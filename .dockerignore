@@ -1,0 +1,11 @@
+.git
+node_modules
+dist
+deploy
+.gev-cache
+.gev-logs
+screenshots
+qa-shots
+output
+*.log
+.env
