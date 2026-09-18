@@ -1,0 +1,14 @@
+#!/bin/sh
+# Refuses any commit that stages a file under deploy/local/ (the private,
+# host-specific deployment folder for docker.tuxhpc.net - real secrets and
+# internal infra details live there and must never reach a git object).
+# Enable once per checkout: git config core.hooksPath .githooks
+
+leaked=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^deploy/local/' | grep -v '^deploy/local/\.gitignore$')
+
+if [ -n "$leaked" ]; then
+  echo "error: refusing to commit files under deploy/local/ (private deployment data):" >&2
+  echo "$leaked" | sed 's/^/  /' >&2
+  echo "unstage them with: git restore --staged <path>" >&2
+  exit 1
+fi

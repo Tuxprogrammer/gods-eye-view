@@ -12,3 +12,10 @@ output/
 3d-models/
 pinokio/ENVIRONMENT
 pinokio/.installed
+
+# Private, host-specific deployment config/notes (docker.tuxhpc.net and
+# friends). Contains real secrets and internal infra details - never commit.
+# A second .gitignore lives inside the folder itself as defense-in-depth in
+# case this rule is ever edited or dropped.
+/deploy/local/*
+!/deploy/local/.gitignore
