@@ -40,6 +40,41 @@ _“pretty cool”_ — [Brendan Eich](https://x.com/BrendanEich/status/20945920
 
 ---
 
+## 🍴 This Fork's Additions
+
+This fork stays in step with upstream (a scheduled pipeline merges `upstream/main` and only pushes it when the tests, boundary checks and formatting pass) and adds features for a self-hosted, operator-style deployment.
+
+### 📡 HF Propagation layer
+
+Live shortwave-radio propagation, draped straight onto the photoreal 3D tiles: where the ionosphere will bounce a signal today, on the same globe as everything else.
+
+<img src="docs/media/fork/hf-propagation-overview.jpg" alt="MUF heatmap draped over Europe and North Africa with labelled contour rings and colour-matched ionosonde station bubbles" width="100%">
+
+- **Two maps, pick one:** **MUF (3000 km)** and **foF2**, as an exclusive selector in the Data Layers panel. The colour scale, its numeric range and an opacity slider live under the active map and disappear when the layer is off.
+- **Contour rings:** isolines that encircle the same value, with the MHz level printed repeatedly along every ring so a ring always says what it is.
+- **Station bubbles:** the ionosondes the map is built from, coloured on the map's own scale. A bubble that matches the colour beneath it is the model agreeing with a measurement. Stations over the horizon are hidden, so nothing shows through the planet.
+- **Hover or click a station** for a details table (MUF, foF2, hmF2, confidence, position, how old the reading is, source). Click pins the card to the station and it follows as the camera moves; Esc, the × or a click elsewhere closes it.
+- **Polite by construction:** nothing is fetched until a browser is looking at the layer, upstream requests are conditional, cached and shared between viewers, and rings and stations are only requested while their toggles are on.
+
+<p>
+  <img src="docs/media/fork/hf-propagation-station-details.jpg" alt="A pinned details table for the El Arenosillo ionosonde over Spain" width="68%">
+  <img src="docs/media/fork/hf-propagation-panel.jpg" alt="The HF Propagation row in Data Layers: MUF and foF2 selector, rings and stations toggles, colour scale and opacity" width="30%">
+</p>
+
+Data comes from [prop.kc2g.com](https://prop.kc2g.com/)'s public rendered maps, which are built from [GIRO](https://giro.uml.edu/) ionosonde data (CC BY-NC-SA 4.0, **non-commercial use only**) and the IRI-2020 model. Credit is shown in the in-app attribution list and in [DATA_SOURCES.md](DATA_SOURCES.md). The site publishes no API terms, so the layer reads only what its own pages serve and validates it strictly: if the upstream layout changes, the layer reports itself unavailable instead of drawing something wrong.
+
+### 🐳 Container image and CI
+
+A `Dockerfile` and `.gitlab-ci.yml` build the app into an image on every push to `main` and publish it to the project's container registry, so a host only has to pull and start it. A daily scheduled job merges upstream, runs the tests, boundary checks and format check, pushes on green and reports the outcome to a chat webhook.
+
+### 🎯 Defaults and small changes
+
+- The app opens over Huntsville, AL instead of the upstream default.
+- The HUD's classification banner reads `UNCLASSIFIED` rather than an invented marking.
+- A pre-commit guard (`git config core.hooksPath .githooks`) refuses to stage anything from the private, gitignored deployment folder.
+
+---
+
 ## 🌍 Why This Exists
 
 God's Eye View brings public signals into one explorable globe. Track the world live. Talk to it. Break it. Extend it.
