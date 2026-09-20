@@ -1809,7 +1809,17 @@
       "src/director/sharing/lifetime.js",
       "src/director/authoring.js",
       "src/scenes/sharing.js",
-      "src/ui/sceneSharing.js"
+      "src/ui/sceneSharing.js",
+      "src/layers/propagation/model.js",
+      "src/layers/propagation/source.js",
+      "src/layers/propagation/controls.js",
+      "src/layers/propagation/surface.js",
+      "src/layers/propagation/rendering.js",
+      "src/layers/propagation/index.js",
+      "src/app/layers/propagation.js",
+      "src/layers/propagation/tilesetQuality.js",
+      "src/layers/propagation/stationInteraction.js",
+      "src/layers/propagation/horizon.js"
     ],
     "external": [
       "@mapbox/vector-tile",
@@ -2203,7 +2213,17 @@
       "src/sources/overpassFeaturesRecords.js",
       "src/sources/overpassFeatures.js",
       "src/sources/featureSource.js",
-      "src/sources/overpassRoads.js"
+      "src/sources/overpassRoads.js",
+      "src/layers/propagation/model.js",
+      "src/layers/propagation/surface.js",
+      "src/layers/propagation/controls.js",
+      "src/layers/propagation/source.js",
+      "src/layers/propagation/rendering.js",
+      "src/layers/propagation/index.js",
+      "src/app/layers/propagation.js",
+      "src/layers/propagation/tilesetQuality.js",
+      "src/layers/propagation/stationInteraction.js",
+      "src/layers/propagation/horizon.js"
     ],
     "external": [
       "cesium",

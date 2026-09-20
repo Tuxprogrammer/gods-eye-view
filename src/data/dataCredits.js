@@ -195,6 +195,15 @@ export const DATA_CREDITS = [
       '(public domain; audio delivered directly by each broadcaster)',
   },
   {
+    key: 'kc2g-propagation',
+    html:
+      'HF propagation maps (MUF 3000 km, foF2): ' +
+      '<a href="https://prop.kc2g.com/" target="_blank" rel="noopener">prop.kc2g.com</a> ' +
+      'from ionosonde data of the ' +
+      '<a href="https://giro.uml.edu/" target="_blank" rel="noopener">Global Ionospheric Radio Observatory (GIRO)</a> ' +
+      'and its contributing stations, with the IRI-2020 model',
+  },
+  {
     key: 'reearth-terrain',
     html:
       'Terrain (keyless globe stacks): ' +

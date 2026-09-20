@@ -1,0 +1,159 @@
+/* Continuous colour scale and range sliders inside a layer row's sub-controls
+   (used by the HF propagation layer). Each takes a full row of the wrapping
+   .data-toggle-controls flex container. */
+.data-toggle-ramp {
+  flex: 1 0 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.data-toggle-ramp-bar {
+  height: 8px;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+
+.data-toggle-ramp-ticks {
+  position: relative;
+  height: 10px;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.3px;
+  color: var(--text-dim);
+}
+
+.data-toggle-ramp-ticks > span {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.data-toggle-ramp-caption {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.5px;
+  color: var(--text-dim);
+}
+
+.data-toggle-slider {
+  flex: 1 0 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 1.2px;
+  color: var(--text-dim);
+}
+
+.data-toggle-slider-input {
+  flex: 1;
+  min-width: 0;
+  height: 12px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.data-toggle-slider-value {
+  min-width: 3.2em;
+  text-align: right;
+  color: var(--text-secondary);
+}
+
+/* A chip that opens a new group (independent toggles after an exclusive set). */
+.data-toggle-chip.chip-break {
+  margin-left: 10px;
+}
+
+/* Station details: a small table that follows the cursor on hover and pins to
+   the bubble on click. Sits inside the viewer container, above the canvas. */
+.propagation-station-card {
+  position: absolute;
+  z-index: 70;
+  min-width: 190px;
+  max-width: 260px;
+  padding: 8px 10px 9px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-primary, #e8eaed);
+  background: rgba(8, 12, 18, 0.94);
+  border: 1px solid var(--glass-border-hover, rgba(0, 212, 255, 0.45));
+  border-radius: 4px;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.55);
+  /* A hover preview must never steal the pointer from the globe beneath it. */
+  pointer-events: none;
+}
+
+.propagation-station-card[hidden] {
+  display: none;
+}
+
+.propagation-station-card.pinned {
+  pointer-events: auto;
+  border-color: var(--accent);
+}
+
+.propagation-station-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 5px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.propagation-station-card-title {
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  color: var(--accent);
+}
+
+.propagation-station-card-close {
+  display: none;
+  padding: 0 4px;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--text-secondary, #b8bcc4);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.propagation-station-card.pinned .propagation-station-card-close {
+  display: block;
+}
+
+.propagation-station-card-close:hover,
+.propagation-station-card-close:focus-visible {
+  color: var(--accent);
+  outline: none;
+}
+
+.propagation-station-card-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.propagation-station-card-table th,
+.propagation-station-card-table td {
+  padding: 1.5px 0;
+  font-weight: 400;
+  text-align: left;
+  vertical-align: top;
+}
+
+.propagation-station-card-table th {
+  padding-right: 12px;
+  color: var(--text-dim, rgba(232, 234, 237, 0.55));
+  white-space: nowrap;
+}
+
+.propagation-station-card-table td {
+  text-align: right;
+  color: var(--text-primary, #e8eaed);
+}

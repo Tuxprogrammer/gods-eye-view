@@ -45,7 +45,7 @@ const PANEL_GROUPS = [
   },
   {
     label: 'Utilities',
-    ids: ['directions', 'radio'],
+    ids: ['directions', 'radio', 'propagation'],
   },
 ];
 const PANEL_ORDER = PANEL_GROUPS.flatMap(({ label, ids }) =>
@@ -61,7 +61,15 @@ const PANEL_LABELS = {
   'alpr-cameras': 'Mapped ALPR Cameras',
   'local-datacenters': 'Data Centers',
   'local-firms': 'Active Fires',
+  propagation: 'HF Propagation',
 };
+
+/** Class test over `className`, which every element (and test double) carries. */
+function hasClass(node, name) {
+  return String(node?.className ?? '')
+    .split(/\s+/)
+    .includes(name);
+}
 
 function panelLabel(layer) {
   return PANEL_LABELS[layer.id] || layer.name;
@@ -248,6 +256,23 @@ export class LayerPanel {
           else if (chip.params)
             this.setLayerParams(layer.id, chip.params, { origin: 'user' });
         });
+        // Sliders (opacity and the like) report continuous input; the live
+        // descriptor is re-read so a stale row can never drive a dead slider.
+        this._bind(controls, 'input', (event) => {
+          const input = event.target?.closest?.('.data-toggle-slider-input');
+          if (!input || !this.isEnabled(layer.id)) return;
+          const slider = this._rowControlsFor(layer.id)?.sliders?.find(
+            (entry) => entry.id === input.dataset.sliderId,
+          );
+          if (!slider) return;
+          const value = Number(input.value);
+          if (!Number.isFinite(value)) return;
+          const output = input.parentElement?.querySelector?.(
+            '.data-toggle-slider-value',
+          );
+          if (output) output.textContent = `${value}${slider.suffix || ''}`;
+          slider.onInput?.(value);
+        });
         row.appendChild(controls);
         // An ordered list below the chips, for a layer whose row carries a
         // sequence (turn-by-turn directions). Its own delegated listener, its
@@ -298,8 +323,14 @@ export class LayerPanel {
     const controls = layer.enabled ? this._rowControlsFor(layer.id) : null;
     const chips = controls?.chips || [];
     const legend = controls?.legend || [];
+    const ramp = controls?.ramp || null;
+    const sliders = controls?.sliders || [];
     this._syncRowList(listContainer, controls?.list || null);
-    container.hidden = chips.length === 0 && legend.length === 0;
+    container.hidden =
+      chips.length === 0 &&
+      legend.length === 0 &&
+      !ramp &&
+      sliders.length === 0;
 
     for (const node of [...container.children]) {
       if (
@@ -323,7 +354,7 @@ export class LayerPanel {
         container.appendChild(button);
       }
       const state = chip.state || (chip.active ? 'active' : 'idle');
-      button.className = `data-toggle-chip chip-${state}${chip.active ? ' active' : ''}`;
+      button.className = `data-toggle-chip chip-${state}${chip.active ? ' active' : ''}${chip.breakBefore ? ' chip-break' : ''}`;
       if (button.textContent !== chip.label) button.textContent = chip.label;
       button.title = chip.title || '';
       button.disabled = Boolean(chip.disabled);
@@ -344,6 +375,105 @@ export class LayerPanel {
       entry.append(swatch, text);
       container.appendChild(entry);
     }
+    this._syncRamp(container, ramp);
+    this._syncSliders(container, sliders);
+  }
+
+  /**
+   * A continuous colour scale: gradient bar, value ticks and a caption. Built
+   * once and updated in place, since it repaints on every panel refresh.
+   * @param {HTMLElement} container The row's `.data-toggle-controls` node.
+   * @param {{gradient: string, ticks: Array<{position: number, label: string}>,
+   *   caption: string}|null} ramp
+   */
+  _syncRamp(container, ramp) {
+    let node = [...container.children].find((child) =>
+      hasClass(child, 'data-toggle-ramp'),
+    );
+    if (!ramp) {
+      node?.remove();
+      return;
+    }
+    if (!node) {
+      node = document.createElement('div');
+      node.className = 'data-toggle-ramp';
+      const bar = document.createElement('div');
+      bar.className = 'data-toggle-ramp-bar';
+      bar.setAttribute('role', 'img');
+      const ticks = document.createElement('div');
+      ticks.className = 'data-toggle-ramp-ticks';
+      const caption = document.createElement('div');
+      caption.className = 'data-toggle-ramp-caption';
+      node.append(bar, ticks, caption);
+      container.appendChild(node);
+    }
+    const [bar, ticks, caption] = node.children;
+    if (bar.style.background !== ramp.gradient)
+      bar.style.background = ramp.gradient;
+    const tickKey = JSON.stringify(ramp.ticks);
+    if (ticks.dataset.key !== tickKey) {
+      ticks.dataset.key = tickKey;
+      ticks.replaceChildren(
+        ...ramp.ticks.map((tick) => {
+          const label = document.createElement('span');
+          label.style.left = `${(tick.position * 100).toFixed(2)}%`;
+          label.textContent = tick.label;
+          return label;
+        }),
+      );
+    }
+    if (caption.textContent !== ramp.caption)
+      caption.textContent = ramp.caption;
+    bar.setAttribute(
+      'aria-label',
+      `${ramp.caption}. Scale marks: ${ramp.ticks.map((tick) => tick.label).join(', ')}`,
+    );
+  }
+
+  /**
+   * Range sliders, reconciled in place by id. The value is never rewritten
+   * while the slider is the active element, so a drag is not fought by the
+   * refresh its own input triggers.
+   * @param {HTMLElement} container The row's `.data-toggle-controls` node.
+   * @param {Array<{id: string, label: string, min: number, max: number,
+   *   step: number, value: number, suffix?: string}>} sliders
+   */
+  _syncSliders(container, sliders) {
+    const existing = new Map(
+      [...container.children]
+        .filter((child) => hasClass(child, 'data-toggle-slider'))
+        .map((child) => [child.dataset.sliderId, child]),
+    );
+    for (const slider of sliders) {
+      let label = existing.get(slider.id);
+      existing.delete(slider.id);
+      if (!label) {
+        label = document.createElement('label');
+        label.className = 'data-toggle-slider';
+        label.dataset.sliderId = slider.id;
+        const name = document.createElement('span');
+        name.className = 'data-toggle-slider-name';
+        const input = document.createElement('input');
+        input.type = 'range';
+        input.className = 'data-toggle-slider-input';
+        input.dataset.sliderId = slider.id;
+        const value = document.createElement('span');
+        value.className = 'data-toggle-slider-value';
+        label.append(name, input, value);
+        container.appendChild(label);
+      }
+      const [name, input, value] = label.children;
+      if (name.textContent !== slider.label) name.textContent = slider.label;
+      input.min = String(slider.min);
+      input.max = String(slider.max);
+      input.step = String(slider.step);
+      if (document.activeElement !== input) input.value = String(slider.value);
+      input.setAttribute('aria-label', slider.label);
+      const text = `${slider.value}${slider.suffix || ''}`;
+      if (document.activeElement !== input && value.textContent !== text)
+        value.textContent = text;
+    }
+    for (const label of existing.values()) label.remove();
   }
 
   /**
