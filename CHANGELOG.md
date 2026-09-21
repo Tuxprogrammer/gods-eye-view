@@ -3,7 +3,8 @@
 - Meshtastic nodes now show their hardware model on the hover card, above the firmware line, and
   nodes whose model has a picture are drawn with that device instead of the role glyph (other
   hardware keeps the glyph). The pictures are GPL v3 SVGs from meshtastic/web-flasher, pinned to
-  the last commit before it added its copyright notice; see `public/img/meshtastic-devices/README.md`.
+  the last commit before it added its copyright notice; see `public/img/meshtastic-devices/README.md`. Newer devices use MIT-licensed pictures from
+  meshcore-dev/flasher.meshcore.io (`public/img/meshcore-devices/`).
 
 - Add a Meshtastic layer: the server holds receive-only MQTT connections to the brokers you
   switch on (the project's public broker, ALmesh, and any custom broker added in Data Layers

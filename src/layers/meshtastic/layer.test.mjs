@@ -469,7 +469,7 @@ test('a model shared by several listed devices is named for the first, and pictu
   assert.equal(hardwareName(16), 'LILYGO T-LoRa T3-S3');
   assert.equal(hardwareImageUrl(13), null);
   assert.equal(hardwareImageUrl(null), null);
-  for (const model of [3, 4, 7, 9, 43, 48, 58, 71, 84]) {
+  for (const model of [3, 4, 7, 9, 43, 48, 58, 71, 84, 110, 89, 133]) {
     const url = hardwareImageUrl(model);
     assert.ok(url, `model ${model}`);
     assert.ok(existsSync(`public${url}`), `${url} is bundled`);
