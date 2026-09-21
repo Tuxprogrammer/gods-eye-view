@@ -83,17 +83,19 @@ Set your callsign in `.env` as `APRS_CALLSIGN`; the login passcode is computed f
 
 Every [Meshtastic](https://meshtastic.org/) node whose operator publishes to MQTT, on the globe: positions, names, roles, signal, battery and sensor telemetry, and text messages.
 
-<img src="docs/media/fork/meshtastic-globe.png" alt="Meshtastic nodes around Huntsville, Alabama, ringed by role; a dashed ring marks a position the node's channel has blurred" width="100%">
+<img src="docs/media/fork/meshtastic-globe.png" alt="Meshtastic nodes around Huntsville, Alabama, drawn as their device with their names fanned out around stacked icons; a dashed outline marks a position the node's channel has blurred" width="100%">
 
 - **You choose the brokers.** Data Layers → Meshtastic lists the MQTT servers: the Meshtastic project's public broker and **ALmesh** are there to start with, each with an on/off switch, an editable topic (`msh/US/#`, or `msh/US/AL/#` to narrow it) and a **✕** on its left to delete it. **+ ADD SERVER** takes any other broker (host, port, TLS, login, topic, and optional channel keys for a private channel you have the key for). Nothing connects until you switch a server on.
 - **Always listening, 24 hours.** The server keeps a receive-only MQTT connection to every server that is on, whether or not a browser is open, and stores what it can read for 24 hours (SQLite, `.gev-cache/meshtastic/`). Reads use the network's public default channel key; a channel with a key you have not supplied is skipped, and the row says how many.
 - **Radius, heard within, tracks:** the same controls as the APRS layer, plus a name filter (`HT*, !0af87081`) and a moving-only toggle. Nodes hidden behind the planet are not drawn.
-- **Hover a node** for its card: name, role, when it was heard, position and altitude, signal (SNR, RSSI, hops), battery and voltage, sensors, firmware and radio preset, and which gateway and channel it was heard through. **Click** to pin it, with **CENTER**, **ZOOM**, a highlighted **24 h TRACK**, telemetry charts and its recent messages.
+- **Nodes are drawn as their device** where a picture exists (Heltec, LILYGO, RAK, Seeed, ThinkNode and more, about sixty models); other hardware keeps a role glyph. The pictures are GPL v3 and MIT SVGs from the Meshtastic and MeshCore flashers, with sources and licences in `public/img/`.
+- **Hover a node** for its card: name, role, when it was heard, position and altitude, signal (SNR, RSSI, hops), battery and voltage, sensors, hardware model, firmware and radio preset, and which gateway and channel it was heard through. **Click** to pin it, with **CENTER**, **ZOOM**, a highlighted **24 h TRACK**, telemetry charts and its recent messages.
+- **Stacked nodes:** where icons overlap, their names fan out around the dots, and clicking the stack pins each node in turn (the card says "2 of 5"). APRS stations cycle the same way.
 - **Position ambiguity.** Many nodes run a blurred position and say how blurred in the packet. Those are drawn with a dashed outline, and hovering or pinning one draws a ring on the ground showing the box the node could be anywhere inside.
 - **Message pop-ups** beside the sender for text messages sent inside the radius, like APRS.
 - **Consent is honoured.** A node that has not turned on "OK to MQTT" is not shown (a gateway's own packets excepted: its operator set up the uplink), and the layer never publishes anything.
 
-<img src="docs/media/fork/meshtastic-ambiguity-ring.png" alt="A hovered node with its details card and a ring showing the box its blurred position could be in" width="100%">
+<img src="docs/media/fork/meshtastic-ambiguity-ring.png" alt="A hovered Heltec V3 node with its details card, hardware model included, and a ring showing the box its blurred position could be in" width="100%">
 
 The list of servers and their logins are stored on the server and never sent back to the browser, and any host can be added, so put a shared deployment behind access control. See [DATA_SOURCES.md](DATA_SOURCES.md) and [.env.example](.env.example).
 
