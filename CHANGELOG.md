@@ -24,6 +24,11 @@
   recency window and type, with tracks, weather, message pop-ups and an
   aprs.fi-style details card. The login passcode is computed from `APRS_CALLSIGN`.
   The panel gains dropdown and text-filter widgets.
+- Enable responsive trackpad pinch zoom on the globe. Browser pixel-mode
+  `Ctrl+wheel` pinch gestures now reach Cesium with bounded amplification,
+  while ordinary wheel, line-mode and touch-pinch inputs retain their existing
+  behavior; the listener is removed with the application scene.
+
 - Report AIS speed and course that carry the standard "not available" code as
   unknown instead of 102.3 knots and 360 degrees. Genuine readings, including a
   stopped vessel's zero and the highest encodable values, are unchanged.
@@ -156,6 +161,8 @@
 - Separate canonical voice action arguments from descriptive wording, preserving the existing Realtime tool inventory.
 
 - Expose portable radio, camera-type and regional source helpers; keep HTTP transport separate from record normalization.
+
+- The Realtime debug-log endpoint is bounded on every axis it was not: an always-on per-client rate limit, asynchronous appends through a serialized queue instead of a synchronous write on the request path, and rotation of the log file at 32 MB keeping one prior generation. The 8 MB cap applied to a single request body and never to the file those requests accumulated into, so any local page could grow it for as long as the dev server ran. A malformed record and a failed write are now told apart, 400 from 500, and neither answer carries the error text.
 
 - Three proxy paths no longer relay upstream or JS error text to the client. The HUD summary passed OpenAI's own `error.message` through whenever upstream was not ok, carrying request ids and quota wording; the Realtime token route passed through non-success response bodies and echoed JS errors, which can expose upstream details; and a failed CCTV media fetch stored the raw errno as the camera's health message, which reaches the screen through `GET /api/cctv/health` rather than through the sanitized response beside it. Logs now name the failure and the upstream status without the text.
 

@@ -3583,9 +3583,14 @@ are omitted rather than framing the wrong part of the globe.
 - `/api/route` proxies bounded OSRM route requests for annotation routes, with profile allowlisting, distance caps, response caps, caching, and sanitized "no route found" errors.
 - Track endpoints: `/api/ais-live/track?mmsi=` (server-accumulated ring buffers; sub-route handled before the rows snapshot), `/api/opensky-track?icao24=` (OAuth, 60s cache, sanitized errors, independent OpenSky credit bucket), `/api/adsblol/trace?hex=` (60s cache, 5MB cap, ODbL attribution required in UI).
 - Realtime debug logs redact API keys, bearer tokens, client secrets, and image data URLs before writing to disk; request bodies are size-capped.
+- `/api/realtime/debug-log` enforces an always-on 120-per-client/400-global one-minute limiter (not the opt-in `GEV_RATELIMIT_OPENAI_PER_MIN` bucket the cost-bearing OpenAI routes share), appends asynchronously through a serialized queue, and rotates `realtime-conversations.jsonl` at 32 MB keeping one prior generation, so the sink is bounded at twice that regardless of session length. A malformed record answers 400 and a failed write 500, both with a fixed message.
 
 ## UI/UX Runtime Defaults
 
+- Trackpad pinch zoom is registered as Cesium's `Ctrl+wheel` camera input.
+  Pixel-mode pinch deltas receive bounded amplification before reaching the
+  canvas; ordinary wheel, line/page-mode and native touch-pinch paths are left
+  unchanged. The application scene owns and removes the relay listener.
 - Z ladder: panels promote within 100–139 (renormalized on wrap), voice pill 150, toast 200, clean-view exit 300.
 - Panel POSITION keys are versioned `v8` (`godsEyeView.v8.panelPos.<id>`); collapsed-state keys remain `v6`. The one-time position reset clears stale DISPLAY placements that could overlap the Context rail.
 - Map Source lives in the bottom Visual Presets tray. The left accordion contains no MAP STACK panel, and the `k` panel token that addressed it is gone from the share registry, so legacy `ui=k...` state takes the ordinary unknown-token skip.
