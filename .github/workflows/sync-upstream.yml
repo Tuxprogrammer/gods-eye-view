@@ -8,8 +8,11 @@ name: Sync upstream
 # fork's main first so both remotes share one merge commit.
 #
 # A push made with the default GITHUB_TOKEN is refused when upstream changed
-# anything under .github/workflows/. To cover that case, add a personal access
-# token with the `workflow` scope as the repository secret SYNC_TOKEN.
+# anything under .github/workflows/. So the job checks out and pushes over SSH
+# with a write-enabled deploy key, stored as the repository secret
+# SYNC_DEPLOY_KEY. It can reach only this repository, and deploy-key pushes
+# may modify workflow files. Without the secret the job falls back to
+# GITHUB_TOKEN.
 
 on:
   schedule:
@@ -36,7 +39,7 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
-          token: ${{ secrets.SYNC_TOKEN || github.token }}
+          ssh-key: ${{ secrets.SYNC_DEPLOY_KEY }}
 
       - name: Use Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
