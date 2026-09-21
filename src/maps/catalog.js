@@ -37,4 +37,27 @@ export const MAP_STACKS = [
     kind: 'osm',
     requiresIon: false,
   },
+  {
+    id: 'carto-positron',
+    label: 'CARTO Positron',
+    shortLabel: 'LIGHT',
+    kind: 'carto',
+    style: 'light_all',
+    requiresIon: false,
+  },
+  {
+    id: 'carto-dark',
+    label: 'CARTO Dark Matter',
+    shortLabel: 'DARK',
+    kind: 'carto',
+    style: 'dark_all',
+    requiresIon: false,
+  },
+  {
+    id: 'openfreemap-dark',
+    label: 'OpenFreeMap Dark',
+    shortLabel: 'OFM',
+    kind: 'openfreemap',
+    requiresIon: false,
+  },
 ];

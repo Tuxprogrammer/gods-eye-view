@@ -33,6 +33,9 @@ export function createBrowserViteConfig({
       'import.meta.env.GOOGLE_MAPS_API_KEY': JSON.stringify(googleApiKey),
       'import.meta.env.CESIUM_ION_TOKEN': JSON.stringify(cesiumToken),
     },
+    // maplibre-gl ships its worker as a sibling module resolved from its own
+    // URL; the dependency optimizer drops that file, so serve it unbundled.
+    optimizeDeps: { exclude: ['maplibre-gl'] },
     build: { chunkSizeWarningLimit: 1500 },
   };
 }

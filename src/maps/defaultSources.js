@@ -5,8 +5,12 @@ import {
   createOsmImagery,
   createEsriImagery,
   createIonImagery,
+  createCartoImagery,
   ESRI_ATTRIBUTION_HTML,
+  CARTO_ATTRIBUTION_HTML,
+  OPENFREEMAP_ATTRIBUTION_HTML,
 } from './imagery.js';
+import { createOpenFreeMapImagery } from './openFreeMapRaster.js';
 import { createWorldTerrain, createKeylessTerrain } from './terrain.js';
 
 /** Select sources and setup guidance without putting provider branches in the controller. */
@@ -44,31 +48,34 @@ export function createDefaultMapSources({
           unavailableReason: photorealUnavailableReason(hasIon || hasGoogle),
           tileset: googleTileset,
         };
-      const imagery =
-        descriptor.kind === 'ion'
-          ? () => createIonImagery(descriptor.style, ionToken)
-          : descriptor.id === 'osm'
-            ? createOsmImagery
-            : createEsriImagery;
-      return {
-        ...common,
-        imagery,
-        terrain,
-        ...(descriptor.id === 'esri-imagery'
-          ? {
-              credit: ESRI_ATTRIBUTION_HTML,
-              constructionFallback: {
-                id: 'osm',
-                message: 'Esri Satellite is unavailable; using OSM',
-              },
-              tileFailureFallback: {
-                id: 'osm',
-                threshold: 2,
-                message: 'Esri Satellite tile requests failed; using OSM',
-              },
-            }
-          : {}),
+      const imageryByKind = {
+        ion: () => createIonImagery(descriptor.style, ionToken),
+        osm: createOsmImagery,
+        carto: () => createCartoImagery(descriptor.style),
+        openfreemap: () => createOpenFreeMapImagery(),
       };
+      const imagery = imageryByKind[descriptor.kind] || createEsriImagery;
+      const fallbackToOsm = (name, credit) => ({
+        credit,
+        constructionFallback: {
+          id: 'osm',
+          message: `${name} is unavailable; using OSM`,
+        },
+        tileFailureFallback: {
+          id: 'osm',
+          threshold: 2,
+          message: `${name} tile requests failed; using OSM`,
+        },
+      });
+      const extras =
+        descriptor.id === 'esri-imagery'
+          ? fallbackToOsm('Esri Satellite', ESRI_ATTRIBUTION_HTML)
+          : descriptor.kind === 'carto'
+            ? fallbackToOsm(descriptor.label, CARTO_ATTRIBUTION_HTML)
+            : descriptor.kind === 'openfreemap'
+              ? fallbackToOsm(descriptor.label, OPENFREEMAP_ATTRIBUTION_HTML)
+              : {};
+      return { ...common, imagery, terrain, ...extras };
     }),
   };
 }

@@ -1,5 +1,11 @@
 # Changelog
 
+- Add three map sources to the MAP SOURCE tray: CARTO Positron, CARTO Dark Matter (raster,
+  keyed by server-side `CARTO_API_KEY`) and OpenFreeMap Dark (vector tiles rendered to
+  raster with MapLibre). All fetch through `/api/tiles/*`, a permanent disk cache
+  (`.gev-cache/tiles`, no expiry or size limit) so each tile is requested upstream once.
+  Each falls back to OSM on failure.
+
 - APRS layer: draw stations with the aprs.fi symbol set (aprs-symbols), loaded from a
   pinned CDN commit at runtime rather than bundled because its licences are mixed;
   falls back to drawn glyphs if it cannot load. Track length now defaults to 1 hour.

@@ -14,6 +14,7 @@ import { defaultSourceRoot } from './common/source-root.js';
 import { radioBrowserProxy } from './radio.js';
 import { propagationProxy } from './propagation.js';
 import { aprsProxy } from './aprs.js';
+import { mapTilesProxy } from './tiles.js';
 import { gbfsProxy } from './gbfs.js';
 import { transitProxy } from './transit.js';
 import { adsbLolProxy } from './aircraft/adsb-lol.js';
@@ -42,6 +43,7 @@ function localProviderPlugins() {
     radioBrowserProxy(),
     propagationProxy(),
     aprsProxy(),
+    mapTilesProxy(),
     gbfsProxy(),
     transitProxy(),
     adsbLolProxy(),

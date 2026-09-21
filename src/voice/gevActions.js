@@ -263,6 +263,18 @@ const STACK_ALIASES = new Map([
   ['road', 'osm'],
   ['roads', 'osm'],
   ['road map', 'osm'],
+  ['carto-positron', 'carto-positron'],
+  ['carto positron', 'carto-positron'],
+  ['positron', 'carto-positron'],
+  ['carto light', 'carto-positron'],
+  ['light map', 'carto-positron'],
+  ['carto-dark', 'carto-dark'],
+  ['carto dark', 'carto-dark'],
+  ['dark matter', 'carto-dark'],
+  ['openfreemap-dark', 'openfreemap-dark'],
+  ['openfreemap', 'openfreemap-dark'],
+  ['open free map', 'openfreemap-dark'],
+  ['dark map', 'openfreemap-dark'],
 ]);
 
 /** Search order for track_entity across entity layer families. */
