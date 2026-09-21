@@ -15,6 +15,7 @@ import {
   sparklinePath,
   stationCategory,
   stationsQuery,
+  symbolCell,
   symbolFor,
 } from './model.js';
 
@@ -217,4 +218,18 @@ test('an operator-masked position is labelled as such on the card', () => {
   assert.ok(text.some((line) => line.includes('operator-masked: within ~19 km')));
   const exact = cardModel(station({ wx: null, symCode: '-' }));
   assert.equal(exact.lines.flat().some((s) => /masked/.test(s.t)), false);
+});
+
+test('symbols map onto the aprs.fi sprite sheets', () => {
+  // Row 0 of the primary sheet runs from '!' (33): '#' is the third tile.
+  assert.deepEqual(symbolCell('/', '#'), { sheet: 0, col: 2, row: 0, overlay: null });
+  assert.deepEqual(symbolCell('/', '>'), { sheet: 0, col: 13, row: 1, overlay: null });
+  assert.deepEqual(symbolCell('/', '_'), { sheet: 0, col: 14, row: 3, overlay: null });
+  assert.deepEqual(symbolCell('\\', '#'), { sheet: 1, col: 2, row: 0, overlay: null });
+  // An overlay character picks its own tile from the overlay sheet.
+  assert.deepEqual(symbolCell('A', '#'), { sheet: 1, col: 2, row: 0, overlay: { col: 0, row: 2 } });
+  assert.deepEqual(symbolCell('0', '_').overlay, { col: 15, row: 0 });
+  assert.equal(symbolCell('~', '#'), null, 'an unknown table has no picture');
+  assert.equal(symbolCell('/', ' '), null);
+  assert.equal(symbolCell('/', ''), null);
 });

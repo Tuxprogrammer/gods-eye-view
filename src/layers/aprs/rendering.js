@@ -5,6 +5,8 @@ import {
   LABEL_STATION_LIMIT,
   stationCategory,
   stationLabel,
+  SYMBOL_TILE_PX,
+  symbolCell,
   symbolFor,
 } from './model.js';
 
@@ -18,16 +20,63 @@ const ICON_SCALE_BY_DISTANCE = new Cesium.NearFarScalar(2e5, 1, 1.2e7, 0.45);
  * the visible limb does not flicker with the terrain beneath it.
  */
 const HORIZON_ELEVATION_M = 2000;
-const ICON_SIZE = 40;
+const ICON_SIZE = 44;
+/** The symbol picture inside the badge. */
+const SPRITE_SIZE = 32;
 const TRACK_WIDTH = 3;
 const SELECTED_TRACK_COLOR = Cesium.Color.fromCssColorString('#ffe45c');
 const LABEL_FONT = 'bold 12px Inter, sans-serif';
 
 const iconCache = new Map();
 
-/** A round badge in the category colour with the symbol's glyph, cached by look. */
-function iconFor(glyph, color) {
-  const key = `${glyph}|${color}`;
+/**
+ * The aprs.fi symbol set (aprs-symbols by Heikki Hannikainen, OH7LZB), loaded
+ * by the browser at runtime from a CDN, pinned to one commit. It is NOT
+ * bundled: its licences are mixed (some share-alike, some unknown, some brand
+ * logos), so this project points at it rather than redistributing it. If the
+ * sheets cannot be loaded the markers keep their drawn glyphs.
+ */
+const SYMBOL_SHEET_URL = (n) =>
+  `https://cdn.jsdelivr.net/gh/hessu/aprs-symbols@f2286a9cd43eb6ba4501250b4c39fff111e3796c/png/aprs-symbols-${SYMBOL_TILE_PX}-${n}.png`;
+const symbolSheets = { state: 'idle', images: [], waiting: [] };
+
+/** Start loading the sheets once; `onReady` runs when they are all usable. */
+function whenSymbolSheets(onReady) {
+  if (symbolSheets.state === 'ready') return onReady();
+  if (symbolSheets.state === 'failed' || typeof Image === 'undefined') return;
+  symbolSheets.waiting.push(onReady);
+  if (symbolSheets.state === 'loading') return;
+  symbolSheets.state = 'loading';
+  let pending = 3;
+  for (let n = 0; n < 3; n += 1) {
+    const image = new Image();
+    image.crossOrigin = 'anonymous';
+    image.onload = () => {
+      pending -= 1;
+      if (pending === 0 && symbolSheets.state === 'loading') {
+        symbolSheets.state = 'ready';
+        for (const fn of symbolSheets.waiting.splice(0)) fn();
+      }
+    };
+    image.onerror = () => {
+      symbolSheets.state = 'failed';
+      symbolSheets.waiting.length = 0;
+    };
+    image.src = SYMBOL_SHEET_URL(n);
+    symbolSheets.images[n] = image;
+  }
+}
+
+/**
+ * A round badge in the category colour holding the station's symbol: the
+ * aprs.fi picture when the sheets are loaded, otherwise a drawn glyph. Cached
+ * by look.
+ */
+function iconFor(symbol, cell, color) {
+  const sprite = cell && symbolSheets.state === 'ready';
+  const key = sprite
+    ? `s|${cell.sheet}|${cell.col}|${cell.row}|${cell.overlay?.col}|${cell.overlay?.row}|${color}`
+    : `g|${symbol.glyph}|${color}`;
   let canvas = iconCache.get(key);
   if (canvas) return { key, canvas };
   canvas = document.createElement('canvas');
@@ -37,17 +86,36 @@ function iconFor(glyph, color) {
   const c = ICON_SIZE / 2;
   ctx.beginPath();
   ctx.arc(c, c, c - 3, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(12, 16, 24, 0.86)';
+  ctx.fillStyle = sprite
+    ? 'rgba(255, 255, 255, 0.92)'
+    : 'rgba(12, 16, 24, 0.86)';
   ctx.fill();
   ctx.lineWidth = 3;
   ctx.strokeStyle = color;
   ctx.stroke();
-  ctx.font =
-    '20px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillStyle = color;
-  ctx.fillText(glyph, c, c + 1);
+  if (sprite) {
+    const draw = (sheet, at) =>
+      ctx.drawImage(
+        symbolSheets.images[sheet],
+        at.col * SYMBOL_TILE_PX,
+        at.row * SYMBOL_TILE_PX,
+        SYMBOL_TILE_PX,
+        SYMBOL_TILE_PX,
+        c - SPRITE_SIZE / 2,
+        c - SPRITE_SIZE / 2,
+        SPRITE_SIZE,
+        SPRITE_SIZE,
+      );
+    draw(cell.sheet, cell);
+    if (cell.overlay) draw(2, cell.overlay);
+  } else {
+    ctx.font =
+      '20px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = color;
+    ctx.fillText(symbol.glyph, c, c + 1);
+  }
   iconCache.set(key, canvas);
   return { key, canvas };
 }
@@ -125,6 +193,13 @@ export function createAprsSurface({ viewer, classificationType }) {
   let showLabels = true;
   let remover = null;
   const render = () => scene.requestRender?.();
+  // Once the aprs.fi sheets arrive, restyle what is already drawn.
+  whenSymbolSheets(() => {
+    const clamp = records.size <= CLAMP_STATION_LIMIT;
+    for (const record of records.values())
+      styleRecord(record, record.station, clamp);
+    render();
+  });
 
   const heightReference = (clamp) =>
     clamp
@@ -135,7 +210,11 @@ export function createAprsSurface({ viewer, classificationType }) {
     const category = stationCategory(station);
     const color = CATEGORY_COLORS[category] ?? CATEGORY_COLORS.fixed;
     const symbol = symbolFor(station.symTable, station.symCode);
-    const { key, canvas } = iconFor(symbol.glyph, color);
+    const { key, canvas } = iconFor(
+      symbol,
+      symbolCell(station.symTable, station.symCode),
+      color,
+    );
     if (record.iconKey !== key) {
       record.billboard.setImage(key, canvas);
       record.iconKey = key;

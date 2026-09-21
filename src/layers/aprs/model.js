@@ -338,6 +338,40 @@ export function symbolFor(table, code) {
   return { glyph: hit[0], label: hit[1], category: hit[2] };
 }
 
+/** aprs-symbols sprite sheets: 16 columns of square tiles, indexed by ASCII code - 33. */
+export const SYMBOL_SHEET_COLUMNS = 16;
+export const SYMBOL_TILE_PX = 64;
+
+const cellOf = (charCode) => {
+  const index = charCode - 33;
+  return {
+    col: index % SYMBOL_SHEET_COLUMNS,
+    row: Math.floor(index / SYMBOL_SHEET_COLUMNS),
+  };
+};
+
+/**
+ * Where a symbol is on the aprs.fi sprite sheets, or null when the sheets have
+ * no picture for it (the caller then falls back to a drawn glyph).
+ * `sheet` 0 is the primary table, 1 the alternate; an overlay character
+ * (A-Z, 0-9 in the table position) is drawn from sheet 2 over the alternate
+ * symbol.
+ * @returns {{sheet: 0|1, col: number, row: number, overlay: {col: number, row: number}|null}|null}
+ */
+export function symbolCell(table, code) {
+  const codePoint = String(code ?? '').charCodeAt(0);
+  if (!(codePoint >= 33 && codePoint <= 126)) return null;
+  if (table === '/') return { sheet: 0, ...cellOf(codePoint), overlay: null };
+  if (table === '\\') return { sheet: 1, ...cellOf(codePoint), overlay: null };
+  if (/^[0-9A-Z]$/.test(String(table)))
+    return {
+      sheet: 1,
+      ...cellOf(codePoint),
+      overlay: cellOf(String(table).charCodeAt(0)),
+    };
+  return null;
+}
+
 /** The category that decides a marker's colour. */
 export function stationCategory(station) {
   if (station.wx || station.symCode === '_') return 'weather';

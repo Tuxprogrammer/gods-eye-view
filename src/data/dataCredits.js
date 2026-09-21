@@ -212,6 +212,13 @@ export const DATA_CREDITS = [
       '<a href="http://www.cwop.org/" target="_blank" rel="noopener">CWOP</a> weather observers',
   },
   {
+    key: 'aprs-symbols',
+    html:
+      'APRS map symbols: ' +
+      '<a href="http://github.com/hessu/aprs-symbols/" target="_blank" rel="noopener">aprs-symbols</a> ' +
+      'by Heikki Hannikainen (OH7LZB), the set used by aprs.fi',
+  },
+  {
     key: 'reearth-terrain',
     html:
       'Terrain (keyless globe stacks): ' +

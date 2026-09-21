@@ -1,5 +1,9 @@
 # Changelog
 
+- APRS layer: draw stations with the aprs.fi symbol set (aprs-symbols), loaded from a
+  pinned CDN commit at runtime rather than bundled because its licences are mixed;
+  falls back to drawn glyphs if it cannot load. Track length now defaults to 1 hour.
+
 - Add an APRS layer: an always-on, receive-only APRS-IS client streams into a
   24-hour SQLite store (Node's built-in `node:sqlite`, `.gev-cache/aprs/`), and the
   layer shows stations by radius (up to the whole Earth, with the far side hidden),
