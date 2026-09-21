@@ -1,0 +1,129 @@
+/* Mobile tokens and global touch hygiene. Everything is scoped under
+   html[data-ui='mobile'] so desktop is untouched. */
+
+/* Foundation-owned elements exist in the DOM on desktop too; keep them out. */
+html:not([data-ui='mobile']) #mobile-sheet,
+html:not([data-ui='mobile']) #mobile-sheet-backdrop,
+html:not([data-ui='mobile']) #mobile-menu-btn,
+html:not([data-ui='mobile']) #mobile-top-right,
+html:not([data-ui='mobile']) #mobile-status {
+  display: none !important;
+}
+
+html[data-ui='mobile'] {
+  --m-tap: 44px;
+  --m-row: 52px;
+  --m-gap: 12px;
+  --m-radius: 14px;
+  --m-font: 15px;
+  --m-font-meta: 12px;
+  --m-bg: rgba(10, 16, 22, 0.94);
+  --m-line: rgba(120, 200, 255, 0.18);
+  --m-accent: var(--accent, #00d4ff);
+  --m-text: var(--text-primary, #e8eaed);
+  --m-text-dim: rgba(232, 234, 237, 0.62);
+  --m-safe-t: env(safe-area-inset-top, 0px);
+  --m-safe-r: env(safe-area-inset-right, 0px);
+  --m-safe-b: env(safe-area-inset-bottom, 0px);
+  --m-safe-l: env(safe-area-inset-left, 0px);
+  /* z ladder: menu/status/top-right 110, sheet backdrop 165, sheet 170. */
+  --m-z-chrome: 110;
+  --m-z-backdrop: 165;
+  --m-z-sheet: 170;
+  overscroll-behavior: none;
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+html[data-ui='mobile'] body {
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+html[data-ui='mobile'] :is(button, [role='button'], a, summary, label, select) {
+  touch-action: manipulation;
+}
+
+/* No iOS focus-zoom: inputs are at least 16px on touch. */
+html[data-ui='mobile'] :is(input, select, textarea) {
+  font-size: max(16px, 1em);
+}
+
+/* Sliders: 44px hit height, 6px visible track, 24px thumb. Pages opt in with
+   class .m-range; every range inside the sheet gets it automatically. */
+html[data-ui='mobile'] #mobile-sheet input[type='range'],
+html[data-ui='mobile'] input[type='range'].m-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: var(--m-tap);
+  background: transparent;
+  margin: 0;
+}
+html[data-ui='mobile']
+  #mobile-sheet
+  input[type='range']::-webkit-slider-runnable-track,
+html[data-ui='mobile']
+  input[type='range'].m-range::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--m-line);
+}
+html[data-ui='mobile'] #mobile-sheet input[type='range']::-webkit-slider-thumb,
+html[data-ui='mobile'] input[type='range'].m-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  margin-top: -9px;
+  border-radius: 50%;
+  border: 0;
+  background: var(--m-accent);
+}
+html[data-ui='mobile'] #mobile-sheet input[type='range']::-moz-range-track,
+html[data-ui='mobile'] input[type='range'].m-range::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--m-line);
+}
+html[data-ui='mobile'] #mobile-sheet input[type='range']::-moz-range-thumb,
+html[data-ui='mobile'] input[type='range'].m-range::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 0;
+  background: var(--m-accent);
+}
+
+/* Shared building blocks for page owners. */
+html[data-ui='mobile'] .m-row {
+  display: flex;
+  align-items: center;
+  gap: var(--m-gap);
+  min-height: var(--m-row);
+  padding: 6px 0;
+  font-size: var(--m-font);
+  color: var(--m-text);
+}
+html[data-ui='mobile'] .m-meta {
+  font-size: var(--m-font-meta);
+  color: var(--m-text-dim);
+}
+html[data-ui='mobile'] .m-btn {
+  min-height: var(--m-tap);
+  min-width: var(--m-tap);
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid var(--m-line);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--m-text);
+  font-size: var(--m-font);
+}
+html[data-ui='mobile'] .mobile-stub {
+  margin: 24px 0;
+  color: var(--m-text-dim);
+  font-size: var(--m-font);
+  text-align: center;
+}

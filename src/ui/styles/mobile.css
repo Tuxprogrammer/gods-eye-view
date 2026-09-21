@@ -1,0 +1,17 @@
+/* Mobile UI stylesheets, in cascade order. Every rule is scoped under
+   html[data-ui='mobile']. Kept as one import so style.css stays a shim. */
+@import './mobile-base.css';
+@import './mobile-sheet.css';
+@import './mobile-chrome.css';
+@import './mobile-layers.css';
+@import './mobile-scenes.css';
+@import './mobile-view.css';
+@import './mobile-places.css';
+@import './mobile-voice.css';
+@import './mobile-context.css';
+@import './mobile-cctv.css';
+@import './mobile-radio.css';
+@import './mobile-cockpit.css';
+@import './mobile-cards.css';
+@import './mobile-modals.css';
+@import './mobile-more.css';
