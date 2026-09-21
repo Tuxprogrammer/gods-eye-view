@@ -19,53 +19,47 @@ default:
 
 sync:upstream:
   stage: sync
-  # node:24-alpine, not alpine/git — the test gate below needs npm; alpine/git has none.
+  # node:24-alpine, not alpine/git — the verify gate needs npm; alpine/git has none.
   image: node:24-alpine
   rules:
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
+  variables:
+    # The GitHub fork syncs itself from upstream at 06:00 UTC
+    # (.github/workflows/sync-upstream.yml). Merging it first means both
+    # remotes share one merge commit instead of two different ones.
+    MIRROR_REPO: "https://github.com/Tuxprogrammer/gods-eye-view.git"
   before_script:
     - apk add --no-cache git curl
   script:
-    - git remote set-url upstream "$UPSTREAM_REPO" 2>/dev/null || git remote add upstream "$UPSTREAM_REPO"
-    - git fetch upstream main
-    - git config user.email "ci@git.tuxhpc.net"
-    - git config user.name "gods-eye-view sync bot"
-    - BEFORE_SHA="$(git rev-parse HEAD)"
+    # Merge logic: scripts/sync-upstream.sh (union-merges Markdown conflicts).
+    # Gate: scripts/sync-verify.sh (blocks only failures the merge introduces).
     - |
-      if git merge --no-edit upstream/main; then
-        AFTER_SHA="$(git rev-parse HEAD)"
-        if [ "$BEFORE_SHA" = "$AFTER_SHA" ]; then
-          echo "Already up to date — nothing to push, no notification."
-        elif npm ci && npm test && npm run check:boundaries && npm run format:check; then
-          git push "https://sync-bot:${SYNC_PUSH_TOKEN}@git.tuxhpc.net/homelab/gods-eye-view.git" HEAD:main
-          curl -sf -X POST -H "Content-Type: application/json" \
-            -d '{"content":"gods-eye-view: merged upstream cleanly, tests passed, pushed to main."}' \
-            "$DISCORD_WEBHOOK_URL"
-        else
-          curl -sf -X POST -H "Content-Type: application/json" \
-            -d '{"content":"gods-eye-view: upstream merged cleanly but failed tests/boundaries/format checks — NOT pushed to main. Needs manual review."}' \
-            "$DISCORD_WEBHOOK_URL"
-          exit 1
-        fi
-      else
-        git merge --abort
-        curl -sf -X POST -H "Content-Type: application/json" \
-          -d '{"content":"gods-eye-view: upstream sync hit a merge conflict — needs manual resolution."}' \
-          "$DISCORD_WEBHOOK_URL"
-        # STILL A PLACEHOLDER — not fully specified. At minimum needs:
-        #  - push the conflicted state to a FIXED branch (e.g. upstream-sync-conflict),
-        #    force-updating it each day rather than accumulating branches
-        #  - check the GitLab API for an already-open MR from that branch before
-        #    creating a new one, so a persistent conflict doesn't spawn one per day
-        #  - decide --no-ff vs --ff-only, since that determines whether the fork's
-        #    own commits survive an upstream rewrite
+      notify() {
+        curl -sf -X POST -H "Content-Type: application/json" -d "{\"content\":\"gods-eye-view: $1\"}" "$DISCORD_WEBHOOK_URL" || true
+      }
+      BEFORE_SHA="$(git rev-parse HEAD)"
+      set +e
+      sh scripts/sync-upstream.sh
+      rc=$?
+      set -e
+      if [ "$rc" -eq 10 ]; then
+        notify "upstream sync hit a merge conflict outside Markdown - needs manual resolution."
+        exit 1
+      elif [ "$rc" -ne 0 ]; then
+        notify "upstream sync could not fetch a remote (exit $rc) - check network or a renamed branch."
+        exit 1
       fi
-      # NOTE: if `git fetch upstream main` itself fails (network, auth, upstream
-      # renamed a branch), the job dies here and NO notification is sent at all —
-      # a silent failure mode worth deciding whether to guard against. Same for
-      # a test-gate failure above: currently just a red job + Discord alert, no
-      # automatic MR — deliberately left simpler than the conflict path rather
-      # than doubling the not-yet-built MR logic for a second failure mode.
+      AFTER_SHA="$(git rev-parse HEAD)"
+      if [ "$BEFORE_SHA" = "$AFTER_SHA" ]; then
+        echo "Already up to date - nothing to push, no notification."
+        exit 0
+      fi
+      if ! sh scripts/sync-verify.sh "$BEFORE_SHA" "$AFTER_SHA"; then
+        notify "upstream merged cleanly but introduced NEW test/boundary/format failures - NOT pushed to main. Needs manual review."
+        exit 1
+      fi
+      git push "https://sync-bot:${SYNC_PUSH_TOKEN}@git.tuxhpc.net/homelab/gods-eye-view.git" "$AFTER_SHA:refs/heads/main"
+      notify "merged upstream, no new failures, pushed to main ($(git rev-list --count "$BEFORE_SHA..$AFTER_SHA") new commits)."
 
 build:image:
   stage: build

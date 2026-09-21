@@ -1,0 +1,79 @@
+name: Sync upstream
+
+# Keeps this fork on bilawalsidhu/gods-eye-view: merges upstream main into ours
+# every day, runs the same gate CI uses, and pushes only if it passes. The
+# merge logic lives in scripts/sync-upstream.sh (shared with the GitLab job).
+#
+# Runs at 06:00 UTC, ahead of the GitLab job at 09:00 UTC, which merges this
+# fork's main first so both remotes share one merge commit.
+#
+# A push made with the default GITHUB_TOKEN is refused when upstream changed
+# anything under .github/workflows/. To cover that case, add a personal access
+# token with the `workflow` scope as the repository secret SYNC_TOKEN.
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-upstream
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    # Only the fork should sync itself; upstream would be merging into itself.
+    if: github.repository_owner != 'bilawalsidhu'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PUPPETEER_SKIP_DOWNLOAD: '1'
+    steps:
+      - name: Check out full history
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.SYNC_TOKEN || github.token }}
+
+      - name: Use Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24.14.0
+          cache: npm
+
+      - name: Merge upstream
+        id: merge
+        run: |
+          git config user.name "gods-eye-view sync bot"
+          git config user.email "sync-bot@users.noreply.github.com"
+          before="$(git rev-parse HEAD)"
+          set +e
+          sh scripts/sync-upstream.sh
+          status=$?
+          set -e
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          if [ "$status" -ne 0 ]; then
+            echo "::error::Upstream sync needs a human (exit $status): conflicts outside Markdown, or upstream could not be fetched."
+            exit "$status"
+          fi
+          if [ "$before" = "$(git rev-parse HEAD)" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Already up to date with upstream."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "before=$before" >> "$GITHUB_OUTPUT"
+            echo "after=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Fails only on checks the merge newly breaks; failures the fork's own
+      # tip already had (its features vs upstream's tests) do not block.
+      - name: Gate the merge
+        if: steps.merge.outputs.changed == 'true'
+        run: sh scripts/sync-verify.sh "${{ steps.merge.outputs.before }}" "${{ steps.merge.outputs.after }}"
+
+      - name: Push
+        if: steps.merge.outputs.changed == 'true'
+        run: git push origin "${{ steps.merge.outputs.after }}:refs/heads/${{ github.event.repository.default_branch }}"
