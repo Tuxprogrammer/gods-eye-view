@@ -1,5 +1,6 @@
 import * as Cesium from 'cesium';
 import { createHorizon } from '../aprs/rendering.js';
+import { hardwareImageUrl } from './hardware.js';
 import {
   CATEGORY_COLORS,
   CLAMP_NODE_LIMIT,
@@ -21,16 +22,44 @@ const SELECTED_TRACK_COLOR = Cesium.Color.fromCssColorString('#ffe45c');
 const LABEL_FONT = 'bold 12px Inter, sans-serif';
 
 const iconCache = new Map();
+/** Device picture URL -> {image, ready, waiters}; loaded once, on first use. */
+const deviceImages = new Map();
+/** Largest side of a device picture inside the badge. */
+const DEVICE_IMAGE_SIZE = 24;
+
+/**
+ * The loaded picture for a URL, or null while it loads or if it failed.
+ * `onReady` is called once the picture arrives.
+ */
+function deviceImage(url, onReady) {
+  let held = deviceImages.get(url);
+  if (!held) {
+    const image = new Image();
+    held = { image, ready: false, waiters: new Set() };
+    deviceImages.set(url, held);
+    image.onload = () => {
+      held.ready = image.naturalWidth > 0 && image.naturalHeight > 0;
+      if (!held.ready) return;
+      for (const waiter of held.waiters) waiter();
+      held.waiters.clear();
+    };
+    image.src = url;
+  }
+  if (!held.ready && onReady) held.waiters.add(onReady);
+  return held.ready ? held.image : null;
+}
 
 /**
  * A round badge in the role colour holding the role's glyph. A dashed ring
  * marks a position the node's channel has blurred, so a reader can tell a
  * pinpoint from a neighbourhood at a glance. Cached by look.
  */
-function iconFor(node) {
+function iconFor(node, onImageReady) {
   const category = nodeCategory(node);
   const approximate = node.precisionKm >= 0.5;
-  const key = `${category}|${approximate ? 'approx' : 'exact'}`;
+  const url = hardwareImageUrl(node.hwModel);
+  const picture = url ? deviceImage(url, onImageReady) : null;
+  const key = `${category}|${approximate ? 'approx' : 'exact'}|${picture ? url : ''}`;
   let canvas = iconCache.get(key);
   if (canvas) return { key, canvas };
   canvas = document.createElement('canvas');
@@ -47,12 +76,20 @@ function iconFor(node) {
   if (approximate) ctx.setLineDash([5, 4]);
   ctx.stroke();
   ctx.setLineDash([]);
-  ctx.font =
-    '18px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillStyle = CATEGORY_COLORS[category];
-  ctx.fillText(nodeGlyph(node), c, c + 1);
+  if (picture) {
+    const fit =
+      DEVICE_IMAGE_SIZE / Math.max(picture.naturalWidth, picture.naturalHeight);
+    const w = picture.naturalWidth * fit;
+    const h = picture.naturalHeight * fit;
+    ctx.drawImage(picture, c - w / 2, c - h / 2, w, h);
+  } else {
+    ctx.font =
+      '18px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = CATEGORY_COLORS[category];
+    ctx.fillText(nodeGlyph(node), c, c + 1);
+  }
   iconCache.set(key, canvas);
   return { key, canvas };
 }
@@ -84,6 +121,7 @@ export function createMeshtasticSurface({ viewer, classificationType }) {
   let type = classificationType;
   let showLabels = true;
   let remover = null;
+  let destroyed = false;
   const render = () => scene.requestRender?.();
 
   const heightReference = (clamp) =>
@@ -92,7 +130,7 @@ export function createMeshtasticSurface({ viewer, classificationType }) {
       : Cesium.HeightReference.NONE;
 
   function styleRecord(record, node, clamp) {
-    const { key, canvas } = iconFor(node);
+    const { key, canvas } = iconFor(node, restyleAll);
     if (record.iconKey !== key) {
       record.billboard.setImage(key, canvas);
       record.iconKey = key;
@@ -128,6 +166,15 @@ export function createMeshtasticSurface({ viewer, classificationType }) {
       labels.remove(record.label);
       record.label = null;
     }
+  }
+
+  /** A device picture finished loading: redraw the icons that wait for it. */
+  function restyleAll() {
+    if (destroyed) return;
+    const clamp = records.size <= CLAMP_NODE_LIMIT;
+    for (const record of records.values())
+      styleRecord(record, record.station, clamp);
+    render();
   }
 
   function applyEmphasis() {
@@ -425,6 +472,8 @@ export function createMeshtasticSurface({ viewer, classificationType }) {
     },
 
     destroy() {
+      destroyed = true;
+      for (const held of deviceImages.values()) held.waiters.delete(restyleAll);
       this.clear();
       scene.primitives.remove(billboards);
       scene.primitives.remove(labels);

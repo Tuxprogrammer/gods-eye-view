@@ -24,6 +24,7 @@ import {
   unitOption,
   windowOption,
 } from '../aprs/model.js';
+import { hardwareName } from './hardware.js';
 
 /** Pure model, formatting and query helpers for the Meshtastic layer. */
 
@@ -129,6 +130,7 @@ function normalizeNode(row) {
     longName: text(row.longName),
     shortName: text(row.shortName),
     role: text(row.role),
+    hwModel: finite(row.hwModel) ? row.hwModel : null,
     lat: row.lat,
     lon: row.lon,
     alt: finite(row.alt) ? row.alt : null,
@@ -407,6 +409,8 @@ export function cardModel(node, units = DEFAULT_UNITS, now = Date.now()) {
     if (parts.length) lines.push([t('Sensors: '), b(parts.join(' · '))]);
   }
 
+  const hardware = hardwareName(node.hwModel);
+  if (hardware) lines.push([t('Hardware: '), b(hardware)]);
   const radio = [
     node.firmware && `fw ${node.firmware}`,
     node.region,

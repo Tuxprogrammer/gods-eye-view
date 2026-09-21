@@ -443,3 +443,35 @@ test('a topic being typed is not overwritten by a refresh', () =>
     panel._syncServers(container, { items: [item('global')] });
     assert.equal(topic.value, 'msh/US/AL/#');
   }));
+
+test('the card names the hardware just above the firmware line, and says nothing when unknown', () => {
+  const lines = (extra) =>
+    cardModel(
+      normalizeNodesPayload({
+        nodes: [node('!a', { firmware: '2.5.15', region: 'US', ...extra })],
+      }).nodes[0],
+      'metric',
+      5000,
+    ).lines.map((l) => l.map((s) => s.t).join(''));
+  const known = lines({ hwModel: 43 });
+  const at = known.indexOf('Hardware: Heltec V3');
+  assert.ok(at >= 0, known.join('|'));
+  assert.match(known[at + 1], /^fw 2\.5\.15/);
+  assert.ok(lines({ hwModel: 9999 }).includes('Hardware: Hardware 9999'));
+  assert.ok(!lines({}).some((l) => l.startsWith('Hardware')));
+  assert.ok(!lines({ hwModel: 0 }).some((l) => l.startsWith('Hardware')));
+});
+
+test('a model shared by several listed devices is named for the first, and pictured only when the image exists', async () => {
+  const { hardwareName, hardwareImageUrl } = await import('./hardware.js');
+  const { existsSync } = await import('node:fs');
+  assert.equal(hardwareName(9), 'RAK WisBlock 4631');
+  assert.equal(hardwareName(16), 'LILYGO T-LoRa T3-S3');
+  assert.equal(hardwareImageUrl(13), null);
+  assert.equal(hardwareImageUrl(null), null);
+  for (const model of [3, 4, 7, 9, 43, 48, 58, 71, 84]) {
+    const url = hardwareImageUrl(model);
+    assert.ok(url, `model ${model}`);
+    assert.ok(existsSync(`public${url}`), `${url} is bundled`);
+  }
+});
