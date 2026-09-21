@@ -9,6 +9,7 @@
 @import './src/ui/styles/radio.css';
 @import './src/ui/styles/propagation.css';
 @import './src/ui/styles/aprs.css';
+@import './src/ui/styles/meshtastic.css';
 @import './src/ui/styles/cctv.css';
 @import './src/ui/styles/scenes.css';
 @import './src/ui/styles/bhote-koshi.css';

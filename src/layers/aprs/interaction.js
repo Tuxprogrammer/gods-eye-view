@@ -47,6 +47,13 @@ export function createStationInteraction({
   units,
   loadDetail,
   flyTo,
+  // Another network reuses this card with its own text, charts and wording.
+  cardModel: buildCard = cardModel,
+  chartSeries: buildCharts = (detail, unit) =>
+    chartSeries(detail?.weather ?? [], unit),
+  noun = 'APRS station',
+  logTag = 'APRS',
+  messageLine = (m) => `${m.from} › ${m.to}: ${m.text}`,
   now = Date.now,
   documentRef = globalThis.document,
   setTimer = (fn, ms) => globalThis.setTimeout(fn, ms),
@@ -113,7 +120,7 @@ export function createStationInteraction({
   }
 
   function renderCharts(detail) {
-    const series = chartSeries(detail?.weather ?? [], units());
+    const series = buildCharts(detail, units());
     charts.hidden = series.length === 0;
     charts.replaceChildren(
       ...series.map((item) => {
@@ -152,20 +159,18 @@ export function createStationInteraction({
     messages.replaceChildren(
       ...list
         .slice(-4)
-        .map((m) =>
-          el('div', 'aprs-card-message', `${m.from} › ${m.to}: ${m.text}`),
-        ),
+        .map((m) => el('div', 'aprs-card-message', messageLine(m))),
     );
   }
 
   function render(station, pinned) {
-    const model = cardModel(station, units(), now());
+    const model = buildCard(station, units(), now());
     glyph.textContent = model.glyph;
     title.textContent = model.title;
     renderLines(model);
     card.classList.toggle('pinned', pinned);
     card.setAttribute('role', pinned ? 'dialog' : 'tooltip');
-    card.setAttribute('aria-label', `${station.id} APRS station details`);
+    card.setAttribute('aria-label', `${station.id} ${noun} details`);
     actions.hidden = !pinned;
     if (!pinned) {
       charts.hidden = true;
@@ -236,7 +241,8 @@ export function createStationInteraction({
       place(currentAnchor());
     } catch (error) {
       // The card still works without the extras; say nothing loud.
-      if (!request.signal.aborted) console.warn('[Data:APRS] detail:', error);
+      if (!request.signal.aborted)
+        console.warn(`[Data:${logTag}] detail:`, error);
     }
   }
 

@@ -345,6 +345,7 @@ export const LAYER_STATE_REGISTRY = Object.freeze([
     disposition: 'enabled-only',
   }),
   Object.freeze({ id: 'local-firms', token: 'w', disposition: 'enabled-only' }),
+  Object.freeze({ id: 'meshtastic', token: 'l', disposition: 'enabled-only' }),
   Object.freeze({
     id: 'military',
     token: 'm',

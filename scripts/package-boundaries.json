@@ -1827,7 +1827,13 @@
       "src/layers/aprs/interaction.js",
       "src/layers/aprs/popups.js",
       "src/layers/aprs/index.js",
-      "src/app/layers/aprs.js"
+      "src/app/layers/aprs.js",
+      "src/layers/meshtastic/model.js",
+      "src/layers/meshtastic/source.js",
+      "src/layers/meshtastic/controls.js",
+      "src/layers/meshtastic/rendering.js",
+      "src/layers/meshtastic/index.js",
+      "src/app/layers/meshtastic.js"
     ],
     "external": [
       "@mapbox/vector-tile",
@@ -2239,7 +2245,13 @@
       "src/layers/aprs/interaction.js",
       "src/layers/aprs/popups.js",
       "src/layers/aprs/index.js",
-      "src/app/layers/aprs.js"
+      "src/app/layers/aprs.js",
+      "src/layers/meshtastic/model.js",
+      "src/layers/meshtastic/source.js",
+      "src/layers/meshtastic/controls.js",
+      "src/layers/meshtastic/rendering.js",
+      "src/layers/meshtastic/index.js",
+      "src/app/layers/meshtastic.js"
     ],
     "external": [
       "cesium",

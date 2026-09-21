@@ -45,7 +45,7 @@ const PANEL_GROUPS = [
   },
   {
     label: 'Utilities',
-    ids: ['directions', 'radio', 'propagation', 'aprs'],
+    ids: ['directions', 'radio', 'propagation', 'aprs', 'meshtastic'],
   },
 ];
 const PANEL_ORDER = PANEL_GROUPS.flatMap(({ label, ids }) =>
@@ -63,6 +63,7 @@ const PANEL_LABELS = {
   'local-firms': 'Active Fires',
   propagation: 'HF Propagation',
   aprs: 'APRS',
+  meshtastic: 'Meshtastic',
 };
 
 /** Class test over `className`, which every element (and test double) carries. */
@@ -292,6 +293,40 @@ export class LayerPanel {
               ?.onCommit?.(field.value);
           }
         });
+        // A layer with a list of servers (Meshtastic MQTT): switch, delete,
+        // retopic and add. Each reads the live descriptor, like the chips above.
+        this._bind(controls, 'click', (event) => {
+          if (!this.isEnabled(layer.id)) return;
+          const target = event.target;
+          const item = (node) =>
+            this._rowControlsFor(layer.id)?.servers?.items?.find(
+              (entry) =>
+                entry.id === node?.closest?.('.data-server')?.dataset?.serverId,
+            );
+          const remove = target?.closest?.('.data-server-remove');
+          if (remove) return void item(remove)?.onRemove?.();
+          const toggle = target?.closest?.('.data-server-toggle');
+          if (toggle) return void item(toggle)?.onToggle?.();
+        });
+        this._bind(controls, 'change', (event) => {
+          const field = event.target?.closest?.('.data-server-topic');
+          if (!field || !this.isEnabled(layer.id)) return;
+          this._rowControlsFor(layer.id)
+            ?.servers?.items?.find(
+              (item) =>
+                item.id === field.closest('.data-server')?.dataset?.serverId,
+            )
+            ?.onTopic?.(field.value);
+        });
+        this._bind(controls, 'submit', (event) => {
+          const form = event.target?.closest?.('.data-server-form');
+          if (!form) return;
+          event.preventDefault();
+          void this._submitServerForm(
+            form,
+            () => this._rowControlsFor(layer.id)?.servers?.onAdd,
+          );
+        });
         row.appendChild(controls);
         // An ordered list below the chips, for a layer whose row carries a
         // sequence (turn-by-turn directions). Its own delegated listener, its
@@ -346,8 +381,10 @@ export class LayerPanel {
     const sliders = controls?.sliders || [];
     const selects = controls?.selects || [];
     const texts = controls?.texts || [];
+    const servers = controls?.servers || null;
     this._syncRowList(listContainer, controls?.list || null);
     container.hidden =
+      !servers &&
       chips.length === 0 &&
       legend.length === 0 &&
       !ramp &&
@@ -402,6 +439,189 @@ export class LayerPanel {
     this._syncSliders(container, sliders);
     this._syncSelects(container, selects);
     this._syncTexts(container, texts);
+    this._syncServers(container, servers);
+  }
+
+  /**
+   * A list of servers, each with a delete button on its left, a name, a status
+   * line, an editable topic and an on/off switch, above a collapsed "add
+   * server" form. Rows are reconciled in place by id (a topic being typed is
+   * never rewritten), and the form is built once so a refresh cannot wipe it.
+   * @param {HTMLElement} container The row's `.data-toggle-controls` node.
+   * @param {{heading?: string, error?: string|null, items: Array<object>}|null} servers
+   */
+  _syncServers(container, servers) {
+    let block = [...container.children].find((child) =>
+      hasClass(child, 'data-servers'),
+    );
+    if (!servers) {
+      block?.remove();
+      return;
+    }
+    if (!block) {
+      block = document.createElement('div');
+      block.className = 'data-servers';
+      const heading = document.createElement('div');
+      heading.className = 'data-servers-heading';
+      const list = document.createElement('div');
+      list.className = 'data-server-list';
+      const error = document.createElement('div');
+      error.className = 'data-server-error';
+      error.setAttribute('role', 'alert');
+      block.append(heading, list, this._buildServerForm(), error);
+      container.appendChild(block);
+    }
+    const [heading, list, , error] = block.children;
+    if (heading.textContent !== (servers.heading || ''))
+      heading.textContent = servers.heading || '';
+    const message = servers.error || '';
+    if (error.textContent !== message) error.textContent = message;
+    error.hidden = !message;
+
+    const existing = new Map(
+      [...list.children].map((node) => [node.dataset.serverId, node]),
+    );
+    let previous = null;
+    for (const item of servers.items || []) {
+      let node = existing.get(item.id);
+      existing.delete(item.id);
+      if (!node) {
+        node = document.createElement('div');
+        node.className = 'data-server';
+        node.dataset.serverId = item.id;
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'data-server-remove';
+        remove.textContent = '✕';
+        const body = document.createElement('div');
+        body.className = 'data-server-body';
+        const name = document.createElement('div');
+        name.className = 'data-server-name';
+        const status = document.createElement('div');
+        status.className = 'data-server-status';
+        const topic = document.createElement('input');
+        topic.type = 'text';
+        topic.className = 'data-server-topic';
+        topic.autocomplete = 'off';
+        topic.spellcheck = false;
+        body.append(name, status, topic);
+        const toggle = document.createElement('button');
+        toggle.type = 'button';
+        toggle.className = 'data-server-toggle';
+        toggle.setAttribute('role', 'switch');
+        node.append(remove, body, toggle);
+      }
+      const [remove, body, toggle] = node.children;
+      const [name, status, topic] = body.children;
+      remove.title = item.removeLabel || 'Delete server';
+      remove.setAttribute('aria-label', item.removeLabel || 'Delete server');
+      if (name.textContent !== item.name) name.textContent = item.name;
+      name.title = item.title || '';
+      if (status.textContent !== item.statusText)
+        status.textContent = item.statusText;
+      status.dataset.state = item.status || 'off';
+      topic.title = 'MQTT topic filter, e.g. msh/US/# or msh/US/AL/#';
+      topic.setAttribute('aria-label', `${item.name} topic`);
+      if (document.activeElement !== topic && topic.value !== item.topic)
+        topic.value = item.topic;
+      toggle.textContent = item.enabled ? 'ON' : 'OFF';
+      toggle.classList.toggle('active', Boolean(item.enabled));
+      toggle.setAttribute('aria-checked', item.enabled ? 'true' : 'false');
+      toggle.setAttribute('aria-label', `Listen to ${item.name}`);
+      // Keep DOM order in step with descriptor order without rebuilding.
+      const anchor = previous ? previous.nextSibling : list.firstChild;
+      if (node !== anchor) list.insertBefore(node, anchor);
+      previous = node;
+    }
+    for (const node of existing.values()) node.remove();
+  }
+
+  /** The collapsed "add server" form. Built once; see `_submitServerForm`. */
+  _buildServerForm() {
+    const details = document.createElement('details');
+    details.className = 'data-server-add';
+    const summary = document.createElement('summary');
+    summary.textContent = '+ ADD SERVER';
+    const form = document.createElement('form');
+    form.className = 'data-server-form';
+    form.noValidate = true;
+    const field = (name, label, attrs = {}) => {
+      const wrap = document.createElement('label');
+      wrap.className = 'data-server-field';
+      const caption = document.createElement('span');
+      caption.textContent = label;
+      const input = document.createElement('input');
+      input.name = name;
+      input.type = attrs.type || 'text';
+      input.autocomplete = 'off';
+      input.spellcheck = false;
+      if (attrs.placeholder) input.placeholder = attrs.placeholder;
+      if (attrs.title) wrap.title = attrs.title;
+      wrap.append(caption, input);
+      return wrap;
+    };
+    const tls = document.createElement('label');
+    tls.className = 'data-server-field data-server-check';
+    const tlsInput = document.createElement('input');
+    tlsInput.type = 'checkbox';
+    tlsInput.name = 'tls';
+    const tlsText = document.createElement('span');
+    tlsText.textContent = 'TLS';
+    tls.append(tlsInput, tlsText);
+    const submit = document.createElement('button');
+    submit.type = 'submit';
+    submit.className = 'data-server-add-submit';
+    submit.textContent = 'ADD';
+    form.append(
+      field('name', 'NAME', { placeholder: 'My mesh' }),
+      field('host', 'HOST', { placeholder: 'mqtt.example.org' }),
+      field('port', 'PORT', { placeholder: '1883', type: 'number' }),
+      tls,
+      field('username', 'USER'),
+      field('password', 'PASS', { type: 'password' }),
+      field('topic', 'TOPIC', { placeholder: 'msh/US/#' }),
+      field('keys', 'KEYS', {
+        placeholder: 'optional channel keys (base64), comma separated',
+        title:
+          'The default public channel key is always tried. Add a key here to read a private channel you have the key for.',
+      }),
+      submit,
+    );
+    details.append(summary, form);
+    return details;
+  }
+
+  /** Send the add form; show the server's reason on failure, reset it on success. */
+  async _submitServerForm(form, getAdd) {
+    const details = form.closest('details');
+    const error = details?.parentElement?.querySelector?.('.data-server-error');
+    const submit = form.querySelector('.data-server-add-submit');
+    const value = (name) => form.elements?.[name]?.value ?? '';
+    const onAdd = getAdd();
+    if (typeof onAdd !== 'function' || submit?.disabled) return;
+    if (submit) submit.disabled = true;
+    try {
+      await onAdd({
+        name: value('name'),
+        host: value('host'),
+        port: value('port'),
+        tls: Boolean(form.elements?.tls?.checked),
+        username: value('username'),
+        password: value('password'),
+        topic: value('topic'),
+        keys: value('keys'),
+      });
+      form.reset();
+      if (details) details.open = false;
+    } catch (err) {
+      // The layer also records this; showing it here keeps it beside the form.
+      if (error) {
+        error.textContent = err?.message || 'Could not add the server';
+        error.hidden = false;
+      }
+    } finally {
+      if (submit) submit.disabled = false;
+    }
   }
 
   /**

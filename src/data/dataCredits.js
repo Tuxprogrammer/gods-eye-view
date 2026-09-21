@@ -219,6 +219,14 @@ export const DATA_CREDITS = [
       'by Heikki Hannikainen (OH7LZB), the set used by aprs.fi',
   },
   {
+    key: 'meshtastic-mqtt',
+    html:
+      'Mesh radio node positions and messages: ' +
+      '<a href="https://meshtastic.org/" target="_blank" rel="noopener">Meshtastic</a> ' +
+      'nodes whose operators publish to MQTT (the project’s public broker and community brokers such as ' +
+      '<a href="https://almesh.net/" target="_blank" rel="noopener">ALmesh</a>)',
+  },
+  {
     key: 'reearth-terrain',
     html:
       'Terrain (keyless globe stacks): ' +

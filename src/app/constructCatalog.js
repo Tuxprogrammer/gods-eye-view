@@ -19,6 +19,7 @@ import { createApplicationFirms } from './layers/firms.js';
 import { createApplicationEarthquakes } from './layers/earthquakes.js';
 import { createApplicationPropagation } from './layers/propagation.js';
 import { createApplicationAprs } from './layers/aprs.js';
+import { createApplicationMeshtastic } from './layers/meshtastic.js';
 import { createApplicationCables } from './layers/submarineCables.js';
 import { createInfrastructureLayers } from '../data/infrastructure.js';
 import { localGeoJsonServices } from './localGeojsonServices.js';
@@ -47,6 +48,7 @@ const SOURCE_METHODS = Object.freeze({
   earthquakes: ['getSnapshot'],
   propagation: ['getMap'],
   aprs: ['getStations'],
+  meshtastic: ['getNodes'],
   cables: ['fetch'],
 });
 
@@ -117,6 +119,7 @@ export function createApplicationCatalog({
         createApplicationEarthquakes({ source: sources.earthquakes }),
         createApplicationPropagation({ source: sources.propagation }),
         createApplicationAprs({ source: sources.aprs }),
+        createApplicationMeshtastic({ source: sources.meshtastic }),
         createApplicationAlpr({ surface, source: sources.alpr }),
         satellites,
         createApplicationLaunches({ source: sources.launches, satellites }),

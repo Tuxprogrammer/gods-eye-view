@@ -1,5 +1,13 @@
 # Changelog
 
+- Add a Meshtastic layer: the server holds receive-only MQTT connections to the brokers you
+  switch on (the project's public broker, ALmesh, and any custom broker added in Data Layers
+  > Meshtastic; each has an on/off switch, an editable topic and a delete button) and streams
+  what it can read into a 24-hour SQLite store. Nodes are drawn by role with tracks,
+  telemetry, message pop-ups and a hover/pin card. Positions blurred by the channel's
+  precision setting get a dashed ring on hover or pin showing the ambiguity box. Honours
+  "OK to MQTT". MQTT and the protobuf wire format are hand-written (no new dependency).
+
 - Add three map sources to the MAP SOURCE tray: CARTO Positron, CARTO Dark Matter (raster,
   keyed by server-side `CARTO_API_KEY`) and OpenFreeMap Dark (vector tiles rendered to
   raster with MapLibre). All fetch through `/api/tiles/*`, a permanent disk cache

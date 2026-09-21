@@ -25,6 +25,10 @@ RUN npm run build
 # to Node 24), inside the same /app/.gev-cache the other providers use: mount that one
 # directory to keep history across restarts. Set APRS_CALLSIGN at run time; the
 # container needs outbound TCP to noam.aprs2.net:10152.
+# The Meshtastic layer keeps its 24 h cache and its list of MQTT servers in
+# /app/.gev-cache/meshtastic (same mount). Nothing connects until a server is switched
+# on in the layer panel; the container then needs outbound TCP to that broker (the
+# public one and ALmesh use port 1883).
 EXPOSE 4173
 # npx, not `npm run preview`: npm as PID 1 doesn't forward SIGTERM to the vite child,
 # so `docker stop` would always hit the full grace period then SIGKILL mid-write to

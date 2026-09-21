@@ -15,6 +15,7 @@ import { createOverpassAlprSource } from '../layers/alpr/source.js';
 import { createFirmsSource } from '../layers/firms/source.js';
 import { createPropagationSource } from '../layers/propagation/source.js';
 import { createAprsSource } from '../layers/aprs/source.js';
+import { createMeshtasticSource } from '../layers/meshtastic/source.js';
 import { createReferenceSources } from '../sources/reference.js';
 export { createReferenceSources as createStandaloneReferenceSources } from '../sources/reference.js';
 
@@ -39,5 +40,6 @@ export function createStandaloneLayerSources() {
     firms: createFirmsSource(),
     propagation: createPropagationSource(),
     aprs: createAprsSource(),
+    meshtastic: createMeshtasticSource(),
   };
 }

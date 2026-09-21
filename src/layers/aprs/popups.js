@@ -84,7 +84,8 @@ export function createMessagePopups({
       node.setAttribute('role', 'status');
       const from = documentRef.createElement('div');
       from.className = 'aprs-popup-from';
-      from.textContent = `${message.from} › ${message.to}`;
+      // A network whose ids are not readable (Meshtastic `!0af87081`) supplies names.
+      from.textContent = `${message.fromLabel ?? message.from} › ${message.toLabel ?? message.to}`;
       const text = documentRef.createElement('div');
       text.className = 'aprs-popup-text';
       text.textContent = popupText(message.text);

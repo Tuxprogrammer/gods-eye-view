@@ -1,0 +1,220 @@
+/* Meshtastic layer: the list of MQTT servers in the layer panel. The details
+   card, dropdowns and message pop-ups reuse the APRS styles (aprs.css). */
+
+.data-servers {
+  flex: 1 0 100%;
+  order: -3;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  font-family: var(--font-mono);
+}
+
+.data-servers-heading {
+  font-size: 8px;
+  letter-spacing: 1.2px;
+  color: var(--text-dim);
+}
+
+.data-server-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+/* One server: delete button on the left, then name/status/topic, then a switch. */
+.data-server {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 4px 6px 5px 3px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+}
+
+.data-server-remove {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  font: inherit;
+  font-size: 10px;
+  line-height: 1;
+  color: var(--text-dim);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.data-server-remove:hover,
+.data-server-remove:focus-visible {
+  color: #ff6b6b;
+  border-color: rgba(255, 107, 107, 0.55);
+  outline: none;
+}
+
+.data-server-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.data-server-name {
+  overflow: hidden;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: var(--text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.data-server-status {
+  font-size: 8px;
+  letter-spacing: 0.4px;
+  color: var(--text-dim);
+}
+
+.data-server-status::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 5px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.data-server-status[data-state='live']::before {
+  background: #43d17a;
+  box-shadow: 0 0 5px #43d17a;
+}
+
+.data-server-status[data-state='connecting']::before,
+.data-server-status[data-state='reconnecting']::before {
+  background: #ffb547;
+}
+
+.data-server-status[data-state='auth-failed']::before,
+.data-server-status[data-state='error']::before {
+  background: #ff6b6b;
+}
+
+.data-server-topic,
+.data-server-field input[type='text'],
+.data-server-field input[type='number'],
+.data-server-field input[type='password'] {
+  min-width: 0;
+  padding: 2px 4px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-secondary);
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 2px;
+}
+
+.data-server-topic:focus-visible,
+.data-server-field input:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.data-server-toggle {
+  flex: none;
+  padding: 2px 8px;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 1.2px;
+  color: var(--text-dim);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.data-server-toggle.active {
+  color: #06140c;
+  background: #43d17a;
+  border-color: #43d17a;
+}
+
+.data-server-toggle:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.data-server-add summary {
+  font-size: 8px;
+  letter-spacing: 1.2px;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.data-server-add summary:hover,
+.data-server-add[open] summary {
+  color: var(--accent);
+}
+
+.data-server-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 6px;
+  margin-top: 4px;
+}
+
+.data-server-field {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+}
+
+.data-server-field:nth-of-type(1),
+.data-server-field:nth-of-type(2),
+.data-server-field:nth-of-type(7),
+.data-server-field:nth-of-type(8) {
+  grid-column: 1 / -1;
+}
+
+.data-server-check {
+  flex-direction: row;
+  align-items: center;
+  gap: 5px;
+}
+
+.data-server-add-submit {
+  grid-column: 1 / -1;
+  padding: 3px 8px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 1.2px;
+  color: var(--accent);
+  background: rgba(0, 212, 255, 0.08);
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.data-server-add-submit:disabled {
+  opacity: 0.5;
+  cursor: progress;
+}
+
+.data-server-error {
+  font-size: 9px;
+  color: #ff8a8a;
+  overflow-wrap: anywhere;
+}
+
+.data-server-error[hidden] {
+  display: none;
+}
