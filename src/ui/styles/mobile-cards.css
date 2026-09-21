@@ -26,10 +26,51 @@ html:not([data-ui='mobile']) :is(
 }
 
 /* ------------------------------------------------ APRS / Meshtastic / propagation */
-/* Hover previews cannot exist on touch: only a tapped (pinned) card shows. */
+/* No hover on touch: a mouse-style preview never shows. A first tap shows the
+   compact tooltip below instead (.touch-preview); a second tap opens the card. */
 html[data-ui='mobile']
-  :is(.aprs-card, .propagation-station-card):not(.pinned) {
+  :is(.aprs-card, .propagation-station-card):not(.pinned):not(.touch-preview) {
   display: none !important;
+}
+
+html[data-ui='mobile']
+  :is(.aprs-card, .propagation-station-card).touch-preview:not(.pinned):not(
+    [hidden]
+  ) {
+  display: block !important;
+  z-index: 140;
+  box-sizing: border-box;
+  width: min(270px, calc(100vw - 24px));
+  max-width: min(270px, calc(100vw - 24px));
+  overflow: hidden;
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.4;
+  pointer-events: auto;
+  cursor: pointer;
+}
+/* Just the headline lines; the full card is one more tap away. */
+html[data-ui='mobile'] .aprs-card.touch-preview:not(.pinned) .m-card-nav,
+html[data-ui='mobile'] .aprs-card.touch-preview:not(.pinned) .aprs-card-close,
+html[data-ui='mobile'] .aprs-card.touch-preview:not(.pinned) .aprs-card-charts,
+html[data-ui='mobile'] .aprs-card.touch-preview:not(.pinned) .aprs-card-messages,
+html[data-ui='mobile'] .aprs-card.touch-preview:not(.pinned) .aprs-card-actions,
+html[data-ui='mobile']
+  .aprs-card.touch-preview:not(.pinned)
+  .aprs-card-line:nth-child(n + 5) {
+  display: none !important;
+}
+html[data-ui='mobile']
+  :is(.aprs-card, .propagation-station-card).touch-preview:not(.pinned)::after {
+  content: 'Tap for details ›';
+  display: block;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--m-line);
+  color: var(--accent, #00d4ff);
+  font-size: 11px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
 }
 
 html[data-ui='mobile']

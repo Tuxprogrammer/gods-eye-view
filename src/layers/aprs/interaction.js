@@ -4,6 +4,8 @@ import { cardModel, chartSeries, sparklinePath } from './model.js';
 const HOVER_THROTTLE_MS = 70;
 /** A press that moves further than this is a camera drag, not a click. */
 const DRAG_TOLERANCE_PX = 5;
+/** A second tap within this many px of a touch preview opens the full card. */
+const PREVIEW_REPEAT_PX = 28;
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const CHART_WIDTH = 120;
 const CHART_HEIGHT = 26;
@@ -213,7 +215,45 @@ export function createStationInteraction({
 
   const hideCard = () => {
     card.hidden = true;
+    card.classList.remove('touch-preview');
   };
+
+  // Touch has no hover, so a first tap previews the station as the same small
+  // tooltip a mouse hover shows; a second tap on the station, or a tap on the
+  // tooltip, opens the full card. Mobile UI only: desktop clicks pin at once.
+  let previewId = null;
+  let previewPoint = null;
+  let previewStack = null;
+  const isTouchTap = (event) =>
+    documentRef.documentElement?.dataset?.ui === 'mobile' &&
+    event?.pointerType !== 'mouse';
+  function hidePreview() {
+    if (previewId === null) return;
+    previewId = null;
+    previewPoint = null;
+    previewStack = null;
+    if (pinnedId === null) {
+      hoverId = null;
+      surface.setEmphasis(null);
+      hideCard();
+    }
+  }
+  function showPreview(id, point, ids) {
+    const record = surface.recordFor(id);
+    if (!record || !record.visible) return false;
+    previewId = id;
+    previewPoint = point;
+    previewStack = ids;
+    hoverId = id;
+    surface.setEmphasis(id);
+    render(record.station, false);
+    stack.hidden = ids.length < 2;
+    if (!stack.hidden)
+      stack.textContent = `${ids.indexOf(id) + 1} of ${ids.length}`;
+    card.classList.add('touch-preview');
+    place(point);
+    return true;
+  }
 
   function follow() {
     if (pinnedId === null) return;
@@ -360,6 +400,7 @@ export function createStationInteraction({
       Math.hypot(point.x - down.x, point.y - down.y) > DRAG_TOLERANCE_PX
     ) {
       down = null;
+      hidePreview();
       return;
     }
     down = null;
@@ -367,6 +408,28 @@ export function createStationInteraction({
     const top = surface.idAt(point.x, point.y);
     const ids =
       surface.idsAt?.(point.x, point.y) ?? (top === null ? [] : [top]);
+    if (isTouchTap(event) && pinnedId === null) {
+      // First tap on a station: tooltip only. Tapping the same spot again falls
+      // through to the normal pin below.
+      const again =
+        previewId !== null &&
+        ids.includes(previewId) &&
+        previewPoint &&
+        Math.hypot(point.x - previewPoint.x, point.y - previewPoint.y) <=
+          PREVIEW_REPEAT_PX;
+      if (ids.length > 0 && !again) {
+        if (!showPreview(ids[0], point, ids)) hidePreview();
+        return;
+      }
+      if (ids.length === 0) {
+        hidePreview();
+        return;
+      }
+    }
+    previewId = null;
+    previewPoint = null;
+    previewStack = null;
+    card.classList.remove('touch-preview');
     const target = clickTarget(ids, pinnedId);
     unpin();
     stackIds = ids;
@@ -410,7 +473,25 @@ export function createStationInteraction({
   });
   const onClose = () => unpin();
 
+  // Tapping the touch tooltip itself opens the full card for that station.
+  const onCardTap = () => {
+    if (previewId === null || pinnedId !== null) return;
+    const id = previewId;
+    const point = previewPoint ?? { x: card.offsetLeft, y: card.offsetTop };
+    const ids = previewStack ?? [id];
+    hidePreview();
+    stackIds = ids;
+    stackPoint = point;
+    card.classList.remove('touch-preview');
+    pin(id, point, {
+      index: Math.max(1, ids.indexOf(id) + 1),
+      count: ids.length,
+    });
+  };
+  card.addEventListener('click', onCardTap);
   card.addEventListener('gev:card-step', onStep);
+  const cameraRemover =
+    viewer.camera?.moveStart?.addEventListener?.(hidePreview) ?? null;
   canvas.addEventListener('pointermove', onMove);
   canvas.addEventListener('pointerleave', onLeave);
   canvas.addEventListener('pointerdown', onDown);
@@ -433,6 +514,7 @@ export function createStationInteraction({
     /** Close everything (layer off). */
     hide() {
       unpin();
+      hidePreview();
       pendingMove = null;
       if (timer !== null) clearTimer(timer);
       timer = null;
@@ -445,6 +527,8 @@ export function createStationInteraction({
     },
     destroy() {
       this.hide();
+      cameraRemover?.();
+      card.removeEventListener('click', onCardTap);
       canvas.removeEventListener('pointermove', onMove);
       canvas.removeEventListener('pointerleave', onLeave);
       canvas.removeEventListener('pointerdown', onDown);

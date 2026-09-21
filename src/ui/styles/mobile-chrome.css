@@ -127,9 +127,8 @@ html[data-ui='mobile'] #mobile-status[data-kind='loading'] {
   color: var(--m-accent);
 }
 
-/* Required attribution stays visible, just smaller: 9px, bottom-left,
-   translucent dark backing, up to three wrapped lines (never clipped past
-   that; the full list lives behind "Data attribution").
+/* Required attribution stays visible, just tiny: 7px, one line, bottom-left,
+   translucent dark backing (the full list lives behind "Data attribution").
    Desktop rules for #cesium-credits reach specificity [2,4,1] (minimal-HUD
    variant) and set bottom/left/right/max-width per state, so the id is
    repeated to outrank all of them without !important. The geometry is
@@ -143,11 +142,11 @@ html[data-ui='mobile'] #cesium-credits#cesium-credits#cesium-credits {
   bottom: calc(var(--m-safe-b) + 4px);
   left: 0;
   max-width: calc(100vw - 72px - var(--m-safe-r));
-  max-height: 42px;
+  max-height: 20px;
   overflow: hidden;
-  white-space: normal;
-  padding: 1px 6px 1px calc(var(--m-safe-l) + 4px);
-  font-size: 9px;
+  white-space: nowrap;
+  padding: 1px 5px 1px calc(var(--m-safe-l) + 3px);
+  font-size: 7px;
   line-height: 1.3;
   text-align: left;
   color: rgba(232, 234, 237, 0.78);
@@ -155,8 +154,14 @@ html[data-ui='mobile'] #cesium-credits#cesium-credits#cesium-credits {
   border-radius: 0 6px 0 0;
 }
 html[data-ui='mobile'] #cesium-credits img {
-  max-height: 11px;
+  max-height: 8px;
   width: auto;
+  vertical-align: middle !important;
+}
+html[data-ui='mobile'] #cesium-credits .cesium-widget-credits,
+html[data-ui='mobile'] #cesium-credits .cesium-credit-expand-link {
+  font-size: inherit;
+  line-height: inherit;
 }
 
 /* Cesium's inner credits box is position:absolute, so it contributes no size to

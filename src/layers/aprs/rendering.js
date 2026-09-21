@@ -11,6 +11,11 @@ import {
 } from './model.js';
 
 export const STATION_ID_PREFIX = 'aprs-station:';
+
+/** The mobile UI mode; labels are only pickable there. */
+export function touchUi() {
+  return globalThis.document?.documentElement?.dataset?.ui === 'mobile';
+}
 /** A click reaches this many stations deep, within this many pixels. */
 const STACK_LIMIT = 24;
 const STACK_PICK_PX = 6;
@@ -250,6 +255,9 @@ export function createAprsSurface({ viewer, classificationType }) {
     if (wanted) {
       if (!record.label) {
         record.label = labels.add({
+          // On touch a label is a tap target too (mobile only; desktop hover
+          // and click keep picking the icon alone).
+          id: touchUi() ? `${STATION_ID_PREFIX}${station.id}` : undefined,
           text: stationLabel(station),
           font: LABEL_FONT,
           fillColor: Cesium.Color.WHITE,

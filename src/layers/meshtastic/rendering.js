@@ -1,5 +1,5 @@
 import * as Cesium from 'cesium';
-import { createHorizon, idsUnder } from '../aprs/rendering.js';
+import { createHorizon, idsUnder, touchUi } from '../aprs/rendering.js';
 import { hardwareImageUrl } from './hardware.js';
 import {
   CATEGORY_COLORS,
@@ -160,6 +160,8 @@ export function createMeshtasticSurface({ viewer, classificationType }) {
     if (wanted) {
       if (!record.label) {
         record.label = labels.add({
+          // On touch a label is a tap target too (mobile only).
+          id: touchUi() ? `${NODE_ID_PREFIX}${node.id}` : undefined,
           text: nodeLabel(node),
           font: LABEL_FONT,
           fillColor: Cesium.Color.WHITE,
