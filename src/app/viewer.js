@@ -101,8 +101,37 @@ export function installTrackpadPinchZoom(
   };
 }
 
-/** Create the standard globe viewer in caller-owned, visible containers. */
-export function createApplicationViewer({ container, creditContainer }) {
+const MOBILE_MSAA_SAMPLES = 2;
+const MOBILE_MAX_RESOLUTION_SCALE = 1.25;
+const MOBILE_TILESET_MAX_SSE = 24;
+
+/**
+ * Rendering budget for touch devices, computed from injected values only (this
+ * module never reads the UI mode). Fewer MSAA samples, a capped render scale
+ * (Cesium already renders at CSS pixels; the scale sharpens modestly and never
+ * exceeds min(devicePixelRatio, 1.25)) and a slightly coarser tile SSE.
+ */
+export function mobileViewerTuning(devicePixelRatio = 1) {
+  const ratio =
+    Number.isFinite(devicePixelRatio) && devicePixelRatio > 0
+      ? devicePixelRatio
+      : 1;
+  return {
+    msaaSamples: MOBILE_MSAA_SAMPLES,
+    resolutionScale: Math.min(ratio, 2, MOBILE_MAX_RESOLUTION_SCALE),
+    tilesetMaximumScreenSpaceError: MOBILE_TILESET_MAX_SSE,
+  };
+}
+
+/**
+ * Create the standard globe viewer in caller-owned, visible containers.
+ * `mobile` is an optional mobileViewerTuning() result; omit it for desktop.
+ */
+export function createApplicationViewer({
+  container,
+  creditContainer,
+  mobile = null,
+}) {
   if (!container || !creditContainer)
     throw new TypeError('Viewer and credit containers are required');
   const viewer = new Cesium.Viewer(container, {
@@ -119,11 +148,13 @@ export function createApplicationViewer({ container, creditContainer }) {
     infoBox: false,
     baseLayer: false,
     creditContainer,
-    msaaSamples: 4,
+    msaaSamples: mobile?.msaaSamples ?? 4,
     contextOptions: { webgl: { preserveDrawingBuffer: true } },
   });
   try {
     viewer.targetFrameRate = 60;
+    if (mobile?.resolutionScale)
+      viewer.resolutionScale = mobile.resolutionScale;
     viewer.scene.globe.show = false;
     viewer.scene.skyAtmosphere.show = true;
     viewer.scene.skyAtmosphere.atmosphereLightIntensity = 18;

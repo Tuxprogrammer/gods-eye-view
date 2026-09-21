@@ -1,1 +1,296 @@
-/* mobile-context: everything scoped under html[data-ui='mobile'] */
+/* mobile-context: everything scoped under html[data-ui='mobile'].
+   The Context page (src/ui/mobile/pages/context.js) hosts the SAME nodes the
+   desktop right rail owns. Prefix `#mobile-sheet .m-context` (one id) beats the
+   desktop id-scoped rules (#space-mission-panel-host ..., :has(...) grids)
+   without touching them. One scroll region per page: inner max-height /
+   overflow scrollers are neutralised. */
+
+html[data-ui='mobile'] #mobile-sheet .m-context {
+  gap: var(--m-gap);
+}
+html[data-ui='mobile'] #mobile-sheet .m-context__help {
+  margin: 0;
+  line-height: 1.45;
+}
+
+/* Mode buttons: two big tiles. */
+html[data-ui='mobile'] #mobile-sheet .m-context .global-context-modes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+html[data-ui='mobile'] #mobile-sheet .m-context .context-mode-button {
+  flex-direction: column;
+  min-height: 68px;
+  padding: 8px;
+  border-radius: 12px;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  text-align: center;
+}
+html[data-ui='mobile']
+  #mobile-sheet
+  .m-context
+  .context-mode-button
+  .material-symbols-outlined {
+  font-size: 26px;
+}
+
+html[data-ui='mobile'] #mobile-sheet .m-context .context-mode-standby {
+  min-height: 72px;
+  padding: 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  letter-spacing: 0.04em;
+}
+html[data-ui='mobile'] #mobile-sheet .m-context .context-mode-standby strong {
+  font-size: 14px;
+}
+
+/* Contacts: actions. */
+html[data-ui='mobile'] #mobile-sheet .m-context .context-mode-view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-gap);
+}
+html[data-ui='mobile'] #mobile-sheet .m-context .context-mode-view[hidden] {
+  display: none !important;
+}
+html[data-ui='mobile'] #mobile-sheet .m-context .global-context-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+html[data-ui='mobile']
+  #mobile-sheet
+  .m-context
+  .global-context-actions
+  .panel-layer-toggle {
+  min-height: 48px;
+  padding: 10px;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+}
+html[data-ui='mobile'] #mobile-sheet .m-context #tr3b-toggle:not([hidden]) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 48px;
+  font-size: 18px;
+}
+html[data-ui='mobile'] #mobile-sheet .m-context #tr3b-toggle::after {
+  content: 'Reclassify tracked contact as TR-3B';
+  font:
+    13px/1.2 var(--font-mono, monospace);
+  letter-spacing: 0.03em;
+}
+
+/* Awareness list. */
+html[data-ui='mobile'] #mobile-sheet .m-context #military-awareness-panel {
+  overflow: visible;
+  font-size: 14px;
+  line-height: 1.45;
+}
+html[data-ui='mobile']
+  #mobile-sheet
+  .m-context
+  .military-awareness-controls {
+  gap: 8px;
+}
+html[data-ui='mobile']
+  #mobile-sheet
+  .m-context
+  .military-awareness-controls
+  button {
+  min-height: 48px;
+  padding: 8px;
+  font-size: 13px;
+}
+html[data-ui='mobile'] #mobile-sheet .m-context .military-awareness-row {
+  padding: 10px 0;
+}
+html[data-ui='mobile'] #mobile-sheet .m-context .military-awareness-target {
+  min-height: 44px;
+  align-items: center;
+  padding: 6px 0;
+  font-size: 14px;
+}
+html[data-ui='mobile'] #mobile-sheet .m-context .military-awareness-note,
+html[data-ui='mobile'] #mobile-sheet .m-context .military-awareness-row small {
+  font-size: 12px;
+}
+html[data-ui='mobile']
+  #mobile-sheet
+  .m-context
+  .military-awareness-standby
+  strong {
+  font-size: 13px;
+}
+html[data-ui='mobile'] #mobile-sheet .m-context .military-awareness-standby span {
+  font-size: 12px;
+}
+html[data-ui='mobile']
+  #mobile-sheet
+  .m-context
+  .military-awareness-standby
+  button {
+  min-height: 44px;
+  font-size: 13px;
+}
+
+/* Space missions: roster. */
+html[data-ui='mobile']
+  #mobile-sheet
+  .m-context
+  #space-mission-panel-host
+  .space-mission-roster {
+  padding: 10px;
+}
+html[data-ui='mobile']
+  #mobile-sheet
+  .m-context
+  #space-mission-panel-host
+  .space-mission-roster-header
+  strong {
+  font-size: 13px;
+}
+html[data-ui='mobile']
+  #mobile-sheet
+  .m-context
+  #space-mission-panel-host
+  .space-mission-roster-header
+  span,
+html[data-ui='mobile']
+  #mobile-sheet
+  .m-context
+  #space-mission-panel-host
+  .space-mission-roster-header
+  output {
+  font-size: 12px;
+}
+html[data-ui='mobile']
+  #mobile-sheet
+  .m-context
+  #space-mission-panel-host
+  .space-mission-roster-list {
+  max-height: none;
+  overflow: visible;
+  padding-right: 0;
+  gap: 6px;
+}
+html[data-ui='mobile']
+  #mobile-sheet
+  .m-context
+  #space-mission-panel-host
+  .space-mission-roster-item {
+  min-height: 56px;
+  padding: 10px;
+}
+html[data-ui='mobile']
+  #mobile-sheet
+  .m-context
+  #space-mission-panel-host
+  .space-mission-roster-copy
+  strong {
+  font-size: 14px;
+}
+html[data-ui='mobile']
+  #mobile-sheet
+  .m-context
+  #space-mission-panel-host
+  .space-mission-roster-copy
+  small,
+html[data-ui='mobile']
+  #mobile-sheet
+  .m-context
+  #space-mission-panel-host
+  .space-mission-roster-empty {
+  font-size: 12px;
+}
+/* "TAB PREVIEWS / ENTER SELECTS" is a keyboard hint. */
+html[data-ui='mobile']
+  #mobile-sheet
+  .m-context
+  [data-mission-roster-focus-continuation] {
+  display: none;
+}
+
+/* Space missions: detail. The data tables keep their own horizontal scroll
+   (they are wider than a phone); everything else flows in the page. */
+html[data-ui='mobile'] #mobile-sheet .m-context #space-mission-panel {
+  margin-top: 0;
+}
+html[data-ui='mobile']
+  #mobile-sheet
+  .m-context
+  #space-mission-panel
+  .space-mission-view-header {
+  font-size: 12px;
+}
+html[data-ui='mobile']
+  #mobile-sheet
+  .m-context
+  #space-mission-panel
+  .space-mission-view-header
+  button {
+  width: var(--m-tap);
+  height: var(--m-tap);
+  font-size: 18px;
+}
+html[data-ui='mobile']
+  #mobile-sheet
+  .m-context
+  #space-mission-panel
+  .space-mission-detail {
+  font-size: 13px;
+}
+html[data-ui='mobile']
+  #mobile-sheet
+  .m-context
+  #space-mission-panel
+  .mission-data-section
+  h4 {
+  font-size: 12px;
+}
+html[data-ui='mobile']
+  #mobile-sheet
+  .m-context
+  #space-mission-panel
+  .mission-data-table
+  :is(th, td, small) {
+  font-size: 12px;
+}
+html[data-ui='mobile']
+  #mobile-sheet
+  .m-context
+  #space-mission-panel
+  :is(
+    .mission-focus-button,
+    .mission-replay-button,
+    .mission-nav-button,
+    .mission-replay-transport button
+  ) {
+  min-height: 48px;
+  font-size: 13px;
+}
+html[data-ui='mobile']
+  #mobile-sheet
+  .m-context
+  #space-mission-panel
+  .mission-replay-speed-header {
+  font-size: 12px;
+}
+
+/* The COCKPIT entry lives on <body> in mobile (see context.js). Keep it clear
+   of the mic FAB (bottom-right, 52px) and safe areas. P-Cockpit may override. */
+html[data-ui='mobile'] #cockpit-entry {
+  left: auto;
+  right: calc(var(--m-safe-r) + 12px);
+  bottom: calc(var(--m-safe-b) + 84px);
+  min-height: 48px;
+  padding-inline: 14px;
+  font-size: 12px;
+}

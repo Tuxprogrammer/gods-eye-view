@@ -3,6 +3,7 @@ import * as Cesium from 'cesium';
 import {
   createApplicationViewer,
   installTrackpadPinchZoom,
+  mobileViewerTuning,
 } from '../app/viewer.js';
 import { registerDataCredits } from '../data/dataCredits.js';
 import { configureCreditKeyboardAccess } from '../creditKeyboard.js';
@@ -26,6 +27,11 @@ export async function createApplicationScene({
   loaderStatus,
   signal,
   defer,
+  // The inline bootstrap in index.html sets data-ui before this runs; reading
+  // the attribute keeps this package free of a ui import.
+  mobile = document.documentElement.dataset.ui === 'mobile'
+    ? mobileViewerTuning(window.devicePixelRatio)
+    : null,
 }) {
   const operations = createApplicationOperations({
     requests: requestServices,
@@ -50,6 +56,7 @@ export async function createApplicationScene({
   const viewer = createApplicationViewer({
     container: 'cesiumContainer',
     creditContainer,
+    mobile,
   });
   defer(() => {
     uninstallRenderGovernor(viewer);
@@ -75,6 +82,12 @@ export async function createApplicationScene({
   });
   signal.throwIfAborted();
   if (tileset) {
+    if (mobile?.tilesetMaximumScreenSpaceError) {
+      tileset.maximumScreenSpaceError = Math.max(
+        tileset.maximumScreenSpaceError ?? 0,
+        mobile.tilesetMaximumScreenSpaceError,
+      );
+    }
     viewer.scene.primitives.add(tileset);
     // NOTE: Cesium World Terrain intentionally disabled — conflicts with Google 3D Tiles at high zoom.
     // Google Photorealistic 3D Tiles provide their own terrain/elevation.

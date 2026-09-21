@@ -1,1 +1,889 @@
-/* mobile-cockpit: everything scoped under html[data-ui='mobile'] */
+/* mobile-cockpit: everything scoped under html[data-ui='mobile'].
+
+   Cockpit on phones: the map keeps the flight instruments and a compact,
+   tap-sized control cluster (vision cycler, exit/reset, "i" details button,
+   prev/next contact). Contact, Route, Briefing, Display and Radio live in a
+   compact bottom drawer (#mobile-cockpit-drawer) that receives the ORIGINAL
+   nodes (see src/ui/mobile/cockpit-drawer.js). All perspective / rotateY /
+   translateZ panel transforms are flattened. cockpit.css (incl. its pinned
+   <=760px block) is untouched; overrides here win by specificity or, against
+   that block's `display:none !important`, by !important + :not([hidden]). */
+
+/* ---- Nodes this file's JS creates: never on desktop / outside cockpit ---- */
+html:not([data-ui='mobile']) #mobile-cockpit-drawer,
+html:not([data-ui='mobile']) #mobile-cockpit-info,
+html:not([data-ui='mobile']) #mobile-cockpit-nav,
+html[data-ui='mobile'] body:not(.cockpit-mode) #mobile-cockpit-drawer,
+html[data-ui='mobile'] body:not(.cockpit-mode) #mobile-cockpit-info,
+html[data-ui='mobile'] body:not(.cockpit-mode) #mobile-cockpit-nav,
+html[data-ui='mobile'] body:not(.cockpit-mode) #view-switcher {
+  display: none !important;
+}
+
+/* ---- Floating COCKPIT entry (moved to <body>; sits above the mic FAB) ---- */
+html[data-ui='mobile'] #cockpit-entry {
+  left: auto;
+  right: calc(var(--m-safe-r) + 12px);
+  bottom: calc(var(--m-safe-b) + 80px);
+  min-height: 48px;
+  padding: 0 18px;
+  border-radius: 24px;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  touch-action: manipulation;
+}
+html[data-ui='mobile'] #cockpit-entry .material-symbols-outlined {
+  font-size: 22px;
+}
+
+/* ---- HUD: flat, viewport-first ---- */
+html[data-ui='mobile'] #cockpit-hud {
+  perspective: none;
+}
+html[data-ui='mobile'] #cockpit-hud .cockpit-visor-shell {
+  perspective: none;
+  transform-style: flat;
+}
+/* Decorative or keyboard-oriented chrome: dropped on touch. */
+html[data-ui='mobile']
+  #cockpit-hud
+  :is(
+    .cockpit-help,
+    .cockpit-roll-arc,
+    .cockpit-pitch-rail,
+    .cockpit-visor-status,
+    .cockpit-mode-chip,
+    .cockpit-altitude-rim,
+    .cockpit-utility-controls
+  ) {
+  display: none !important;
+}
+/* The Intel HUD readouts compete with the instruments on a phone. */
+html[data-ui='mobile'] body.cockpit-mode #intel-hud {
+  display: none !important;
+}
+
+/* Top line: callsign clears the menu button and the top-right column. */
+html[data-ui='mobile'] #cockpit-hud .cockpit-topline {
+  top: calc(var(--m-safe-t) + 34px);
+  left: calc(var(--m-safe-l) + 62px);
+  right: calc(var(--m-safe-r) + 60px);
+  display: block;
+}
+html[data-ui='mobile'] #cockpit-hud .cockpit-kicker {
+  font-size: 10px;
+}
+html[data-ui='mobile'] #cockpit-callsign {
+  font-size: 16px;
+}
+html[data-ui='mobile'] #cockpit-hud .cockpit-aircraft-meta {
+  display: block;
+  overflow: hidden;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Vision cycler: 44px targets, centred under the callsign. */
+html[data-ui='mobile'] #cockpit-hud .cockpit-vision-controls {
+  position: fixed;
+  top: calc(var(--m-safe-t) + 84px);
+  left: 50%;
+  grid-template-columns: 1fr 1.3fr 1fr;
+  gap: 4px;
+  width: min(300px, calc(100vw - 112px));
+  box-sizing: border-box;
+  margin: 0;
+  padding: 4px;
+  border-radius: 14px;
+  background: rgba(0, 7, 12, 0.66);
+  transform: translateX(-50%);
+}
+html[data-ui='mobile'] #cockpit-hud .cockpit-vision-controls button {
+  min-height: 44px;
+  padding: 2px 4px;
+  border-radius: 10px;
+  font-size: 12px;
+  touch-action: manipulation;
+}
+html[data-ui='mobile'] #cockpit-hud .cockpit-vision-controls small {
+  font-size: 10px;
+}
+html[data-ui='mobile']
+  #cockpit-hud
+  .cockpit-vision-controls
+  .material-symbols-outlined {
+  font-size: 20px;
+}
+html[data-ui='mobile'] #cockpit-hud .cockpit-vision-current {
+  flex-direction: column;
+  gap: 2px;
+}
+html[data-ui='mobile'] #cockpit-vision-current-label {
+  overflow: hidden;
+  max-width: 100%;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Instruments: flat, above the bottom bar and contact pill. */
+html[data-ui='mobile'] #cockpit-hud .cockpit-compass {
+  bottom: calc(var(--m-safe-b) + 122px);
+  width: min(560px, calc(100vw - 20px));
+  transform: translateX(-50%);
+  transform-style: flat;
+  perspective: none;
+}
+html[data-ui='mobile'] #cockpit-hud .cockpit-instrument-row {
+  grid-template-columns: minmax(76px, 1fr) auto minmax(76px, 1fr);
+  gap: 8px;
+}
+html[data-ui='mobile'] #cockpit-hud .cockpit-speed,
+html[data-ui='mobile'] #cockpit-hud .cockpit-altitude {
+  transform: none;
+}
+html[data-ui='mobile'] #cockpit-hud .cockpit-readout {
+  min-width: 76px;
+  padding: 4px 6px 5px;
+}
+html[data-ui='mobile'] #cockpit-hud .cockpit-readout strong {
+  font-size: clamp(22px, 7vw, 32px);
+}
+html[data-ui='mobile'] #cockpit-hud .cockpit-readout-label {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+}
+html[data-ui='mobile'] #cockpit-hud .cockpit-readout-unit {
+  font-size: 11px;
+}
+html[data-ui='mobile'] #cockpit-hud .cockpit-heading-value {
+  font-size: 30px;
+}
+html[data-ui='mobile'] #cockpit-hud .cockpit-compass-tape {
+  height: 58px;
+  transform-style: flat;
+}
+html[data-ui='mobile'] #cockpit-hud .cockpit-compass-tape span {
+  transform: translateX(calc(-50% + (var(--slot) * 52px)))
+    translateY(calc(var(--depth) * 6px)) rotateZ(calc(var(--slot) * 3deg));
+}
+html[data-ui='mobile'] #cockpit-hud .cockpit-route-direction small {
+  font-size: 10px;
+}
+
+/* ---- Bottom bar: info, EXIT COCKPIT, RESET (clears the mic FAB) ---- */
+html[data-ui='mobile'] body.cockpit-mode #view-switcher {
+  position: fixed;
+  z-index: 147;
+  left: calc(var(--m-safe-l) + 10px);
+  right: calc(var(--m-safe-r) + 72px);
+  bottom: calc(var(--m-safe-b) + 10px);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-start;
+  width: auto;
+  max-width: none;
+  margin: 0;
+  transform: none;
+}
+html[data-ui='mobile'] body.cockpit-mode #view-switcher button {
+  min-height: 48px;
+  padding: 0 12px;
+  border-radius: 24px;
+  font: 700 12px/1 var(--font-mono);
+  letter-spacing: 0.05em;
+  touch-action: manipulation;
+}
+html[data-ui='mobile']
+  body.cockpit-mode
+  #view-switcher
+  .material-symbols-outlined {
+  font-size: 20px;
+}
+html[data-ui='mobile'] body.cockpit-mode #map-view-switch {
+  flex: 1 1 auto;
+  min-width: 0;
+  border-color: rgba(255, 120, 120, 0.6);
+}
+html[data-ui='mobile'] body.cockpit-mode #cockpit-reset-globe {
+  flex: 0 0 auto;
+}
+html[data-ui='mobile'] body.cockpit-mode #view-switcher #mobile-cockpit-info {
+  display: flex;
+  flex: 0 0 48px;
+  width: 48px;
+  padding: 0;
+  font:
+    italic 700 22px/1 Georgia,
+    'Times New Roman',
+    serif;
+  letter-spacing: 0;
+}
+html[data-ui='mobile'] #mobile-cockpit-info[aria-expanded='true'] {
+  border-color: var(--m-accent);
+  background: rgba(0, 220, 255, 0.2);
+  color: #fff;
+}
+
+/* Prev / next contact: proxy buttons that click the original controls. */
+html[data-ui='mobile'] #mobile-cockpit-nav {
+  position: fixed;
+  z-index: 147;
+  right: calc(var(--m-safe-r) + 12px);
+  bottom: calc(var(--m-safe-b) + 68px);
+  display: flex;
+  align-items: center;
+  height: 48px;
+  padding: 0 2px;
+  border: 1px solid rgba(116, 219, 255, 0.38);
+  border-radius: 24px;
+  background: rgba(0, 7, 12, 0.78);
+  color: #bceeff;
+  font: 700 11px/1 var(--font-mono);
+  letter-spacing: 0.1em;
+}
+html[data-ui='mobile'] .m-cp-nav__label {
+  padding: 0 2px;
+}
+html[data-ui='mobile'] .m-cp-nav__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 46px;
+  padding: 0;
+  border: 0;
+  border-radius: 24px;
+  background: transparent;
+  color: inherit;
+  touch-action: manipulation;
+}
+html[data-ui='mobile'] .m-cp-nav__btn:active {
+  background: rgba(116, 219, 255, 0.2);
+}
+html[data-ui='mobile'] .m-cp-nav__btn .material-symbols-outlined {
+  font-size: 24px;
+}
+
+/* Landscape phones: reclaim height. */
+@media (max-height: 480px) {
+  html[data-ui='mobile'] #cockpit-hud .cockpit-compass {
+    bottom: calc(var(--m-safe-b) + 66px);
+    width: min(480px, 56vw);
+  }
+  html[data-ui='mobile']
+    #cockpit-hud
+    :is(.cockpit-compass-tape, .cockpit-heading-caret) {
+    display: none;
+  }
+  html[data-ui='mobile'] #cockpit-hud .cockpit-aircraft-meta {
+    display: none;
+  }
+  html[data-ui='mobile'] #cockpit-hud .cockpit-vision-controls {
+    top: calc(var(--m-safe-t) + 32px);
+  }
+  html[data-ui='mobile'] #mobile-cockpit-nav {
+    bottom: calc(var(--m-safe-b) + 76px);
+  }
+}
+
+/* ---- Drawer ---- */
+html[data-ui='mobile'] #mobile-cockpit-drawer {
+  position: fixed;
+  z-index: 150;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: none;
+  flex-direction: column;
+  box-sizing: border-box;
+  height: min(56dvh, 470px);
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0 var(--m-safe-r) var(--m-safe-b) var(--m-safe-l);
+  border: 1px solid var(--m-line);
+  border-bottom: 0;
+  border-radius: var(--m-radius) var(--m-radius) 0 0;
+  background: var(--m-bg);
+  box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.5);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  color: var(--m-text);
+  font: 400 14px/1.35 var(--font-mono, monospace);
+  text-shadow: none;
+}
+html[data-ui='mobile']
+  body.cockpit-mode
+  #mobile-cockpit-drawer[data-open='true'] {
+  display: flex;
+}
+@media (max-height: 480px) {
+  html[data-ui='mobile'] #mobile-cockpit-drawer {
+    height: calc(100dvh - var(--m-safe-t) - 8px);
+    max-width: min(560px, 72vw);
+  }
+}
+html[data-ui='mobile'] .m-cp__head {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px 6px 10px;
+  border-bottom: 1px solid var(--m-line);
+}
+html[data-ui='mobile'] .m-cp__tabs {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px;
+  min-width: 0;
+}
+html[data-ui='mobile'] .m-cp__tab {
+  min-height: var(--m-tap);
+  min-width: 0;
+  padding: 0 2px;
+  overflow: hidden;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--m-text-dim);
+  font: 700 12px/1 var(--font-mono, monospace);
+  letter-spacing: 0.02em;
+  text-overflow: ellipsis;
+  touch-action: manipulation;
+}
+html[data-ui='mobile'] .m-cp__tab[aria-selected='true'] {
+  border-color: var(--m-accent);
+  background: rgba(0, 220, 255, 0.14);
+  color: #fff;
+}
+html[data-ui='mobile']
+  .m-cp__tab[data-empty='true']:not([aria-selected='true']) {
+  opacity: 0.55;
+}
+html[data-ui='mobile'] .m-cp__close {
+  flex: 0 0 auto;
+  width: var(--m-tap);
+  height: var(--m-tap);
+  padding: 0;
+  border: 1px solid var(--m-line);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--m-text);
+  font-size: 16px;
+  touch-action: manipulation;
+}
+/* ONE scroll region per drawer. */
+html[data-ui='mobile'] .m-cp__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 10px 12px 14px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+html[data-ui='mobile'] .m-cp__pane[hidden] {
+  display: none;
+}
+html[data-ui='mobile'] .m-cp__pane {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+html[data-ui='mobile'] .m-cp__empty {
+  display: none;
+  margin: 16px 0;
+  color: var(--m-text-dim);
+  font-size: 14px;
+  text-align: center;
+}
+html[data-ui='mobile']
+  .m-cp__pane:has(> #cockpit-context[hidden])
+  > .m-cp__empty,
+html[data-ui='mobile']
+  .m-cp__pane:has(> #cockpit-route[hidden])
+  > .m-cp__empty {
+  display: block;
+}
+
+/* Windows moved in: flat, unbounded, no nested scrollers. */
+html[data-ui='mobile'] .m-cp :is(#cockpit-context, #cockpit-signal-stream) {
+  position: static;
+  inset: auto;
+  width: auto;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+  text-shadow: none;
+  pointer-events: auto;
+}
+/* Beat the pinned <=760px rule that hides these windows outright. */
+html[data-ui='mobile'] body.cockpit-mode .m-cp #cockpit-context:not([hidden]) {
+  display: grid !important;
+  gap: 12px;
+}
+html[data-ui='mobile']
+  body.cockpit-mode
+  .m-cp
+  #cockpit-signal-stream:not([hidden]) {
+  display: flex !important;
+  flex-direction: column;
+  gap: 10px;
+}
+html[data-ui='mobile']
+  .m-cp
+  :is(
+    #cockpit-context-toggle,
+    #cockpit-signal-toggle,
+    #cockpit-brief-previous,
+    #cockpit-brief-next,
+    #cockpit-brief-position
+  ) {
+  display: none;
+}
+/* Collapsed state (Escape from a keyboard, disclosure side effects) must not
+   blank the drawer: re-show what the collapsed rules hide. */
+html[data-ui='mobile']
+  .m-cp
+  #cockpit-context[data-collapsed='true']
+  .cockpit-context-header {
+  padding: 0 0 8px;
+  border-bottom: 1px solid var(--m-line);
+}
+html[data-ui='mobile']
+  .m-cp
+  #cockpit-context[data-collapsed='true']
+  .cockpit-context-qualifier,
+html[data-ui='mobile']
+  .m-cp
+  #cockpit-context[data-collapsed='true']
+  .cockpit-context-actions
+  button:not(#cockpit-context-toggle) {
+  display: inline-flex;
+}
+html[data-ui='mobile']
+  .m-cp
+  #cockpit-context[data-collapsed='true']
+  .cockpit-context-cohorts {
+  display: grid;
+}
+html[data-ui='mobile']
+  .m-cp
+  #cockpit-context[data-collapsed='true']
+  .cockpit-context-nearest {
+  display: grid;
+}
+html[data-ui='mobile']
+  .m-cp
+  #cockpit-context[data-collapsed='true']
+  .cockpit-context-footer {
+  display: grid;
+}
+html[data-ui='mobile']
+  .m-cp
+  #cockpit-signal-stream[data-collapsed='true']
+  .cockpit-signal-header {
+  padding: 0;
+  border-bottom: 0;
+}
+html[data-ui='mobile']
+  .m-cp
+  #cockpit-signal-stream[data-collapsed='true']
+  .cockpit-brief-stage {
+  display: block;
+}
+html[data-ui='mobile']
+  .m-cp
+  #cockpit-signal-stream[data-collapsed='true']
+  .cockpit-signal-footer {
+  display: contents;
+}
+html[data-ui='mobile']
+  .m-cp
+  #cockpit-signal-stream[data-collapsed='true']
+  .cockpit-brief-actions
+  > :not(#cockpit-signal-toggle) {
+  display: inline-flex;
+}
+html[data-ui='mobile']
+  .m-cp
+  #cockpit-signal-stream[data-collapsed='true']
+  :is(#cockpit-brief-previous, #cockpit-brief-next, #cockpit-brief-position) {
+  display: none;
+}
+
+/* -- Contact tab -- */
+html[data-ui='mobile'] .m-cp .cockpit-position-readout {
+  position: static;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--m-text-dim);
+}
+html[data-ui='mobile'] .m-cp .cockpit-context-header {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px 10px;
+  padding: 0 0 8px;
+}
+html[data-ui='mobile'] .m-cp .cockpit-context-kicker {
+  font-size: 11px;
+}
+html[data-ui='mobile'] .m-cp #cockpit-context-subject {
+  font-size: 14px;
+  letter-spacing: 0.06em;
+}
+html[data-ui='mobile'] .m-cp .cockpit-context-qualifier {
+  font-size: 11px;
+  white-space: normal;
+}
+html[data-ui='mobile'] .m-cp .cockpit-context-actions {
+  display: flex;
+  gap: 6px;
+}
+html[data-ui='mobile'] .m-cp .cockpit-context-actions button {
+  width: var(--m-tap);
+  height: var(--m-tap);
+  border-radius: 10px;
+  touch-action: manipulation;
+}
+html[data-ui='mobile']
+  .m-cp
+  .cockpit-context-actions
+  .material-symbols-outlined {
+  font-size: 22px;
+}
+html[data-ui='mobile'] .m-cp .cockpit-context-cohorts {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+html[data-ui='mobile'] .m-cp .cockpit-context-cohorts > div {
+  padding: 6px;
+}
+html[data-ui='mobile'] .m-cp .cockpit-context-cohorts span {
+  font-size: 12px;
+}
+html[data-ui='mobile'] .m-cp .cockpit-context-cohorts strong {
+  font-size: 20px;
+}
+html[data-ui='mobile'] .m-cp .cockpit-context-cohorts small {
+  display: block;
+  overflow: hidden;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+html[data-ui='mobile'] .m-cp .cockpit-context-nearest {
+  grid-template-columns: 26px minmax(0, 1fr) auto auto;
+  gap: 8px;
+}
+html[data-ui='mobile'] .m-cp .cockpit-context-nearest small {
+  font-size: 10px;
+}
+html[data-ui='mobile'] .m-cp #cockpit-context-nearest-label {
+  font-size: 13px;
+}
+html[data-ui='mobile'] .m-cp #cockpit-context-bearing,
+html[data-ui='mobile'] .m-cp #cockpit-context-distance {
+  display: inline;
+  font-size: 13px;
+}
+html[data-ui='mobile'] .m-cp .cockpit-context-footer {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 8px 12px;
+  font-size: 12px;
+}
+html[data-ui='mobile'] .m-cp #cockpit-context-uncertainty {
+  grid-column: 1 / -1;
+  font-size: 12px;
+  line-height: 1.4;
+}
+html[data-ui='mobile'] .m-cp .cockpit-context-weather {
+  min-width: 96px;
+  height: var(--m-tap);
+  padding: 0 14px;
+  font: 700 13px/1 var(--font-mono, monospace);
+  touch-action: manipulation;
+}
+html[data-ui='mobile'] .m-cp #cockpit-context-updated {
+  justify-self: end;
+  font-size: 12px;
+}
+
+/* -- Route tab -- */
+html[data-ui='mobile'] .m-cp #cockpit-route {
+  gap: 12px;
+  padding: 0;
+  border-bottom: 0;
+  font-size: 12px;
+}
+html[data-ui='mobile'] .m-cp .cockpit-route-kicker {
+  font-size: 12px;
+}
+html[data-ui='mobile'] .m-cp .cockpit-route-heading small {
+  font-size: 11px;
+  white-space: normal;
+}
+html[data-ui='mobile'] .m-cp .cockpit-route-endpoints {
+  grid-template-columns: minmax(0, 1fr) 26px minmax(0, 1fr);
+}
+html[data-ui='mobile'] .m-cp .cockpit-route-airport {
+  padding: 10px;
+}
+html[data-ui='mobile'] .m-cp .cockpit-route-airport > span {
+  font-size: 11px;
+}
+html[data-ui='mobile'] .m-cp .cockpit-route-airport strong {
+  font-size: 16px;
+}
+html[data-ui='mobile'] .m-cp .cockpit-route-arrow {
+  font-size: 22px;
+}
+
+/* -- Brief tab (signals / news / local) -- */
+html[data-ui='mobile'] .m-cp .cockpit-signal-header {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  padding: 0 0 8px;
+  order: 1;
+}
+html[data-ui='mobile'] .m-cp .cockpit-signal-kicker {
+  font-size: 11px;
+}
+html[data-ui='mobile'] .m-cp .cockpit-signal-header strong {
+  font-size: 13px;
+}
+html[data-ui='mobile'] .m-cp .cockpit-brief-actions {
+  display: flex;
+}
+html[data-ui='mobile'] .m-cp #cockpit-brief-auto {
+  width: auto;
+  min-width: 96px;
+  height: var(--m-tap);
+  padding: 0 14px;
+  border-radius: 10px;
+  font: 700 12px/1 var(--font-mono, monospace);
+  touch-action: manipulation;
+}
+/* Footer contents join the flex column: tabs first, then stage, then source. */
+html[data-ui='mobile'] .m-cp .cockpit-signal-footer {
+  display: contents;
+}
+html[data-ui='mobile'] .m-cp .cockpit-brief-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  order: 2;
+}
+html[data-ui='mobile'] .m-cp .cockpit-brief-tabs button {
+  min-height: var(--m-tap);
+  padding: 0 6px;
+  border: 1px solid var(--m-line);
+  border-radius: 10px;
+  font: 700 13px/1 var(--font-mono, monospace);
+  color: var(--m-text-dim);
+  touch-action: manipulation;
+}
+html[data-ui='mobile'] .m-cp .cockpit-brief-tabs button[aria-current='true'] {
+  border-color: var(--m-accent);
+  background: rgba(0, 220, 255, 0.14);
+  color: #fff;
+}
+html[data-ui='mobile'] .m-cp .cockpit-brief-stage {
+  min-height: 0;
+  overflow: visible;
+  order: 3;
+}
+html[data-ui='mobile'] .m-cp .cockpit-signal-footer > span {
+  order: 4;
+  font-size: 11px;
+  white-space: normal;
+  color: var(--m-text-dim);
+}
+html[data-ui='mobile'] .m-cp .cockpit-signal-list {
+  gap: 6px;
+}
+html[data-ui='mobile'] .m-cp .cockpit-signal-list li {
+  grid-template-columns: 64px minmax(0, 1fr);
+  padding: 8px 8px 8px 10px;
+  font-size: 13px;
+}
+html[data-ui='mobile'] .m-cp .cockpit-signal-list time {
+  font-size: 12px;
+}
+html[data-ui='mobile'] .m-cp .cockpit-signal-list strong {
+  font-size: 13px;
+}
+html[data-ui='mobile'] .m-cp .cockpit-signal-list span {
+  font-size: 12px;
+}
+html[data-ui='mobile'] .m-cp .cockpit-signal-target {
+  min-height: var(--m-tap);
+  font-size: 13px;
+  touch-action: manipulation;
+}
+html[data-ui='mobile'] .m-cp .cockpit-signal-target-chevron {
+  font-size: 18px !important;
+}
+html[data-ui='mobile'] .m-cp .cockpit-news-list a {
+  display: block;
+  min-height: var(--m-tap);
+  padding: 8px 0;
+}
+html[data-ui='mobile'] .m-cp .cockpit-news-list strong {
+  font-size: 14px;
+}
+html[data-ui='mobile'] .m-cp .cockpit-news-list span {
+  font-size: 12px;
+}
+html[data-ui='mobile'] .m-cp .cockpit-brief-status {
+  font-size: 12px;
+}
+html[data-ui='mobile'] .m-cp .cockpit-local-place strong {
+  font-size: 15px;
+}
+html[data-ui='mobile'] .m-cp .cockpit-local-place small {
+  font-size: 12px;
+}
+html[data-ui='mobile'] .m-cp .cockpit-local-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+html[data-ui='mobile'] .m-cp .cockpit-local-grid span {
+  font-size: 11px;
+}
+html[data-ui='mobile'] .m-cp .cockpit-local-grid strong {
+  font-size: 18px;
+}
+html[data-ui='mobile'] .m-cp #cockpit-local-condition {
+  font-size: 14px;
+}
+html[data-ui='mobile'] .m-cp .cockpit-local-grid small {
+  font-size: 11px;
+}
+html[data-ui='mobile'] .m-cp .cockpit-weather-credit {
+  display: inline-block;
+  padding: 12px 0;
+  font-size: 12px;
+}
+
+/* -- Display tab (CockpitDisplayPortal groups) -- */
+html[data-ui='mobile'] .m-cp #cockpit-display-panel,
+html[data-ui='mobile'] .m-cp #cockpit-radio-panel {
+  position: static;
+  width: 100%;
+  max-height: none;
+  overflow: visible;
+  padding: 0;
+  border: 0;
+}
+/* The desktop disclosure state is irrelevant here: the tab owns visibility. */
+html[data-ui='mobile'] .m-cp #cockpit-display-panel[hidden] {
+  display: flex !important;
+}
+html[data-ui='mobile'] .m-cp #cockpit-radio-panel[hidden] {
+  display: grid !important;
+}
+html[data-ui='mobile']
+  .m-cp
+  #cockpit-display-panel
+  :is(.pp-toggle-btn, .panel-collapse-btn, button) {
+  min-height: var(--m-tap);
+  touch-action: manipulation;
+}
+html[data-ui='mobile']
+  .m-cp
+  #cockpit-display-panel
+  :is(.pp-label, .param-label, .param-value, .param-panel-title) {
+  font-size: 13px;
+}
+html[data-ui='mobile'] .m-cp #cockpit-display-panel #param-slider-panel {
+  max-height: none;
+  overflow: visible;
+}
+html[data-ui='mobile'] .m-cp #cockpit-display-panel select {
+  min-height: var(--m-tap);
+}
+
+/* -- Radio tab -- */
+html[data-ui='mobile'] .m-cp .cockpit-radio-compact {
+  gap: 12px;
+}
+html[data-ui='mobile'] .m-cp .cockpit-radio-station {
+  font-size: 15px;
+}
+html[data-ui='mobile'] .m-cp #cockpit-radio-enable-btn {
+  min-height: var(--m-tap);
+  font-size: 14px;
+  touch-action: manipulation;
+}
+html[data-ui='mobile'] .m-cp .cockpit-radio-transport {
+  gap: 10px;
+}
+html[data-ui='mobile'] .m-cp .cockpit-radio-transport button {
+  min-height: 48px;
+  border-radius: 10px;
+  font-size: 18px;
+  touch-action: manipulation;
+}
+html[data-ui='mobile'] .m-cp .cockpit-radio-volume {
+  gap: 10px;
+  font-size: 12px;
+}
+html[data-ui='mobile'] .m-cp #cockpit-radio-volume-value {
+  min-width: 3ch;
+  font-size: 13px;
+}
+
+/* Sliders inside the drawer: 44px hit height, 6px track, 24px thumb
+   (mirrors the sheet rules in mobile-base.css, scoped to this drawer). */
+html[data-ui='mobile'] .m-cp input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: var(--m-tap);
+  margin: 0;
+  background: transparent;
+}
+html[data-ui='mobile']
+  .m-cp
+  input[type='range']::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--m-line);
+}
+html[data-ui='mobile'] .m-cp input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  margin-top: -9px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--m-accent);
+}
+html[data-ui='mobile'] .m-cp input[type='range']::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--m-line);
+}
+html[data-ui='mobile'] .m-cp input[type='range']::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--m-accent);
+}

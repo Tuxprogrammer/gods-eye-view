@@ -75,7 +75,10 @@ export function startBriefRotation({ reset = false } = {}) {
   this.briefTimer = window.setTimeout(() => {
     this.briefTimer = null;
     if (this.destroyed) return;
-    const hasPointer = this.signalStream?.matches(':hover') === true;
+    // Touch UI: :hover sticks after a tap, so it must not pause the carousel.
+    const hasPointer =
+      document.documentElement?.dataset?.ui !== 'mobile' &&
+      this.signalStream?.matches(':hover') === true;
     const hasFocus =
       this.signalStream?.contains(document.activeElement) === true;
     const isInteracting = hasPointer || hasFocus;

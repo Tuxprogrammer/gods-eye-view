@@ -23,6 +23,10 @@ const ui = readShellSource();
 
 const REM_PX = 16;
 
+// The mobile credit rule (mobile-chrome.css). The id is repeated on purpose so
+// it outranks every desktop #cesium-credits rule; see the mobile tests below.
+const MOBILE_CREDIT = "html[data-ui='mobile'] #cesium-credits#cesium-credits#cesium-credits";
+
 // Rendered sizes the stylesheet cannot supply. Measured live at
 // 600/700/800/830/900px viewports by qa-shots/quickwins/credit-probe.mjs and
 // re-measured on every run of that sweep. The CSS inputs that determine them
@@ -198,6 +202,7 @@ const RECOGNIZED = new Set([
   "body:not(.ui-clean-view):not(.recording-mode):has(#intel-hud[data-variant='minimal'].active) #cesium-credits",
   'body.ui-clean-view #cesium-credits',
   'body.recording-mode #cesium-credits',
+  MOBILE_CREDIT,
   // dock
   '#command-dock',
   '#command-dock:has(#location-bar:not(.collapsed))',
@@ -413,7 +418,8 @@ test('the model refuses every cascade construct it cannot resolve', () => {
         // (proven inapplicable at <=720px by the mobile-mode test).
         const railOwn = part === '#right-context-rail' && decl.prop === 'max-height';
         const railFocus = part === '#right-context-rail.layout-focus';
-        if (!railOwn && !railFocus) complaints.push(`${decl.prop}: ${decl.value} on "${part}"`);
+        const mobileCredit = part === MOBILE_CREDIT && decl.prop === 'max-height';
+        if (!railOwn && !railFocus && !mobileCredit) complaints.push(`${decl.prop}: ${decl.value} on "${part}"`);
       }
       if (decl.prop === 'transform' && /translateY|translate3d|matrix|scale\(/.test(decl.value)) {
         const identity = decl.value === 'translateY(0) scale(1)';
@@ -595,4 +601,117 @@ test('the credit line is never suppressed to make room', () => {
     assert.doesNotMatch(block, /opacity\s*:\s*0(\D|$)/, 'the credit must never be faded out');
   }
   assert.match(css, /body\.ui-clean-view #cesium-credits,\s*\n\s*body\.recording-mode #cesium-credits \{[^}]*bottom: 36px;/);
+});
+
+// ── Mobile credit geometry (html[data-ui='mobile']) ─────────────────────────
+
+// Layout facts owned elsewhere, from docs/mobile/DESIGN.md: the mic FAB is
+// 52px, inset 12px from the right safe edge, and only the credit lives in the
+// bottom 56px band on the left. The sheet must stack above the credit.
+const FAB_SIZE_PX = 52;
+const FAB_INSET_PX = 12;
+const BOTTOM_BAND_PX = 56;
+const MIN_READABLE_FONT_PX = 8;
+const MOBILE_WIDTHS = [1024, 900, 820, 768, 720, 640, 600, 480, 414, 390, 375, 360, 320];
+const SAFE_BOTTOMS = [0, 20, 34];
+const SAFE_RIGHTS = [0, 47, 59];
+
+// Each body state selects a different set of desktop credit rules, and all of
+// them must lose to the mobile rule (they set bottom/left/right/max-width).
+const MOBILE_BODY_STATES = [
+  { name: 'ordinary', rules: ['#cesium-credits', CREDIT_SELECTORS[1]] },
+  { name: 'minimal HUD', rules: ['#cesium-credits', CREDIT_SELECTORS[1], MINIMAL_HUD_CREDIT] },
+  { name: 'clean view / recording', rules: ['#cesium-credits', 'body.ui-clean-view #cesium-credits', 'body.recording-mode #cesium-credits'] },
+];
+
+function mobileCreditRule() {
+  const rules = RULES.filter((rule) => rule.parts.includes(MOBILE_CREDIT));
+  assert.equal(rules.length, 1, 'exactly one mobile credit rule must exist (fold extras into it)');
+  return rules[0];
+}
+const mobileDecl = (prop) => mobileCreditRule().decls.find((decl) => decl.prop === prop)?.value;
+
+test('the mobile credit rule beats every desktop credit rule in every state and width', () => {
+  assert.ok(specificity(MOBILE_CREDIT)[0] >= 3, 'the mobile credit selector needs three ids to outrank the minimal-HUD rule');
+  assert.equal(mobileCreditRule().media.length, 0, 'the mobile credit rule must not be media-gated');
+  for (const decl of mobileCreditRule().decls) {
+    assert.equal(decl.important, false, `!important on mobile credit ${decl.prop}`);
+  }
+  for (const state of MOBILE_BODY_STATES) {
+    for (const width of MOBILE_WIDTHS) {
+      for (const prop of ['bottom', 'left', 'right', 'max-width', 'max-height', 'font-size', 'white-space', 'text-align', 'overflow']) {
+        const winner = resolve([...state.rules, MOBILE_CREDIT], prop, width, `${state.name} credit`);
+        assert.equal(winner.part, MOBILE_CREDIT, `${prop} of the ${state.name} credit at ${width}px is won by "${winner.part}", not the mobile rule`);
+      }
+    }
+  }
+});
+
+test('the mobile credit is readable, visible and never suppressed', () => {
+  const fontSize = /^(\d+(?:\.\d+)?)px$/.exec(mobileDecl('font-size') ?? '');
+  assert.ok(fontSize, `mobile credit font-size must be a px value, got ${mobileDecl('font-size')}`);
+  assert.ok(Number(fontSize[1]) >= MIN_READABLE_FONT_PX, `mobile credit font ${fontSize[1]}px is below ${MIN_READABLE_FONT_PX}px`);
+  const decls = new Map(mobileCreditRule().decls.map((decl) => [decl.prop, decl.value]));
+  assert.notEqual(decls.get('display'), 'none');
+  assert.notEqual(decls.get('visibility'), 'hidden');
+  assert.notEqual(decls.get('visibility'), 'collapse');
+  if (decls.has('opacity')) assert.ok(Number(decls.get('opacity')) >= 0.5, `credit opacity ${decls.get('opacity')} is below 0.5`);
+  const color = /^rgba\(\s*\d+,\s*\d+,\s*\d+,\s*([\d.]+)\s*\)$/.exec(decls.get('color') ?? '');
+  assert.ok(color, `mobile credit colour must be an rgba() value, got ${decls.get('color')}`);
+  assert.ok(Number(color[1]) >= 0.5, `credit text alpha ${color[1]} is too faint`);
+  assert.notEqual(decls.get('pointer-events'), 'none', 'the attribution link must stay tappable');
+  // Any other mobile rule touching the credit must not hide it either.
+  for (const rule of RULES) {
+    if (!rule.parts.some((part) => part.startsWith("html[data-ui='mobile']") && part.includes('#cesium-credits'))) continue;
+    for (const decl of rule.decls) {
+      if (decl.prop === 'display') assert.notEqual(decl.value, 'none');
+      if (decl.prop === 'visibility') assert.equal(decl.value, 'visible');
+      if (decl.prop === 'opacity') assert.ok(Number(decl.value) >= 0.5);
+    }
+  }
+});
+
+test('the mobile credit stays in its corner: safe-area bottom, clear of the mic FAB, sheet and band', () => {
+  const bottom = /^calc\(var\(--m-safe-b\) \+ (\d+)px\)$/.exec(mobileDecl('bottom') ?? '');
+  assert.ok(bottom, `mobile credit bottom must be calc(var(--m-safe-b) + Npx), got ${mobileDecl('bottom')}`);
+  const bottomOffset = Number(bottom[1]);
+  const maxHeight = /^(\d+)px$/.exec(mobileDecl('max-height') ?? '');
+  assert.ok(maxHeight, `mobile credit max-height must be a px value, got ${mobileDecl('max-height')}`);
+  const heightPx = Number(maxHeight[1]);
+  assert.equal(mobileDecl('box-sizing'), 'border-box', 'max-height/max-width are modelled as border-box');
+  assert.equal(mobileDecl('left'), '0');
+  assert.equal(mobileDecl('right'), 'auto');
+  assert.equal(mobileDecl('overflow'), 'hidden', 'a taller credit would climb out of the modelled height');
+  const maxWidth = /^calc\(100vw - (\d+)px - var\(--m-safe-r\)\)$/.exec(mobileDecl('max-width') ?? '');
+  assert.ok(maxWidth, `mobile credit max-width must be calc(100vw - Npx - var(--m-safe-r)), got ${mobileDecl('max-width')}`);
+  const reserved = Number(maxWidth[1]);
+
+  // The cap must hold at least one padded line, and the top must stay in the band.
+  const oneLine = Math.ceil(Number.parseFloat(mobileDecl('font-size')) * Number.parseFloat(mobileDecl('line-height')));
+  assert.ok(heightPx >= oneLine + 2, `max-height ${heightPx}px cannot hold one credit line (${oneLine}px + padding)`);
+
+  const failures = [];
+  for (const safeB of SAFE_BOTTOMS) {
+    const top = safeB + bottomOffset + heightPx;
+    if (top > safeB + BOTTOM_BAND_PX) failures.push(`credit top ${top}px leaves the ${BOTTOM_BAND_PX}px bottom band (safe-b ${safeB})`);
+  }
+  for (const width of MOBILE_WIDTHS) {
+    for (const safeR of SAFE_RIGHTS) {
+      const creditRight = width - reserved - safeR; // left:0 + max-width
+      const fabLeft = width - safeR - FAB_INSET_PX - FAB_SIZE_PX;
+      const clearance = fabLeft - creditRight;
+      if (clearance < MIN_CLEARANCE_PX) failures.push(`credit right edge is ${clearance.toFixed(1)}px from the mic FAB at ${width}px (safe-r ${safeR})`);
+      if (creditRight <= 0) failures.push(`the credit has no width at ${width}px (safe-r ${safeR})`);
+    }
+  }
+  assert.deepEqual(failures, [], `the mobile credit collides:\n  ${failures.join('\n  ')}\n`);
+
+  // The sheet (open or peeking) may cover the credit only by stacking above it.
+  const base = fs.readFileSync(path.join(ROOT, 'src', 'ui', 'styles', 'mobile-base.css'), 'utf8');
+  const sheetZ = Number(/--m-z-sheet:\s*(\d+)/.exec(base)?.[1]);
+  const backdropZ = Number(/--m-z-backdrop:\s*(\d+)/.exec(base)?.[1]);
+  const creditZ = Number(resolve(['#cesium-credits'], 'z-index', 375, 'credit').decl.value);
+  assert.ok(Number.isFinite(sheetZ) && Number.isFinite(backdropZ), 'mobile-base.css must define --m-z-sheet and --m-z-backdrop');
+  assert.ok(creditZ < backdropZ && backdropZ < sheetZ, `credit z-index ${creditZ} must sit below the backdrop (${backdropZ}) and sheet (${sheetZ})`);
+  assert.equal(mobileDecl('z-index'), undefined, 'the mobile credit must inherit its stacking, not override it');
 });

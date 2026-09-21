@@ -317,6 +317,49 @@ export function installSheet(doc = document, win = window) {
   const onKey = (event) => {
     if (event.key === 'Escape' && isOpen()) close();
   };
+  // Scroll lock: while the sheet is open the page behind must not scroll or
+  // rubber-band. CSS (overscroll-behavior, body overflow) does most of it; this
+  // catches the gestures CSS cannot: drags that start on non-scrolling chrome
+  // (handle, header) and scrollers already at their edge (iOS chains those to
+  // the page). Touches inside a scroller that can still move are left alone.
+  let touchY = 0;
+  const scrollableAncestor = (node) => {
+    for (let n = node; n && n !== root; n = n.parentElement) {
+      if (n.nodeType !== 1) continue;
+      const overflowY = win.getComputedStyle?.(n)?.overflowY;
+      if (
+        (overflowY === 'auto' || overflowY === 'scroll') &&
+        n.scrollHeight > n.clientHeight + 1
+      ) {
+        return n;
+      }
+    }
+    return null;
+  };
+  const onTouchStart = (event) => {
+    touchY = event.touches?.[0]?.clientY ?? 0;
+  };
+  const onTouchMove = (event) => {
+    if (!isOpen() || event.touches?.length !== 1 || !event.cancelable) return;
+    const scroller = scrollableAncestor(event.target);
+    if (!scroller) {
+      event.preventDefault();
+      return;
+    }
+    const dy = event.touches[0].clientY - touchY; // >0 = finger moving down
+    const atTop = scroller.scrollTop <= 0;
+    const atBottom =
+      scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 1;
+    if ((dy > 0 && atTop) || (dy < 0 && atBottom)) event.preventDefault();
+  };
+  // Wheel / trackpad over the sheet never scrolls the page either.
+  const onWheel = (event) => {
+    if (isOpen() && !scrollableAncestor(event.target)) event.preventDefault();
+  };
+  root.addEventListener('touchstart', onTouchStart, { passive: true });
+  root.addEventListener('touchmove', onTouchMove, { passive: false });
+  root.addEventListener('wheel', onWheel, { passive: false });
+
   const onBack = () => showRoot();
   const onHandle = () => setPeek(root.dataset.peek !== 'true');
   const onClose = () => close();
@@ -339,6 +382,9 @@ export function installSheet(doc = document, win = window) {
     win.removeEventListener('popstate', onPop);
     win.removeEventListener(OPEN_EVENT, onOpenEvent);
     doc.removeEventListener('keydown', onKey);
+    root.removeEventListener('touchstart', onTouchStart);
+    root.removeEventListener('touchmove', onTouchMove);
+    root.removeEventListener('wheel', onWheel);
     backdrop.remove();
     root.remove();
     for (const record of pages.values()) {

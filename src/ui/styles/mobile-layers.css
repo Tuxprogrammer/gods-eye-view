@@ -1,1 +1,279 @@
 /* mobile-layers: everything scoped under html[data-ui='mobile'] */
+
+/* The desktop panel is moved into the Layers page. Neutralise its floating,
+   collapsed and scrolling behaviour: the sheet page is the ONE scroll region.
+   The `.collapsed` class is left alone (share state reads it) and overridden. */
+html[data-ui='mobile'] #mobile-sheet #data-panel,
+html[data-ui='mobile'] #mobile-sheet #data-panel.collapsed,
+html[data-ui='mobile'] #mobile-sheet #data-panel.active {
+  position: static;
+  top: auto;
+  right: auto;
+  bottom: auto;
+  left: auto;
+  width: 100%;
+  max-width: none;
+  height: auto;
+  max-height: none;
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition: none;
+  pointer-events: auto;
+}
+html[data-ui='mobile'] #mobile-sheet #data-panel .panel-glow,
+html[data-ui='mobile'] #mobile-sheet #data-panel .panel-header {
+  display: none !important;
+}
+html[data-ui='mobile'] #mobile-sheet #data-panel .data-panel-inner {
+  height: auto;
+  max-height: none;
+  padding: 0;
+  overflow: visible;
+  background: none;
+  border: 0;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+html[data-ui='mobile'] #mobile-sheet #data-panel.collapsed .data-toggle-list,
+html[data-ui='mobile'] #mobile-sheet #data-panel .data-toggle-list {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  max-height: none;
+  overflow: visible;
+  padding-right: 0;
+  scrollbar-gutter: auto;
+}
+
+html[data-ui='mobile'] .m-layers [data-m-hide='true'] {
+  display: none !important;
+}
+
+/* Search + "All off" */
+html[data-ui='mobile'] .m-layers__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+html[data-ui='mobile'] .m-layers__search {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: var(--m-tap);
+  box-sizing: border-box;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--m-line);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--m-text);
+  font-size: 16px;
+}
+html[data-ui='mobile'] .m-layers__clear {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: auto;
+  height: auto;
+  white-space: nowrap;
+  cursor: pointer;
+}
+html[data-ui='mobile'] .m-layers__clear .material-symbols-outlined {
+  font-size: 20px;
+}
+html[data-ui='mobile'] .m-layers__clear[aria-busy='true'] {
+  opacity: 0.55;
+}
+html[data-ui='mobile'] .m-layers__count,
+html[data-ui='mobile'] .m-layers__empty {
+  margin: 8px 2px 4px;
+}
+html[data-ui='mobile'] .m-layers__count:empty {
+  display: none;
+}
+
+/* Group headings are 44px collapse toggles. */
+html[data-ui='mobile'] .m-layers .data-layer-group-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: var(--m-tap);
+  margin: 6px 0 0;
+  padding: 0 4px;
+  border-top: 1px solid var(--m-line);
+  font-size: 12px;
+  letter-spacing: 1.4px;
+  color: var(--m-text-dim);
+  cursor: pointer;
+  user-select: none;
+}
+html[data-ui='mobile'] .m-layers .data-layer-group-heading::after {
+  content: '\25BE';
+  font-size: 16px;
+  transition: transform 0.15s ease;
+}
+html[data-ui='mobile']
+  .m-layers
+  .data-layer-group-heading[data-m-collapsed='true']::after {
+  transform: rotate(-90deg);
+}
+
+/* Layer rows */
+html[data-ui='mobile'] .m-layers .data-toggle-list {
+  gap: 0;
+}
+html[data-ui='mobile'] .m-layers .data-toggle-row {
+  padding: 8px 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 0;
+}
+html[data-ui='mobile'] .m-layers .data-toggle-top {
+  min-height: var(--m-tap);
+  gap: var(--m-gap);
+}
+html[data-ui='mobile'] .m-layers .data-toggle-left {
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 10px;
+}
+html[data-ui='mobile'] .m-layers .data-icon {
+  font-size: 22px;
+  flex: 0 0 auto;
+}
+html[data-ui='mobile'] .m-layers .data-name {
+  font-size: var(--m-font);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+html[data-ui='mobile'] .m-layers .data-toggle-right {
+  flex: 0 0 auto;
+  gap: 8px;
+}
+html[data-ui='mobile'] .m-layers .data-count {
+  font-size: var(--m-font-meta);
+  min-width: 34px;
+}
+/* The state button is the big switch: 44px tall pill carrying its state word. */
+html[data-ui='mobile'] .m-layers .data-toggle-btn {
+  min-width: 78px;
+  min-height: var(--m-tap);
+  padding: 0 14px;
+  border-radius: 22px;
+  font-size: 12px;
+  letter-spacing: 0.8px;
+  touch-action: manipulation;
+}
+html[data-ui='mobile'] .m-layers .data-toggle-meta {
+  padding-left: 32px;
+  font-size: var(--m-font-meta);
+  letter-spacing: 0.2px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+/* Per-layer sub-controls */
+html[data-ui='mobile'] .m-layers .data-toggle-controls {
+  padding-left: 32px;
+  margin-top: 8px;
+  gap: 8px;
+}
+html[data-ui='mobile'] .m-layers .data-toggle-chip {
+  min-height: var(--m-tap);
+  padding: 0 14px;
+  border-radius: 10px;
+  font-size: 12px;
+  letter-spacing: 0.8px;
+}
+html[data-ui='mobile'] .m-layers .data-toggle-chip.chip-break {
+  margin-left: 0;
+}
+html[data-ui='mobile'] .m-layers .data-toggle-slider,
+html[data-ui='mobile'] .m-layers .data-toggle-select,
+html[data-ui='mobile'] .m-layers .data-toggle-text {
+  font-size: var(--m-font-meta);
+  letter-spacing: 0.6px;
+  gap: 10px;
+}
+html[data-ui='mobile'] .m-layers .data-toggle-select {
+  flex: 1 0 100%;
+}
+html[data-ui='mobile'] .m-layers .data-toggle-slider-input {
+  height: var(--m-tap);
+}
+html[data-ui='mobile'] .m-layers .data-toggle-slider-value {
+  min-width: 3.6em;
+  font-size: var(--m-font-meta);
+}
+html[data-ui='mobile'] .m-layers .data-toggle-select-input,
+html[data-ui='mobile'] .m-layers .data-toggle-text-input {
+  flex: 1 1 auto;
+  min-height: var(--m-tap);
+  padding: 0 10px;
+  border-radius: 10px;
+  font-size: 16px;
+}
+html[data-ui='mobile'] .m-layers .data-toggle-legend-item {
+  font-size: var(--m-font-meta);
+}
+html[data-ui='mobile'] .m-layers .data-row-list-item {
+  min-height: var(--m-tap);
+}
+
+/* Server list (Meshtastic MQTT) */
+html[data-ui='mobile'] .m-layers .data-server {
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+}
+html[data-ui='mobile'] .m-layers .data-server-remove {
+  width: var(--m-tap);
+  height: var(--m-tap);
+  font-size: 18px;
+}
+html[data-ui='mobile'] .m-layers .data-server-toggle {
+  min-height: var(--m-tap);
+  min-width: var(--m-tap);
+  padding: 0 12px;
+  font-size: 12px;
+}
+html[data-ui='mobile'] .m-layers .data-server-name,
+html[data-ui='mobile'] .m-layers .data-server-status {
+  font-size: var(--m-font-meta);
+}
+html[data-ui='mobile'] .m-layers .data-server-topic,
+html[data-ui='mobile'] .m-layers .data-server-field input[type='text'],
+html[data-ui='mobile'] .m-layers .data-server-field input[type='number'],
+html[data-ui='mobile'] .m-layers .data-server-field input[type='password'] {
+  min-height: var(--m-tap);
+  padding: 0 10px;
+  border-radius: 10px;
+  font-size: 16px;
+}
+html[data-ui='mobile'] .m-layers .data-server-add summary {
+  display: flex;
+  align-items: center;
+  min-height: var(--m-tap);
+  font-size: 12px;
+}
+html[data-ui='mobile'] .m-layers .data-server-form {
+  grid-template-columns: 1fr;
+}
+html[data-ui='mobile'] .m-layers .data-server-field {
+  font-size: var(--m-font-meta);
+}
+html[data-ui='mobile'] .m-layers .data-server-check {
+  min-height: var(--m-tap);
+}
+html[data-ui='mobile'] .m-layers .data-server-check input {
+  width: 22px;
+  height: 22px;
+}
+html[data-ui='mobile'] .m-layers .data-server-add-submit {
+  min-height: var(--m-tap);
+  font-size: 13px;
+  border-radius: 10px;
+}
+html[data-ui='mobile'] .m-layers .data-server-error {
+  font-size: var(--m-font-meta);
+}

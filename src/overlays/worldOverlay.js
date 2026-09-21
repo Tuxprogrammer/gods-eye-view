@@ -118,6 +118,14 @@ export const WORLD_OVERLAY_OCCLUDER_SELECTORS = Object.freeze([
   // toggled). Every other cockpit selector was removed — see the block comment.
   '#cockpit-context',
   '#cockpit-signal-stream',
+  // Mobile UI chrome (display:none / absent on desktop, so inert there).
+  '#mobile-menu-btn',
+  '#mobile-top-right',
+  '#mobile-status',
+  '#mobile-sheet',
+  '#mobile-card-sheet',
+  '#mobile-draw-toolbar',
+  '#mobile-deselect',
 ]);
 
 /** @typedef {{x:number,y:number,w:number,h:number}} OverlayRect */

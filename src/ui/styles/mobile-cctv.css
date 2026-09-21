@@ -1,1 +1,149 @@
-/* mobile-cctv: everything scoped under html[data-ui='mobile'] */
+/* mobile-cctv: everything scoped under html[data-ui='mobile'].
+   The CCTV page (src/ui/mobile/pages/cctv.js) hosts the same nodes as the
+   desktop #cctv-panel (moved child by child). Prefix `#mobile-sheet .m-cctv`
+   (one id) beats the id-scoped desktop rules without editing them. */
+
+/* The floating chip is mirrored into the status line (cctv-bridge.js). */
+html[data-ui='mobile'] #cctv-sync-chip {
+  display: none !important;
+}
+
+/* Camera button in #mobile-top-right, shown while a camera is active. */
+html[data-ui='mobile'] #mobile-cctv-btn {
+  font-size: 18px;
+  line-height: 1;
+}
+html[data-ui='mobile'] #mobile-cctv-btn[hidden] {
+  display: none;
+}
+
+html[data-ui='mobile'] #mobile-sheet .m-cctv {
+  gap: var(--m-gap);
+}
+
+/* Moved out of #cctv-panel, so its disabled styling no longer matches. */
+html[data-ui='mobile'] #mobile-sheet .m-cctv :is(button, select, input):disabled {
+  opacity: 0.45;
+}
+
+html[data-ui='mobile'] #mobile-sheet .m-cctv .cctv-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+html[data-ui='mobile'] #mobile-sheet .m-cctv .cctv-controls .scene-btn {
+  min-height: 48px;
+  padding: 8px 10px;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  white-space: normal;
+}
+/* PREV | camera picker | NEXT. */
+html[data-ui='mobile'] #mobile-sheet .m-cctv .cctv-controls:has(#cctv-camera-select) {
+  grid-template-columns: 76px minmax(0, 1fr) 76px;
+}
+html[data-ui='mobile'] #mobile-sheet .m-cctv #cctv-camera-select {
+  min-height: 48px;
+  padding: 8px 10px;
+  font-size: 16px;
+}
+html[data-ui='mobile'] #mobile-sheet .m-cctv #cctv-enable-btn {
+  font-size: 15px;
+  font-weight: 700;
+}
+html[data-ui='mobile'] #mobile-sheet .m-cctv #cctv-quality-chip {
+  min-height: 48px;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  text-align: center;
+}
+
+/* Status + meta, readable. */
+html[data-ui='mobile'] #mobile-sheet .m-cctv #cctv-source-badge {
+  font-size: 12px;
+}
+html[data-ui='mobile'] #mobile-sheet .m-cctv #cctv-meta {
+  font-size: 12px;
+  line-height: 1.45;
+  letter-spacing: 0.4px;
+  overflow-wrap: anywhere;
+}
+
+/* Frame: full width 16:9 (responsive.css squashes it to 120px at <=720). */
+html[data-ui='mobile'] #mobile-sheet .m-cctv #cctv-frame-wrap {
+  min-height: 0;
+}
+html[data-ui='mobile'] #mobile-sheet .m-cctv #cctv-frame {
+  aspect-ratio: 16 / 9;
+  height: auto;
+}
+
+/* Calibration: behind a toggle, numeric chips are the touch path. */
+html[data-ui='mobile'] #mobile-sheet .m-cctv__cal-toggle {
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+}
+html[data-ui='mobile'] #mobile-sheet .m-cctv__cal-toggle::after {
+  content: '  ▾';
+}
+html[data-ui='mobile']
+  #mobile-sheet
+  .m-cctv.is-cal-open
+  .m-cctv__cal-toggle::after {
+  content: '  ▴';
+}
+html[data-ui='mobile'] #mobile-sheet .m-cctv__note {
+  display: none;
+  margin: 0;
+  line-height: 1.45;
+}
+html[data-ui='mobile'] #mobile-sheet .m-cctv .cctv-calibration-block {
+  display: none;
+}
+html[data-ui='mobile'] #mobile-sheet .m-cctv.is-cal-open .m-cctv__note {
+  display: block;
+}
+html[data-ui='mobile'] #mobile-sheet .m-cctv.is-cal-open .cctv-calibration-block {
+  display: block;
+  padding: 12px;
+}
+html[data-ui='mobile'] #mobile-sheet .m-cctv .cctv-calibration-header {
+  margin-bottom: 10px;
+}
+html[data-ui='mobile'] #mobile-sheet .m-cctv .cctv-summary-label {
+  font-size: 12px;
+}
+html[data-ui='mobile'] #mobile-sheet .m-cctv #cctv-adjust-btn {
+  min-height: 44px;
+  min-width: 96px;
+}
+html[data-ui='mobile'] #mobile-sheet .m-cctv .cctv-cal-readout {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+html[data-ui='mobile'] #mobile-sheet .m-cctv .cctv-cal-value {
+  min-height: 48px;
+  padding: 8px 10px;
+  font-size: 14px;
+  letter-spacing: 0.4px;
+  text-align: left;
+}
+html[data-ui='mobile'] #mobile-sheet .m-cctv .cctv-cal-input {
+  width: 100%;
+  min-width: 0;
+  min-height: 32px;
+  padding: 2px 6px;
+  font-size: 16px;
+}
+html[data-ui='mobile'] #mobile-sheet .m-cctv .cctv-calibration-actions {
+  margin-top: 10px;
+}
+
+html[data-ui='mobile'] #mobile-sheet .m-cctv #cctv-summary {
+  font-size: 13px;
+  line-height: 1.5;
+}

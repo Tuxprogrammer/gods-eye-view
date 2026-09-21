@@ -369,7 +369,26 @@ export function createStationInteraction({
       surface.idsAt?.(point.x, point.y) ?? (top === null ? [] : [top]);
     const target = clickTarget(ids, pinnedId);
     unpin();
+    stackIds = ids;
+    stackPoint = point;
     if (target.action === 'pin') pin(target.id, point, target);
+  }
+
+  // Prev/Next through the stack under the last tap (the mobile card sheet's
+  // buttons dispatch this; nothing fires it on desktop).
+  let stackIds = [];
+  let stackPoint = null;
+  function onStep(event) {
+    if (pinnedId === null || stackIds.length < 2 || !stackPoint) return;
+    const at = stackIds.indexOf(pinnedId);
+    if (at === -1) return;
+    const delta = event?.detail?.delta < 0 ? -1 : 1;
+    const index = (at + delta + stackIds.length) % stackIds.length;
+    unpin();
+    pin(stackIds[index], stackPoint, {
+      index: index + 1,
+      count: stackIds.length,
+    });
   }
 
   const onKey = (event) => {
@@ -391,6 +410,7 @@ export function createStationInteraction({
   });
   const onClose = () => unpin();
 
+  card.addEventListener('gev:card-step', onStep);
   canvas.addEventListener('pointermove', onMove);
   canvas.addEventListener('pointerleave', onLeave);
   canvas.addEventListener('pointerdown', onDown);

@@ -1,1 +1,222 @@
-/* mobile-places: everything scoped under html[data-ui='mobile'] */
+/* mobile-places: everything scoped under html[data-ui='mobile'].
+   The Places page reuses the dock's real nodes (moved by portal.js), so the
+   desktop location.css / command-dock rules that still match by class alone
+   are overridden here with higher specificity. One scroll region: the sheet
+   body scrolls; nothing inside may scroll on its own. */
+
+html[data-ui='mobile'] .mp-places {
+  gap: var(--m-gap);
+}
+html[data-ui='mobile'] .mp-places .mp-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--m-line);
+  border-radius: var(--m-radius);
+  background: rgba(255, 255, 255, 0.03);
+}
+html[data-ui='mobile'] .mp-places .mp-heading {
+  margin: 0;
+  font-size: var(--m-font-meta);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--m-text-dim);
+}
+
+/* Current place (the dock's mini status; desktop shows it only when the
+   wing is collapsed, so force it visible). */
+html[data-ui='mobile'] .mp-places #location-mini-status {
+  display: grid;
+  gap: 4px;
+  padding: 0;
+}
+html[data-ui='mobile'] .mp-places .location-mini-city {
+  font-size: 17px;
+  letter-spacing: 0.02em;
+  color: #bdefff;
+  overflow-wrap: anywhere;
+}
+html[data-ui='mobile'] .mp-places .location-mini-poi {
+  max-width: none;
+  font-size: var(--m-font);
+  letter-spacing: 0.02em;
+  color: var(--m-text-dim);
+  white-space: normal;
+  overflow: visible;
+}
+
+/* Search: full-width field + Go + clear. */
+html[data-ui='mobile'] .mp-places .mp-search-box {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+html[data-ui='mobile'] .mp-places #location-search,
+html[data-ui='mobile'] .mp-places #location-search.expanded {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  min-height: var(--m-tap);
+  box-sizing: border-box;
+  padding: 0 12px;
+  font-size: 16px;
+  letter-spacing: 0;
+  border: 1px solid var(--m-line);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--m-text);
+}
+html[data-ui='mobile'] .mp-places #location-search::placeholder {
+  font-style: normal;
+  color: var(--m-text-dim);
+}
+html[data-ui='mobile'] .mp-places #location-search:focus-visible {
+  outline: 2px solid var(--m-accent);
+  outline-offset: 0;
+}
+html[data-ui='mobile'] .mp-places .mp-go {
+  flex: 0 0 auto;
+  min-width: 64px;
+  font-weight: 600;
+  color: #04121a;
+  background: var(--m-accent);
+  border-color: var(--m-accent);
+}
+html[data-ui='mobile'] .mp-places .mp-clear[hidden] {
+  display: none;
+}
+html[data-ui='mobile'] .mp-places .mp-message {
+  margin: 0;
+  min-height: 0;
+}
+html[data-ui='mobile'] .mp-places .mp-message:empty {
+  display: none;
+}
+html[data-ui='mobile'] .mp-places .mp-message[data-kind='error'] {
+  color: #ff9aa6;
+}
+html[data-ui='mobile'] .mp-places .mp-message[data-kind='ok'] {
+  color: #5cffc6;
+}
+
+/* City presets: wrapped chips, no horizontal scroller. */
+html[data-ui='mobile'] .mp-places .location-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  overflow: visible;
+  scroll-behavior: auto;
+}
+html[data-ui='mobile'] .mp-places .location-pill {
+  flex: 1 1 calc(50% - 8px);
+  min-height: var(--m-tap);
+  padding: 0 14px;
+  border-radius: 22px;
+  font-size: var(--m-font);
+  text-align: center;
+  white-space: normal;
+  transition: none;
+}
+html[data-ui='mobile'] .mp-places .location-pill:hover,
+html[data-ui='mobile'] .mp-places .poi-pill:hover {
+  transform: none;
+}
+
+/* Landmarks: always-open vertical list (desktop animates max-height 0 -> 50px
+   and hides overflow; neutralise both). Hotkey letters mean nothing on touch. */
+html[data-ui='mobile'] .mp-places #poi-row,
+html[data-ui='mobile'] .mp-places #poi-row.expanded {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: none;
+  overflow: visible;
+  opacity: 1;
+  padding: 0;
+  justify-content: flex-start;
+  transition: none;
+}
+html[data-ui='mobile'] .mp-places #poi-row:empty {
+  display: none;
+}
+html[data-ui='mobile'] .mp-places .poi-pill {
+  width: 100%;
+  min-height: var(--m-row);
+  padding: 0 14px;
+  border-radius: 12px;
+  white-space: normal;
+  text-align: left;
+  transition: none;
+}
+html[data-ui='mobile'] .mp-places .poi-pill-key {
+  display: none;
+}
+html[data-ui='mobile'] .mp-places .poi-pill-name {
+  font-size: var(--m-font);
+  letter-spacing: 0;
+}
+html[data-ui='mobile'] .mp-places #poi-row:not(:empty) + .mp-hint {
+  display: none;
+}
+html[data-ui='mobile'] .mp-places .mp-hint,
+html[data-ui='mobile'] .mp-places .mp-hint-line {
+  margin: 0;
+}
+
+/* Tools */
+html[data-ui='mobile'] .mp-places .mp-tool {
+  width: 100%;
+  justify-content: center;
+}
+html[data-ui='mobile'] .mp-places .mp-tool[aria-pressed='true'] {
+  border-color: var(--m-accent);
+  color: var(--m-accent);
+}
+html[data-ui='mobile'] .mp-places .mp-share-url {
+  width: 100%;
+  min-height: var(--m-tap);
+  box-sizing: border-box;
+  padding: 0 12px;
+  font-size: 16px;
+  border: 1px solid var(--m-line);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--m-text);
+  user-select: text;
+  -webkit-user-select: text;
+}
+html[data-ui='mobile'] .mp-places .mp-share-url[hidden] {
+  display: none;
+}
+
+/* Floating ORBIT chip: sits above the mic FAB (bottom-right), tap to stop.
+   Desktop keeps top:70/right:36 and pointer-events:none. */
+html[data-ui='mobile'] #orbit-indicator {
+  top: auto;
+  right: calc(var(--m-safe-r) + 12px);
+  bottom: calc(var(--m-safe-b) + 12px + 52px + 10px);
+  z-index: var(--m-z-chrome);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: var(--m-tap);
+  box-sizing: border-box;
+  padding: 0 14px;
+  font-size: 13px;
+  letter-spacing: 1px;
+  border: 1px solid var(--m-line);
+  border-radius: 22px;
+  background: var(--m-bg);
+  pointer-events: none;
+}
+html[data-ui='mobile'] #orbit-indicator.active {
+  pointer-events: auto;
+}
+html[data-ui='mobile'] #orbit-indicator.active::after {
+  content: '\2715';
+  margin-left: 6px;
+  color: var(--m-text-dim);
+}

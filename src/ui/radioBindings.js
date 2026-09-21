@@ -170,6 +170,16 @@ export function bindRadioControls() {
       );
       this._radioTunerSlider.step = '1';
     }
+    // Mobile station list mirrors the directory; desktop has no listener.
+    if (typeof CustomEvent === 'function')
+      this._radioTuner?.dispatchEvent?.(
+        new CustomEvent('gev:radio-directory', {
+          detail: {
+            stations: this._radioTunerStations,
+            selectedId: this._radioState?.selected?.id ?? null,
+          },
+        }),
+      );
   };
   const refreshTunerBand = ({ force = false } = {}) => {
     if (
@@ -365,6 +375,21 @@ export function bindRadioControls() {
       }
     }
   };
+  // Mobile hooks (no desktop code dispatches these): re-measure the tuner
+  // tape after its dial resizes or is first shown, and tune to a directory
+  // index chosen from the mobile station list without a drag gesture.
+  this.listen(this._radioTuner, 'gev:radio-tuner-relayout', () => {
+    refreshTunerBand({ force: true });
+  });
+  this.listen(this._radioTuner, 'gev:radio-tune-to', (event) => {
+    const index = Number(event.detail?.index);
+    if (!Number.isInteger(index) || !beginTuner()) return;
+    const slot = radioTunerSlot(index, this._radioTunerStations.length);
+    this._radioTunerSlider.value = String(slot.slot);
+    this._radioTunerCoordinate = slot.stationIndex;
+    tunerPreview({ coordinate: slot.stationIndex });
+    finishTuner(true);
+  });
   this.listen(
     this._radioEnableBtn,
     'click',

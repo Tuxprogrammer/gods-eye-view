@@ -1,1 +1,249 @@
-/* mobile-voice: everything scoped under html[data-ui='mobile'] */
+/* mobile-voice: everything scoped under html[data-ui='mobile'].
+   #gev-voice-control is moved to <body> by voice.js install() and collapses
+   to a 52px mic FAB. Selectors carry html[data-ui] + id so they beat the
+   desktop foundation.css / responsive.css rules that still match it once it
+   is out of #command-dock (including the data-status='error' capsule->panel
+   restyle). Bottom-left belongs to the attribution; bottom-right is the FAB. */
+
+html[data-ui='mobile'] #gev-voice-control,
+html[data-ui='mobile'] #gev-voice-control[data-status] {
+  position: fixed;
+  right: calc(var(--m-safe-r) + 12px);
+  bottom: calc(var(--m-safe-b) + 12px);
+  left: auto;
+  top: auto;
+  z-index: 150;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  min-width: 0;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  gap: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 212, 255, 0.45);
+  background: var(--m-bg);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.55);
+  transform: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Everything but the mic lives on the Voice page (or is dropped: the
+   hover-only help tray, the waveform, the desktop error tray). */
+html[data-ui='mobile'] #gev-voice-control .gev-voice-heading,
+html[data-ui='mobile'] #gev-voice-control .gev-voice-visualizer,
+html[data-ui='mobile'] #gev-voice-control .gev-voice-readout,
+html[data-ui='mobile'] #gev-voice-control .gev-voice-help-tray,
+html[data-ui='mobile'] #gev-voice-control .gev-voice-error-tray,
+html[data-ui='mobile'] #gev-voice-control .gev-mic-label {
+  display: none !important;
+}
+
+html[data-ui='mobile'] #gev-voice-control #gev-voice-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: none;
+  color: var(--m-accent);
+  touch-action: manipulation;
+}
+html[data-ui='mobile'] #gev-voice-control .gev-mic-orbit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+html[data-ui='mobile'] #gev-voice-control .gev-mic-orbit img {
+  width: 26px;
+  height: 26px;
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
+/* State ring. */
+html[data-ui='mobile'] #gev-voice-control[data-status='connecting'] {
+  border-color: rgba(0, 212, 255, 0.9);
+  border-style: dashed;
+  animation: mv-blink 1s ease-in-out infinite;
+}
+html[data-ui='mobile'] #gev-voice-control[data-status='listening'] {
+  border-color: #5cffc6;
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.55),
+    0 0 0 4px rgba(92, 255, 198, 0.22);
+  animation: mv-pulse 1.6s ease-in-out infinite;
+}
+html[data-ui='mobile'] #gev-voice-control[data-status='executing'] {
+  border-color: #ffdc78;
+}
+html[data-ui='mobile'] #gev-voice-control[data-status='error'] {
+  border-color: #ff5c6e;
+}
+/* Unavailable (no secure context / mic API): dimmed with a "!" badge; a tap
+   opens the Voice page, which explains why. */
+html[data-ui='mobile']
+  #gev-voice-control[data-voice-support]:not([data-voice-support='ok']) {
+  opacity: 0.7;
+  border-color: rgba(255, 220, 120, 0.7);
+}
+html[data-ui='mobile']
+  #gev-voice-control[data-voice-support]:not([data-voice-support='ok'])::after {
+  content: '!';
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ffdc78;
+  color: #1a1400;
+  font: 700 12px/18px sans-serif;
+  text-align: center;
+}
+
+@keyframes mv-pulse {
+  50% {
+    box-shadow:
+      0 4px 16px rgba(0, 0, 0, 0.55),
+      0 0 0 8px rgba(92, 255, 198, 0.08);
+  }
+}
+@keyframes mv-blink {
+  50% {
+    opacity: 0.5;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-ui='mobile'] #gev-voice-control[data-status] {
+    animation: none;
+  }
+}
+
+/* ---- Voice page ---- */
+html[data-ui='mobile'] .mv-voice {
+  gap: var(--m-gap);
+}
+html[data-ui='mobile'] .mv-voice .mv-card,
+html[data-ui='mobile'] .mv-voice .mv-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--m-line);
+  border-radius: var(--m-radius);
+  background: rgba(255, 255, 255, 0.03);
+}
+html[data-ui='mobile'] .mv-voice [hidden] {
+  display: none;
+}
+html[data-ui='mobile'] .mv-voice .mv-banner {
+  border-color: rgba(255, 220, 120, 0.6);
+  background: rgba(255, 220, 120, 0.1);
+  color: #ffe9a8;
+  font-size: var(--m-font);
+  line-height: 1.4;
+}
+html[data-ui='mobile'] .mv-voice .mv-heading {
+  margin: 0;
+  font-size: var(--m-font-meta);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--m-text-dim);
+}
+html[data-ui='mobile'] .mv-voice .mv-status-word {
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--m-accent);
+}
+html[data-ui='mobile'] .mv-voice .mv-status-word[data-status='listening'] {
+  color: #5cffc6;
+}
+html[data-ui='mobile'] .mv-voice .mv-status-word[data-status='executing'] {
+  color: #ffdc78;
+}
+html[data-ui='mobile'] .mv-voice .mv-status-word[data-status='error'] {
+  color: #ff5c6e;
+}
+html[data-ui='mobile'] .mv-voice .mv-toggle {
+  width: 100%;
+  min-height: 52px;
+  font-weight: 600;
+  color: #04121a;
+  background: var(--m-accent);
+  border-color: var(--m-accent);
+}
+html[data-ui='mobile'] .mv-voice .mv-toggle[data-busy='true'] {
+  color: var(--m-text);
+  background: rgba(255, 92, 110, 0.25);
+  border-color: rgba(255, 92, 110, 0.7);
+}
+html[data-ui='mobile'] .mv-voice .mv-toggle:disabled {
+  opacity: 0.45;
+}
+html[data-ui='mobile'] .mv-voice .mv-error {
+  border-color: rgba(255, 92, 110, 0.6);
+}
+html[data-ui='mobile'] .mv-voice .mv-error-text {
+  font-size: var(--m-font);
+  line-height: 1.4;
+  color: #ffb4bd;
+  overflow-wrap: anywhere;
+  user-select: text;
+  -webkit-user-select: text;
+}
+html[data-ui='mobile'] .mv-voice .mv-actions {
+  display: flex;
+  gap: 8px;
+}
+html[data-ui='mobile'] .mv-voice .mv-actions .m-btn {
+  flex: 1 1 0;
+}
+html[data-ui='mobile'] .mv-voice .mv-seg {
+  display: flex;
+  gap: 8px;
+}
+html[data-ui='mobile'] .mv-voice .mv-seg-btn {
+  flex: 1 1 0;
+}
+html[data-ui='mobile'] .mv-voice .mv-seg-btn[aria-pressed='true'] {
+  color: var(--m-accent);
+  border-color: var(--m-accent);
+  background: rgba(0, 212, 255, 0.14);
+}
+html[data-ui='mobile'] .mv-voice .mv-note {
+  margin: 0;
+}
+html[data-ui='mobile'] .mv-voice .mv-cost-value {
+  font-size: 26px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--m-text);
+}
+html[data-ui='mobile'] .mv-voice .mv-cost-value[data-level='warn'] {
+  color: #ffdc78;
+}
+html[data-ui='mobile'] .mv-voice .mv-cost-value[data-level='cap'] {
+  color: #ff5c6e;
+}
+html[data-ui='mobile'] .mv-voice .mv-help-list {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}

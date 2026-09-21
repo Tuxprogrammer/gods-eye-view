@@ -1,1 +1,429 @@
 /* mobile-view: everything scoped under html[data-ui='mobile'] */
+
+/* ---------- Page shell: one scroll region (the sheet body) ---------- */
+html[data-ui='mobile'] .mv-page {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 24px;
+}
+html[data-ui='mobile'] .mv-page .m-meta {
+  line-height: 1.4;
+}
+
+/* #pp-toggles keeps its node (listeners, cockpit portal, share state) but its
+   glass shell, header, and collapsed state are neutralised: its groups become
+   direct flex items of the page and are ordered by data-mv-slot. */
+html[data-ui='mobile'] .mv-page #pp-toggles {
+  display: contents;
+}
+html[data-ui='mobile'] .mv-page #pp-toggles > .pp-header-row {
+  display: none;
+}
+html[data-ui='mobile'] .mv-page #pp-toggles.collapsed > .pp-toggle-group,
+html[data-ui='mobile'] .mv-page #pp-toggles > .pp-toggle-group {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: none;
+}
+html[data-ui='mobile'] .mv-page #pp-toggles.collapsed > #clean-view-toggle,
+html[data-ui='mobile'] .mv-page #pp-toggles > #clean-view-toggle {
+  display: flex;
+  width: 100%;
+}
+html[data-ui='mobile'] .mv-page #pp-toggles.collapsed > #param-slider-panel {
+  display: none;
+}
+html[data-ui='mobile']
+  .mv-page
+  #pp-toggles.collapsed
+  > #param-slider-panel.active {
+  display: block;
+}
+
+/* Order: presets, parameters, map, camera, display groups, FPS. */
+html[data-ui='mobile'] .mv-page .mv-h--style {
+  order: 0;
+}
+html[data-ui='mobile'] .mv-page #style-buttons {
+  order: 1;
+}
+html[data-ui='mobile'] .mv-page .mv-style-help {
+  order: 2;
+}
+html[data-ui='mobile'] .mv-page [data-mv-slot='params'] {
+  order: 3;
+}
+html[data-ui='mobile'] .mv-page .map-source-section {
+  order: 10;
+}
+html[data-ui='mobile'] .mv-page .mv-h--camera {
+  order: 20;
+}
+html[data-ui='mobile'] .mv-page .mv-camera {
+  order: 21;
+}
+html[data-ui='mobile'] .mv-page .mv-camera-note {
+  order: 22;
+}
+html[data-ui='mobile'] .mv-page .mv-h--display {
+  order: 30;
+}
+html[data-ui='mobile'] .mv-page [data-mv-slot='hud'] {
+  order: 31;
+}
+html[data-ui='mobile'] .mv-page [data-mv-slot='detect'] {
+  order: 32;
+}
+html[data-ui='mobile'] .mv-page [data-mv-slot='models'] {
+  order: 33;
+}
+html[data-ui='mobile'] .mv-page [data-mv-slot='scope'] {
+  order: 34;
+}
+html[data-ui='mobile'] .mv-page [data-mv-slot='celestial'] {
+  order: 35;
+}
+html[data-ui='mobile'] .mv-page [data-mv-slot='bloom'] {
+  order: 36;
+}
+html[data-ui='mobile'] .mv-page [data-mv-slot='sharpen'] {
+  order: 37;
+}
+html[data-ui='mobile'] .mv-page [data-mv-slot='draw'] {
+  order: 38;
+}
+html[data-ui='mobile'] .mv-page [data-mv-slot='clean'] {
+  order: 39;
+}
+html[data-ui='mobile'] .mv-page [data-mv-slot='clean-hint'] {
+  order: 40;
+}
+html[data-ui='mobile'] .mv-page [data-mv-slot='fps'] {
+  order: 41;
+}
+
+/* Headings */
+html[data-ui='mobile'] .mv-h,
+html[data-ui='mobile'] .mv-page .map-source-heading {
+  margin: 8px 0 0;
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: var(--m-text-dim);
+}
+html[data-ui='mobile'] .mv-h--style {
+  margin-top: 0;
+}
+
+/* ---------- Visual presets: wrapped grid, no horizontal strip ---------- */
+html[data-ui='mobile'] .mv-page #style-buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 8px;
+  overflow: visible;
+}
+html[data-ui='mobile'] .mv-page #style-buttons .style-btn {
+  min-width: 0;
+  min-height: 64px;
+  padding: 8px 4px;
+  flex-shrink: 1;
+  justify-content: center;
+}
+html[data-ui='mobile'] .mv-page #style-buttons .btn-icon {
+  font-size: 22px;
+}
+html[data-ui='mobile'] .mv-page #style-buttons .btn-label {
+  font-size: 12px;
+  letter-spacing: 0.6px;
+}
+html[data-ui='mobile'] .mv-page #style-buttons .btn-key {
+  display: none;
+}
+html[data-ui='mobile'] .mv-style-help {
+  margin: 0;
+  color: var(--m-text-dim);
+}
+html[data-ui='mobile'] .mv-style-help__name {
+  color: var(--m-text);
+  font-weight: 600;
+}
+
+/* ---------- Parameters: no own scroller, big sliders ---------- */
+html[data-ui='mobile'] .mv-page #param-slider-panel {
+  max-height: none;
+  overflow: visible;
+  padding: 10px 12px;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+html[data-ui='mobile'] .mv-page #param-slider-panel #param-panel-collapse-btn,
+html[data-ui='mobile'] .mv-page #param-slider-panel .param-panel-divider {
+  display: none;
+}
+html[data-ui='mobile'] .mv-page #param-slider-panel .param-panel-title {
+  font-size: 12px;
+  letter-spacing: 1.6px;
+}
+html[data-ui='mobile'] .mv-page #param-slider-panel.collapsed #param-sliders {
+  display: block !important;
+}
+html[data-ui='mobile'] .mv-page .param-slider-row {
+  gap: 8px;
+  margin-bottom: 2px;
+}
+html[data-ui='mobile'] .mv-page .param-label {
+  min-width: 84px;
+  max-width: 34%;
+  font-size: 12px;
+  letter-spacing: 0.4px;
+}
+html[data-ui='mobile'] .mv-page .param-value {
+  min-width: 44px;
+  font-size: 12px;
+}
+
+/* ---------- Map source ---------- */
+html[data-ui='mobile'] .mv-page .map-source-section {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+  gap: 8px;
+}
+html[data-ui='mobile'] .mv-page .map-source-heading {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 1.6px;
+}
+html[data-ui='mobile'] .mv-page .pp-stack-status {
+  max-width: 96px;
+  font-size: 12px;
+}
+html[data-ui='mobile'] .mv-page .map-stack-chip-row {
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 8px;
+}
+html[data-ui='mobile'] .mv-page .map-stack-chip {
+  min-height: var(--m-tap);
+  padding: 6px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.2;
+}
+html[data-ui='mobile'] .mv-page .map-stack-chip-req {
+  font-size: 10px;
+}
+html[data-ui='mobile'] .mv-map-note {
+  margin: 0;
+  white-space: pre-line;
+  color: #ffd166;
+}
+
+/* ---------- Camera section ---------- */
+html[data-ui='mobile'] .mv-camera {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+html[data-ui='mobile'] .mv-cam-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  font-size: 14px;
+}
+html[data-ui='mobile'] .mv-cam-btn__icon {
+  font-size: 18px;
+  line-height: 1;
+}
+html[data-ui='mobile'] .mv-cam-btn[aria-pressed='true'] {
+  border-color: var(--m-accent);
+  color: var(--m-accent);
+  background: rgba(0, 212, 255, 0.12);
+}
+html[data-ui='mobile'] .mv-camera-note {
+  margin: 0;
+}
+
+/* ---------- Display groups: 48px toggles, 44px sliders/segments ---------- */
+html[data-ui='mobile'] .mv-page .pp-toggle-btn {
+  min-height: 48px;
+  padding: 8px 14px;
+  gap: 10px;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+html[data-ui='mobile'] .mv-page .pp-icon {
+  font-size: 18px;
+  width: 22px;
+  text-align: center;
+}
+html[data-ui='mobile'] .mv-page .pp-icon.material-symbols-outlined {
+  width: 22px;
+  font-size: 20px;
+}
+html[data-ui='mobile'] .mv-page .pp-label {
+  font-size: 13px;
+  letter-spacing: 1.2px;
+}
+html[data-ui='mobile'] .mv-page .pp-slider-row {
+  gap: 10px;
+  min-width: 0;
+  padding: 4px 12px 6px;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+html[data-ui='mobile'] .mv-page .pp-slider-mini-label {
+  min-width: 68px;
+  font-size: 12px;
+  letter-spacing: 0.6px;
+}
+html[data-ui='mobile'] .mv-page .pp-slider {
+  min-width: 0;
+}
+html[data-ui='mobile'] .mv-page .pp-slider-value {
+  min-width: 44px;
+  font-size: 12px;
+}
+html[data-ui='mobile'] .mv-page .pp-select {
+  height: var(--m-tap);
+  padding: 0 10px;
+  font-size: 16px;
+  border-radius: 10px;
+}
+html[data-ui='mobile'] .mv-page .pp-text-input {
+  height: var(--m-tap);
+  padding: 0 10px;
+  font-size: 16px;
+  border-radius: 10px;
+}
+html[data-ui='mobile'] .mv-page .pp-mode-seg {
+  border-radius: 10px;
+}
+html[data-ui='mobile'] .mv-page .pp-mode-btn,
+html[data-ui='mobile'] .mv-page .detection-allocation-seg .pp-mode-btn {
+  height: var(--m-tap);
+  min-width: var(--m-tap);
+  font-size: 12px;
+  letter-spacing: 0.4px;
+}
+html[data-ui='mobile'] .mv-page .draw-clear-btn {
+  padding: 0 14px;
+  border-radius: 10px;
+}
+html[data-ui='mobile'] .mv-page .draw-color-select {
+  flex: 0 0 116px;
+}
+html[data-ui='mobile'] .mv-page .draw-hint {
+  font-size: 12px;
+  letter-spacing: 0.2px;
+}
+html[data-ui='mobile'] .mv-page #hud-layout-row,
+html[data-ui='mobile'] .mv-page #models3d-mode-row,
+html[data-ui='mobile'] .mv-page #draw-mode-row {
+  min-width: 0;
+}
+html[data-ui='mobile'] .mv-clean-hint {
+  margin: -4px 0 0;
+}
+
+/* ---------- FPS switch ---------- */
+html[data-ui='mobile'] .mv-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 52px;
+  text-align: left;
+}
+html[data-ui='mobile'] .mv-switch__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+html[data-ui='mobile'] .mv-switch__state {
+  flex: 0 0 auto;
+  min-width: 54px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  text-align: center;
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--m-text-dim);
+}
+html[data-ui='mobile'] .mv-switch[aria-checked='true'] .mv-switch__state {
+  background: var(--m-accent);
+  color: #001318;
+}
+
+/* ---------- On-map controls (always visible, small round buttons) ---------- */
+html[data-ui='mobile'] #mobile-top-right .material-symbols-outlined {
+  font-size: 18px;
+}
+html[data-ui='mobile'] #mobile-top-right #tilt-map-view[aria-pressed='true'],
+html[data-ui='mobile'] #mobile-top-right .mv-orbit-btn[aria-pressed='true'] {
+  border-color: var(--m-accent);
+  color: var(--m-accent);
+  box-shadow: 0 0 12px rgba(0, 212, 255, 0.25);
+}
+html[data-ui='mobile'] .mv-orbit-btn__glyph {
+  font-size: 19px;
+  line-height: 1;
+}
+html[data-ui='mobile'] body.cockpit-mode #mobile-orbit-btn,
+html[data-ui='mobile'] body.scene-playback-mode #mobile-orbit-btn {
+  display: none !important;
+}
+
+/* FPS readout, adopted out of the hidden title bar. */
+html[data-ui='mobile'] .frame-rate-readout.mv-fps-readout {
+  position: fixed;
+  top: calc(var(--m-safe-t) + 58px);
+  left: calc(var(--m-safe-l) + 14px);
+  z-index: var(--m-z-chrome);
+  margin: 0;
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  color: var(--m-accent);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95);
+  pointer-events: none;
+}
+
+/* ---------- Clean view: hide every control, keep a transient exit ---------- */
+html[data-ui='mobile'] body.ui-clean-view #mobile-menu-btn,
+html[data-ui='mobile'] body.ui-clean-view #mobile-top-right,
+html[data-ui='mobile'] body.ui-clean-view #mobile-status,
+html[data-ui='mobile'] body.ui-clean-view #mobile-sheet,
+html[data-ui='mobile'] body.ui-clean-view #mobile-sheet-backdrop,
+html[data-ui='mobile'] body.recording-mode #mobile-menu-btn,
+html[data-ui='mobile'] body.recording-mode #mobile-top-right,
+html[data-ui='mobile'] body.recording-mode #mobile-status,
+html[data-ui='mobile'] body.recording-mode #mobile-sheet,
+html[data-ui='mobile'] body.recording-mode #mobile-sheet-backdrop {
+  display: none !important;
+}
+html[data-ui='mobile'] #clean-view-exit {
+  top: calc(var(--m-safe-t) + 10px);
+  right: calc(var(--m-safe-r) + 10px);
+  transform: none;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--m-tap);
+  padding: 0 18px;
+  font-size: 12px;
+  letter-spacing: 1.2px;
+  opacity: 0.6;
+  touch-action: manipulation;
+}
+html[data-ui='mobile'] #clean-view-exit:active,
+html[data-ui='mobile'] #clean-view-exit:focus-visible {
+  opacity: 1;
+}

@@ -1,1 +1,50 @@
 /* mobile-more: everything scoped under html[data-ui='mobile'] */
+html[data-ui='mobile'] .mobile-more__group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+html[data-ui='mobile'] .mobile-more__heading {
+  margin: 4px 0 0;
+  font-size: var(--m-font-meta);
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--m-text-dim);
+}
+html[data-ui='mobile'] .mobile-more__brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--m-tap);
+}
+html[data-ui='mobile'] .mobile-more__logo {
+  width: 20px;
+  height: 20px;
+}
+html[data-ui='mobile'] .mobile-more__name {
+  font-family: var(--font-mono, monospace);
+  font-weight: 600;
+}
+html[data-ui='mobile'] .mobile-more__action {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  text-align: left;
+}
+html[data-ui='mobile'] .mobile-more__toggle {
+  justify-content: space-between;
+}
+html[data-ui='mobile'] .mobile-more__toggle-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+html[data-ui='mobile'] .mobile-more__toggle input[type='checkbox'] {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+}

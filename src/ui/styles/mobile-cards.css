@@ -1,1 +1,731 @@
-/* mobile-cards: everything scoped under html[data-ui='mobile'] */
+/* mobile-cards: everything scoped under html[data-ui='mobile'].
+   Owner: P-Cards. Entity cards, Bhote Koshi, draw toolbar, selection chip,
+   Meshtastic server list, scene floating overlays.
+
+   Vertical zones (bottom up): 0-26px attribution + pack credits row; the
+   bottom-right mic FAB; --m-card-bottom (72px + safe area) is where every
+   card sheet, the draw toolbar and the selection chip sit, so they clear both.
+   Top 64px is menu/status/compass. */
+
+html[data-ui='mobile'] {
+  --m-card-bottom: calc(var(--m-safe-b, 0px) + 72px);
+  --m-card-side: 8px;
+}
+
+/* Elements injected by cards.js exist only in mobile mode. */
+html:not([data-ui='mobile']) :is(
+    .m-card-nav,
+    .m-callout-close,
+    .m-bhote-tabs,
+    .m-form-bar,
+    #mobile-draw-toolbar,
+    #mobile-deselect,
+    #mobile-card-confirm
+  ) {
+  display: none !important;
+}
+
+/* ------------------------------------------------ APRS / Meshtastic / propagation */
+/* Hover previews cannot exist on touch: only a tapped (pinned) card shows. */
+html[data-ui='mobile']
+  :is(.aprs-card, .propagation-station-card):not(.pinned) {
+  display: none !important;
+}
+
+html[data-ui='mobile']
+  :is(.aprs-card, .propagation-station-card).pinned:not([hidden]) {
+  position: fixed !important;
+  left: calc(var(--m-safe-l, 0px) + var(--m-card-side)) !important;
+  right: calc(var(--m-safe-r, 0px) + var(--m-card-side)) !important;
+  top: auto !important;
+  bottom: var(--m-card-bottom) !important;
+  z-index: 140 !important;
+  box-sizing: border-box;
+  width: auto;
+  min-width: 0;
+  max-width: 560px;
+  max-height: 45dvh;
+  margin: 0 auto;
+  padding: 0 14px 12px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  font-size: 13px;
+  line-height: 1.5;
+  background: var(--m-bg);
+  border-radius: var(--m-radius);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.5);
+}
+
+html[data-ui='mobile'] :is(.aprs-card, .propagation-station-card).pinned::before {
+  content: '';
+  display: block;
+  width: 36px;
+  height: 4px;
+  margin: 8px auto 0;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+html[data-ui='mobile']
+  :is(.aprs-card-head, .propagation-station-card-head) {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  min-height: var(--m-tap);
+  gap: 6px;
+  margin-bottom: 4px;
+  padding: 4px 0;
+  background: var(--m-bg);
+}
+html[data-ui='mobile'] .aprs-card-glyph {
+  font-size: 18px;
+}
+html[data-ui='mobile']
+  :is(.aprs-card-title, .propagation-station-card-title) {
+  overflow: hidden;
+  font-size: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+html[data-ui='mobile'] .aprs-card-stack {
+  font-size: 13px;
+  color: var(--m-text-dim);
+}
+
+html[data-ui='mobile']
+  :is(.aprs-card, .propagation-station-card).pinned
+  :is(.aprs-card-close, .propagation-station-card-close) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--m-tap);
+  min-height: var(--m-tap);
+  padding: 0;
+  font-size: 26px;
+}
+
+html[data-ui='mobile'] .m-card-nav {
+  flex: none;
+  min-width: var(--m-tap);
+  min-height: var(--m-tap);
+  padding: 0;
+  font-size: 26px;
+  line-height: 1;
+  color: var(--m-accent);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--m-line);
+  border-radius: 10px;
+}
+/* Prev/Next only while a stack counter is showing. */
+html[data-ui='mobile']
+  .aprs-card-head:has(.aprs-card-stack[hidden])
+  .m-card-nav {
+  display: none;
+}
+
+html[data-ui='mobile'] .aprs-card-charts {
+  gap: 8px 14px;
+}
+html[data-ui='mobile'] :is(.aprs-chart-label, .aprs-chart-range) {
+  font-size: 11px;
+}
+html[data-ui='mobile'] .aprs-chart svg {
+  height: 34px;
+}
+html[data-ui='mobile'] .aprs-card-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+html[data-ui='mobile'] .aprs-card-actions[hidden] {
+  display: none;
+}
+html[data-ui='mobile'] .aprs-card-action {
+  min-height: var(--m-tap);
+  padding: 0 6px;
+  font-size: 12px;
+  border-radius: 10px;
+}
+
+html[data-ui='mobile'] .propagation-station-card-table th,
+html[data-ui='mobile'] .propagation-station-card-table td {
+  padding: 4px 0;
+  font-size: 13px;
+}
+
+/* Message bubbles: bigger text, only the newest three on screen. */
+html[data-ui='mobile'] .aprs-popup {
+  max-width: min(240px, 70vw);
+  font-size: 12px;
+}
+html[data-ui='mobile'] .aprs-popup-from {
+  font-size: 11px;
+}
+html[data-ui='mobile'] .aprs-popups > .aprs-popup:nth-last-child(n + 4) {
+  display: none;
+}
+
+/* ------------------------------------------------- Meshtastic server list */
+html[data-ui='mobile'] .data-servers-heading {
+  font-size: 12px;
+  letter-spacing: 0.6px;
+}
+html[data-ui='mobile'] .data-server-list {
+  gap: 8px;
+}
+html[data-ui='mobile'] .data-server {
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 10px;
+}
+html[data-ui='mobile'] .data-server-remove {
+  width: var(--m-tap);
+  height: var(--m-tap);
+  font-size: 16px;
+  border-color: var(--m-line);
+  border-radius: 10px;
+}
+html[data-ui='mobile'] .data-server-name {
+  font-size: 14px;
+}
+html[data-ui='mobile'] .data-server-status {
+  font-size: 12px;
+}
+html[data-ui='mobile'] .data-server-topic {
+  min-height: var(--m-tap);
+  padding: 8px;
+  font-size: 16px;
+  border-radius: 8px;
+}
+html[data-ui='mobile'] .data-server-toggle {
+  min-width: 60px;
+  min-height: var(--m-tap);
+  font-size: 13px;
+  border-radius: 10px;
+}
+html[data-ui='mobile'] .data-server-add summary {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  font-size: 13px;
+}
+html[data-ui='mobile'] .data-server-error {
+  font-size: 13px;
+}
+/* The add form opens as a one-column, full-sheet form (the sheet is the
+   containing block for fixed descendants). */
+html[data-ui='mobile'] .data-server-add[open] .data-server-form {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  grid-template-columns: 1fr;
+  align-content: start;
+  gap: 14px;
+  margin: 0;
+  padding: 12px 16px calc(24px + var(--m-safe-b, 0px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--m-bg);
+}
+html[data-ui='mobile'] .m-form-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--m-text);
+  font-size: 16px;
+}
+html[data-ui='mobile'] .data-server-field {
+  gap: 4px;
+  font-size: 12px;
+  letter-spacing: 0.6px;
+}
+html[data-ui='mobile'] .data-server-field:nth-of-type(n) {
+  grid-column: 1 / -1;
+}
+html[data-ui='mobile'] .data-server-field input:not([type='checkbox']) {
+  min-height: var(--m-tap);
+  padding: 8px 10px;
+  font-size: 16px;
+  border-radius: 8px;
+}
+html[data-ui='mobile'] .data-server-check {
+  min-height: var(--m-tap);
+  font-size: 14px;
+}
+html[data-ui='mobile'] .data-server-check input {
+  width: 24px;
+  height: 24px;
+}
+html[data-ui='mobile'] .data-server-add-submit {
+  min-height: 48px;
+  font-size: 15px;
+  border-radius: 10px;
+}
+
+/* Delete-server confirmation. */
+html[data-ui='mobile'] .m-confirm {
+  position: fixed;
+  left: calc(var(--m-safe-l, 0px) + 12px);
+  right: calc(var(--m-safe-r, 0px) + 12px);
+  bottom: calc(var(--m-safe-b, 0px) + 16px);
+  z-index: 190;
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 16px;
+  color: var(--m-text);
+  background: var(--m-bg);
+  border: 1px solid var(--m-line);
+  border-radius: var(--m-radius);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+}
+html[data-ui='mobile'] .m-confirm__text {
+  margin: 0 0 14px;
+  font-size: var(--m-font);
+  overflow-wrap: anywhere;
+}
+html[data-ui='mobile'] .m-confirm__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+html[data-ui='mobile'] .m-confirm__danger {
+  color: #fff;
+  background: #b3261e;
+  border-color: #b3261e;
+}
+
+/* ------------------------------------------------------------ Bhote Koshi */
+/* The event panel is mounted in the (hidden) right rail. While the event is
+   active the rail stops generating a box, so the panel's own fixed
+   positioning applies; its other children stay hidden by the desktop rule. */
+html[data-ui='mobile'] #right-context-rail.bhote-event-active {
+  display: contents !important;
+}
+
+html[data-ui='mobile'] #bhote-koshi-event-panel {
+  position: fixed;
+  left: calc(var(--m-safe-l, 0px) + var(--m-card-side));
+  right: calc(var(--m-safe-r, 0px) + var(--m-card-side));
+  top: auto;
+  bottom: var(--m-card-bottom);
+  z-index: 142;
+  box-sizing: border-box;
+  width: auto;
+  max-width: 560px;
+  max-height: min(44dvh, calc(100dvh - var(--m-safe-t, 0px) - 220px));
+  margin: 0 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: var(--m-radius);
+  background: var(--m-bg);
+}
+
+html[data-ui='mobile'] #bhote-koshi-event-panel .bhote-event-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 10px 12px 8px;
+  background: var(--m-bg);
+}
+html[data-ui='mobile'] #bhote-koshi-event-panel .bhote-event-title {
+  margin-top: 2px;
+  font-size: 15px;
+}
+html[data-ui='mobile'] #bhote-koshi-event-panel .bhote-event-icon-btn {
+  flex: 0 0 var(--m-tap);
+  width: var(--m-tap);
+  height: var(--m-tap);
+  font-size: 24px;
+  border-radius: 10px;
+}
+html[data-ui='mobile'] #bhote-koshi-event-panel :is(
+    .bhote-event-kicker,
+    .bhote-event-section-head,
+    .bhote-event-status,
+    .bhote-event-evidence summary,
+    .bhote-event-report small
+  ) {
+  font-size: 11px;
+}
+html[data-ui='mobile'] #bhote-koshi-event-panel .bhote-event-status-row {
+  flex-wrap: wrap;
+  padding: 8px 12px 0;
+}
+html[data-ui='mobile'] #bhote-koshi-event-panel .bhote-event-section {
+  padding: 10px 12px 12px;
+}
+html[data-ui='mobile'] #bhote-koshi-event-panel .bhote-event-dates {
+  font-size: 11px;
+}
+
+.m-bhote-tabs {
+  display: none;
+}
+html[data-ui='mobile'] .m-bhote-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 8px 12px 0;
+}
+html[data-ui='mobile'] .m-bhote-tab {
+  flex: 1;
+  min-height: var(--m-tap);
+  font: inherit;
+  font-size: 13px;
+  color: var(--m-text-dim);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--m-line);
+  border-radius: 10px;
+}
+html[data-ui='mobile'] .m-bhote-tab[aria-selected='true'] {
+  color: var(--m-accent);
+  border-color: var(--m-accent);
+  background: rgba(0, 212, 255, 0.1);
+}
+
+/* One tab at a time (the tab bar is injected only in mobile mode). */
+html[data-ui='mobile']
+  #bhote-koshi-event-panel[data-m-tab='compare']
+  :is(
+    .bhote-event-section:not([data-role='imagery-comparison']),
+    .bhote-event-evidence,
+    .bhote-event-credit,
+    .bhote-event-caveat
+  ),
+html[data-ui='mobile']
+  #bhote-koshi-event-panel[data-m-tab='timeline']
+  :is(
+    [data-role='imagery-comparison'],
+    .bhote-event-evidence,
+    .bhote-event-credit,
+    .bhote-event-caveat
+  ),
+html[data-ui='mobile']
+  #bhote-koshi-event-panel[data-m-tab='reports']
+  .bhote-event-section {
+  display: none;
+}
+
+html[data-ui='mobile'] #bhote-koshi-event-panel .bhote-event-story-nav {
+  grid-template-columns: var(--m-tap) minmax(0, 1fr) var(--m-tap);
+}
+html[data-ui='mobile'] #bhote-koshi-event-panel .bhote-event-story-nav > button {
+  width: var(--m-tap);
+  min-height: var(--m-tap);
+  border-radius: 10px;
+}
+html[data-ui='mobile'] #bhote-koshi-event-panel .bhote-event-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+html[data-ui='mobile'] #bhote-koshi-event-panel .bhote-event-actions button {
+  min-height: var(--m-tap);
+  padding: 0 8px;
+  font-size: 12px;
+  border-radius: 10px;
+  white-space: normal;
+}
+html[data-ui='mobile'] #bhote-koshi-event-panel .bhote-event-report {
+  min-height: var(--m-tap);
+  font-size: 12px;
+}
+html[data-ui='mobile'] #bhote-koshi-event-panel .bhote-event-credit {
+  flex-wrap: wrap;
+  margin: 10px 12px 0;
+  font-size: 11px;
+}
+html[data-ui='mobile'] #bhote-koshi-event-panel .bhote-event-credit button {
+  min-height: var(--m-tap);
+  padding: 0 12px;
+  font-size: 12px;
+}
+html[data-ui='mobile'] #bhote-koshi-event-panel .bhote-event-caveat {
+  margin: 10px 12px 12px;
+  font-size: 11px;
+}
+
+/* Before/after split: bigger handle, lifted clear of the bottom sheet. */
+html[data-ui='mobile']
+  #bhote-koshi-split-line
+  .bhote-koshi-split-handle {
+  top: 44%;
+  width: var(--m-tap);
+  height: var(--m-tap);
+}
+
+/* Embedded media: a card under the top chrome, no leader line. */
+html[data-ui='mobile'] .bhote-embedded-callout {
+  position: fixed !important;
+  left: calc(var(--m-safe-l, 0px) + var(--m-card-side)) !important;
+  right: calc(var(--m-safe-r, 0px) + var(--m-card-side)) !important;
+  top: calc(var(--m-safe-t, 0px) + 64px) !important;
+  bottom: auto !important;
+  width: auto !important;
+  max-width: 420px;
+  max-height: 40dvh;
+  margin: 0 auto;
+}
+html[data-ui='mobile'] .bhote-embedded-callout.is-portrait {
+  max-width: 210px;
+}
+html[data-ui='mobile'] .bhote-embedded-callout-leader {
+  display: none;
+}
+html[data-ui='mobile'] .bhote-embedded-callout-player {
+  height: auto;
+  max-height: 30dvh;
+}
+html[data-ui='mobile'] .bhote-embedded-callout.is-portrait .bhote-embedded-callout-player {
+  max-height: 34dvh;
+}
+html[data-ui='mobile'] .bhote-embedded-callout footer strong {
+  font-size: 13px;
+}
+html[data-ui='mobile'] .bhote-embedded-callout footer small {
+  font-size: 11px;
+}
+html[data-ui='mobile'] .bhote-embedded-callout footer a {
+  padding: 12px 4px;
+  font-size: 12px;
+}
+html[data-ui='mobile'] .bhote-embedded-callout[data-m-dismissed] {
+  display: none !important;
+}
+html[data-ui='mobile'] .m-callout-close {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 3;
+  width: var(--m-tap);
+  height: var(--m-tap);
+  padding: 0;
+  font-size: 18px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 50%;
+}
+html[data-ui='mobile'] .bhote-embedded-callout-body {
+  pointer-events: auto;
+}
+
+/* ----------------------------------------------------------- Draw toolbar */
+html[data-ui='mobile'] #mobile-draw-toolbar {
+  position: fixed;
+  left: calc(var(--m-safe-l, 0px) + var(--m-card-side));
+  right: calc(var(--m-safe-r, 0px) + var(--m-card-side));
+  bottom: var(--m-card-bottom);
+  z-index: 150;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 10px;
+  color: var(--m-text);
+  background: var(--m-bg);
+  border: 1px solid var(--m-line);
+  border-radius: var(--m-radius);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.5);
+}
+html[data-ui='mobile'] #mobile-draw-toolbar[hidden] {
+  display: none !important;
+}
+html[data-ui='mobile'] .m-draw__hint {
+  min-height: 1.4em;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--m-text);
+}
+html[data-ui='mobile'] .m-draw__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+html[data-ui='mobile'] .m-draw__seg {
+  display: flex;
+  flex: none;
+}
+html[data-ui='mobile'] .m-draw__shape {
+  min-width: 52px;
+  min-height: var(--m-tap);
+  padding: 0 8px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--m-text-dim);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--m-line);
+}
+html[data-ui='mobile'] .m-draw__shape:first-child {
+  border-radius: 10px 0 0 10px;
+}
+html[data-ui='mobile'] .m-draw__shape:last-child {
+  border-radius: 0 10px 10px 0;
+}
+html[data-ui='mobile'] .m-draw__shape[aria-checked='true'] {
+  color: var(--m-accent);
+  border-color: var(--m-accent);
+  background: rgba(0, 212, 255, 0.12);
+}
+html[data-ui='mobile'] .m-draw__label {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--m-tap);
+  box-sizing: border-box;
+  padding: 0 10px;
+  font-size: 16px;
+  color: var(--m-text);
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--m-line);
+  border-radius: 10px;
+}
+html[data-ui='mobile'] .m-draw__colour {
+  flex: none;
+  width: var(--m-tap);
+  height: var(--m-tap);
+  padding: 0;
+  font-size: 22px;
+  color: #8be9ff;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--m-line);
+  border-radius: 50%;
+}
+html[data-ui='mobile'] .m-draw__colour[data-colour='amber'] {
+  color: #ffb547;
+}
+html[data-ui='mobile'] .m-draw__colour[data-colour='cyan'] {
+  color: #39d0ff;
+}
+html[data-ui='mobile'] .m-draw__colour[data-colour='green'] {
+  color: #5dff9f;
+}
+html[data-ui='mobile'] .m-draw__colour[data-colour='red'] {
+  color: #ff6b6b;
+}
+html[data-ui='mobile'] .m-draw__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.6fr var(--m-tap);
+  gap: 8px;
+}
+html[data-ui='mobile'] .m-draw__actions .m-btn {
+  min-width: 0;
+  padding: 0 8px;
+  font-size: 14px;
+}
+html[data-ui='mobile'] .m-draw__actions .m-btn:disabled {
+  opacity: 0.4;
+}
+html[data-ui='mobile'] .m-draw__finish {
+  color: #04121a;
+  background: var(--m-accent);
+  border-color: var(--m-accent);
+  font-weight: 700;
+}
+html[data-ui='mobile'] .m-draw__finish:disabled {
+  color: var(--m-text-dim);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--m-line);
+}
+
+/* ---------------------------------------------------- Selection chip/sheet */
+html[data-ui='mobile'] #mobile-deselect {
+  position: fixed;
+  left: calc(var(--m-safe-l, 0px) + var(--m-card-side));
+  right: calc(var(--m-safe-r, 0px) + var(--m-card-side));
+  bottom: var(--m-card-bottom);
+  z-index: 139;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 8px 8px 8px 14px;
+  color: var(--m-text);
+  background: var(--m-bg);
+  border: 1px solid var(--m-line);
+  border-radius: var(--m-radius);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.5);
+}
+html[data-ui='mobile'] #mobile-deselect[hidden] {
+  display: none !important;
+}
+html[data-ui='mobile'] .m-select__text {
+  flex: 1;
+  min-width: 0;
+}
+html[data-ui='mobile'] .m-select__title,
+html[data-ui='mobile'] .m-select__detail {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+html[data-ui='mobile'] .m-select__title {
+  font-size: 15px;
+}
+
+/* ----------------------------------- Scene floating overlays (inline-styled) */
+/* Scene actions: a bottom card instead of a 300px box pinned at left:12. */
+html[data-ui='mobile'] [data-director-interactions] {
+  position: fixed !important;
+  left: calc(var(--m-safe-l, 0px) + var(--m-card-side)) !important;
+  right: calc(var(--m-safe-r, 0px) + var(--m-card-side)) !important;
+  bottom: var(--m-card-bottom) !important;
+  z-index: 130 !important;
+  box-sizing: border-box;
+  max-width: 520px !important;
+  max-height: 34dvh !important;
+  margin: 0 auto;
+  padding: 12px !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  font: 14px/1.4 sans-serif !important;
+  border-radius: var(--m-radius);
+}
+html[data-ui='mobile'] [data-director-interactions] button {
+  min-height: var(--m-tap);
+  padding: 10px 14px !important;
+  font-size: 14px !important;
+  border-radius: 10px !important;
+}
+/* Pack credits: a single scrolling row just above the attribution line, clear
+   of the mic FAB. Attribution stays reachable (each card keeps its Source link). */
+html[data-ui='mobile'] [data-director-packs] {
+  position: fixed !important;
+  left: calc(var(--m-safe-l, 0px) + 8px) !important;
+  right: calc(var(--m-safe-r, 0px) + 76px) !important;
+  top: auto !important;
+  bottom: calc(var(--m-safe-b, 0px) + 22px) !important;
+  z-index: 120 !important;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 6px;
+  max-height: none !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  overscroll-behavior: contain;
+}
+html[data-ui='mobile'] [data-director-pack] {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-sizing: border-box;
+  max-width: 80vw !important;
+  margin: 0 !important;
+  padding: 2px 8px !important;
+  overflow: hidden;
+  font: 11px/1.3 sans-serif !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-radius: 8px;
+}
+html[data-ui='mobile'] [data-director-pack] a {
+  display: inline-block;
+  padding: 10px 6px;
+}

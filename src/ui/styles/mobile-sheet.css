@@ -201,3 +201,39 @@ html[data-ui='mobile'] .mobile-page__body {
   flex-direction: column;
   gap: var(--m-gap);
 }
+
+/* Scroll lock and pointer isolation. While the sheet is open the page must not
+   scroll or rubber-band, and gestures on the sheet never reach the map: the
+   sheet and the (non-peek) backdrop sit above the Cesium canvas, so they take
+   the pointer events. Peek mode drops the backdrop, letting map gestures
+   through everywhere outside the sheet itself. */
+html[data-ui='mobile'][data-mobile-sheet='open'],
+html[data-ui='mobile'][data-mobile-sheet='open'] body {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+html[data-ui='mobile'] #mobile-sheet,
+html[data-ui='mobile'] #mobile-sheet-backdrop {
+  touch-action: none;
+  overscroll-behavior: contain;
+}
+html[data-ui='mobile'] .mobile-sheet__body {
+  touch-action: pan-y;
+}
+html[data-ui='mobile'] .mobile-sheet__body :is(button, input, select, label) {
+  touch-action: manipulation;
+}
+/* Sliders own horizontal drags. */
+html[data-ui='mobile'] .mobile-sheet__body input[type='range'] {
+  touch-action: pan-y pinch-zoom;
+}
+
+/* Browsers without dynamic viewport units. */
+@supports not (height: 1dvh) {
+  html[data-ui='mobile'] #mobile-sheet {
+    height: min(92vh, calc(100vh - var(--m-safe-t) - 8px));
+  }
+  html[data-ui='mobile'] #mobile-sheet[data-peek='true'] {
+    height: min(30vh, 260px);
+  }
+}

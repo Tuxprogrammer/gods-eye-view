@@ -1,1 +1,283 @@
 /* mobile-scenes: everything scoped under html[data-ui='mobile'] */
+
+/* The desktop panel is moved into the Scenes page. Neutralise the floating and
+   collapsed behaviour; the sheet page is the ONE scroll region. `.collapsed`
+   stays on the node (share state reads it) and is overridden here. */
+html[data-ui='mobile'] #mobile-sheet #scene-panel,
+html[data-ui='mobile'] #mobile-sheet #scene-panel.collapsed {
+  position: static;
+  top: auto;
+  right: auto;
+  bottom: auto;
+  left: auto;
+  width: 100%;
+  max-width: none;
+  max-height: none;
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition: none;
+  pointer-events: auto;
+}
+html[data-ui='mobile'] #mobile-sheet #scene-panel .panel-glow,
+html[data-ui='mobile'] #mobile-sheet #scene-panel .panel-header {
+  display: none !important;
+}
+html[data-ui='mobile'] #mobile-sheet #scene-panel .scene-panel-inner {
+  max-height: none;
+  height: auto;
+  padding: 0;
+  overflow: visible;
+  background: none;
+  border: 0;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+html[data-ui='mobile'] #mobile-sheet #scene-panel.collapsed .scene-controls {
+  display: flex !important;
+}
+html[data-ui='mobile'] #mobile-sheet #scene-panel.collapsed .scene-shot-list {
+  display: flex !important;
+}
+html[data-ui='mobile'] #mobile-sheet #scene-panel.collapsed .scene-progress,
+html[data-ui='mobile'] #mobile-sheet #scene-panel.collapsed #scene-status {
+  display: block !important;
+}
+
+/* Share row */
+html[data-ui='mobile'] .m-scenes__share {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: auto;
+  margin-bottom: var(--m-gap);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+/* Controls: full-width select, 44px buttons that wrap. */
+html[data-ui='mobile'] #scene-panel .scene-controls {
+  gap: 8px;
+  margin-bottom: var(--m-gap);
+}
+html[data-ui='mobile'] #scene-panel #scene-select {
+  flex: 1 1 100%;
+  min-height: var(--m-tap);
+  padding: 0 10px;
+  border-radius: 10px;
+  font-size: 16px;
+}
+html[data-ui='mobile'] #scene-panel .scene-btn {
+  min-height: var(--m-tap);
+  min-width: 88px;
+  padding: 0 12px;
+  border-radius: 10px;
+  font-size: 12px;
+  letter-spacing: 0.8px;
+}
+html[data-ui='mobile'] #scene-panel #scene-start-btn,
+html[data-ui='mobile'] #scene-panel #scene-stop-btn,
+html[data-ui='mobile'] #scene-panel #scene-next-btn {
+  min-width: 0;
+}
+
+/* Shot list: no inner scroller, rows as cards with a wrapped action row. */
+html[data-ui='mobile'] #scene-panel .scene-shot-list {
+  max-height: none;
+  min-height: 0;
+  overflow: visible;
+  padding: 0;
+  margin-bottom: var(--m-gap);
+  gap: 8px;
+}
+html[data-ui='mobile'] #scene-panel .scene-shot-empty {
+  padding: 16px 10px;
+  font-size: var(--m-font-meta);
+  letter-spacing: 0.4px;
+  line-height: 1.4;
+}
+html[data-ui='mobile'] #scene-panel .scene-shot-row {
+  padding: 10px;
+  border-radius: 12px;
+}
+html[data-ui='mobile'] #scene-panel .scene-shot-top {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+html[data-ui='mobile'] #scene-panel .scene-shot-label {
+  flex: 1 0 100%;
+  display: flex;
+  align-items: center;
+  min-height: var(--m-tap);
+  font-size: var(--m-font);
+  letter-spacing: 0.4px;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+html[data-ui='mobile'] #scene-panel .scene-shot-rename {
+  min-height: var(--m-tap);
+  padding: 0 10px;
+  border-radius: 10px;
+  font-size: 16px;
+  user-select: text;
+  -webkit-user-select: text;
+}
+html[data-ui='mobile'] #scene-panel .scene-shot-actions {
+  flex: 1 0 100%;
+  gap: 8px;
+}
+html[data-ui='mobile'] #scene-panel .scene-shot-btn {
+  flex: 1 1 0;
+  min-height: var(--m-tap);
+  padding: 0 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  letter-spacing: 0.6px;
+}
+html[data-ui='mobile'] #scene-panel .scene-shot-meta {
+  margin-top: 6px;
+  font-size: var(--m-font-meta);
+  letter-spacing: 0.3px;
+}
+
+html[data-ui='mobile'] #scene-panel .scene-progress {
+  height: 22px;
+}
+html[data-ui='mobile'] #scene-panel #scene-progress-fill {
+  font-size: 11px;
+  min-width: 2.6em;
+}
+html[data-ui='mobile'] #scene-panel #scene-status {
+  font-size: var(--m-font-meta);
+  letter-spacing: 0.4px;
+  overflow-wrap: anywhere;
+}
+
+/* Inline confirm / prompt (replaces window.prompt / window.confirm). Sticks to
+   the top of the scrolling page so it is visible wherever it was triggered. */
+html[data-ui='mobile'] .m-dialog {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: var(--m-gap);
+  padding: 12px;
+  border: 1px solid var(--m-accent);
+  border-radius: var(--m-radius);
+  background: var(--m-bg);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+}
+html[data-ui='mobile'] .m-dialog__message {
+  margin: 0;
+  font-size: var(--m-font);
+  overflow-wrap: anywhere;
+}
+html[data-ui='mobile'] .m-dialog__input {
+  min-height: var(--m-tap);
+  box-sizing: border-box;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--m-line);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--m-text);
+  font-size: 16px;
+}
+html[data-ui='mobile'] .m-dialog__actions {
+  display: flex;
+  gap: 8px;
+}
+html[data-ui='mobile'] .m-dialog__actions .m-btn {
+  flex: 1 1 0;
+}
+html[data-ui='mobile'] .m-dialog__ok {
+  border-color: var(--m-accent);
+  color: var(--m-accent);
+}
+html[data-ui='mobile'] .m-dialog__ok--danger {
+  border-color: #ff7272;
+  color: #ff8585;
+}
+
+/* Playback bar: stays on the map while a scene runs. Left of the top-right
+   button column and below the menu button / status line row. */
+html[data-ui='mobile'] #mobile-scene-bar {
+  position: fixed;
+  z-index: var(--m-z-chrome);
+  top: calc(var(--m-safe-t) + 64px);
+  left: calc(var(--m-safe-l) + 12px);
+  right: calc(var(--m-safe-r) + 60px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 6px 6px 12px;
+  border: 1px solid var(--m-line);
+  border-radius: 999px;
+  background: var(--m-bg);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+  color: var(--m-text);
+}
+html[data-ui='mobile'] #mobile-scene-bar[hidden] {
+  display: none;
+}
+html[data-ui='mobile'] .m-scene-bar__main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+html[data-ui='mobile'] .m-scene-bar__text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-family: var(--font-mono, monospace);
+}
+html[data-ui='mobile'] .m-scene-bar__track {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--m-line);
+  overflow: hidden;
+}
+html[data-ui='mobile'] .m-scene-bar__fill {
+  height: 100%;
+  width: 0;
+  background: var(--m-accent);
+  transition: width 100ms linear;
+}
+html[data-ui='mobile'] .m-scene-bar__stop {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  border-color: #ff7272;
+  color: #ff8585;
+  font-size: 13px;
+}
+/* The runtime pill moves into the bar; drop its floating chrome there. */
+html[data-ui='mobile'] #mobile-scene-bar #scene-runtime {
+  position: static;
+  top: auto;
+  left: auto;
+  transform: none;
+  opacity: 1;
+  visibility: visible;
+  max-width: none;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  font-size: 12px;
+  letter-spacing: 0.6px;
+  text-align: left;
+  text-shadow: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+}
