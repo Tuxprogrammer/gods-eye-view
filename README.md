@@ -97,6 +97,10 @@ Every [Meshtastic](https://meshtastic.org/) node whose operator publishes to MQT
 
 <img src="docs/media/fork/meshtastic-ambiguity-ring.png" alt="A hovered Heltec V3 node with its details card, hardware model included, and a ring showing the box its blurred position could be in" width="100%">
 
+With the radius on **Whole Earth**, a live text message pops up beside its sender for a few seconds as it arrives:
+
+<img src="docs/media/fork/meshtastic-message-popup.png" alt="Meshtastic nodes across the United States drawn as their devices, with a message pop-up beside a sender in Georgia reading: !7d076b58 to #LongFast, test" width="100%">
+
 The list of servers and their logins are stored on the server and never sent back to the browser, and any host can be added, so put a shared deployment behind access control. See [DATA_SOURCES.md](DATA_SOURCES.md) and [.env.example](.env.example).
 
 ### 🐳 Container image and CI
