@@ -38,6 +38,8 @@ html[data-ui='mobile'] #mobile-sheet #data-panel .data-panel-inner {
 }
 html[data-ui='mobile'] #mobile-sheet #data-panel.collapsed .data-toggle-list,
 html[data-ui='mobile'] #mobile-sheet #data-panel .data-toggle-list {
+  display: flex !important;
+  flex-direction: column;
   opacity: 1 !important;
   visibility: visible !important;
   pointer-events: auto !important;

@@ -158,3 +158,31 @@ html[data-ui='mobile'] #cesium-credits img {
   max-height: 11px;
   width: auto;
 }
+
+/* Cesium's inner credits box is position:absolute, so it contributes no size to
+   the fixed container; with overflow hidden above the text was clipped away. */
+html[data-ui='mobile'] #cesium-credits .cesium-widget-credits {
+  position: static;
+  display: block;
+  padding: 0;
+  text-align: left;
+}
+
+/* The tactical HUD readouts (classification, timestamp, MGRS, lat/lon, GSD) are
+   informational clutter over a phone-sized viewport; the map gets the space. */
+html[data-ui='mobile'] #intel-hud {
+  display: none !important;
+}
+
+/* The circular "scope" vignette and the full-globe celestial ring turn a wide or
+   short viewport (landscape phone, tablet) into a small porthole. The viewport is
+   the product on a phone, so both are dropped; their toggles are hidden in the
+   View page since they would do nothing visible. */
+html[data-ui='mobile'] #scope-mask,
+html[data-ui='mobile'] .celestial-ring-overlay {
+  display: none !important;
+}
+html[data-ui='mobile'] .pp-toggle-group:has(#scope-toggle),
+html[data-ui='mobile'] .pp-toggle-group:has(#celestial-toggle) {
+  display: none !important;
+}

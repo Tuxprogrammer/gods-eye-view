@@ -129,7 +129,7 @@ html[data-ui='mobile'] #cockpit-vision-current-label {
 
 /* Instruments: flat, above the bottom bar and contact pill. */
 html[data-ui='mobile'] #cockpit-hud .cockpit-compass {
-  bottom: calc(var(--m-safe-b) + 122px);
+  bottom: calc(var(--m-safe-b) + 142px);
   width: min(560px, calc(100vw - 20px));
   transform: translateX(-50%);
   transform-style: flat;
@@ -178,7 +178,7 @@ html[data-ui='mobile'] body.cockpit-mode #view-switcher {
   z-index: 147;
   left: calc(var(--m-safe-l) + 10px);
   right: calc(var(--m-safe-r) + 72px);
-  bottom: calc(var(--m-safe-b) + 10px);
+  bottom: calc(var(--m-safe-b) + 30px);
   display: flex;
   gap: 8px;
   align-items: center;
@@ -232,7 +232,7 @@ html[data-ui='mobile'] #mobile-cockpit-nav {
   position: fixed;
   z-index: 147;
   right: calc(var(--m-safe-r) + 12px);
-  bottom: calc(var(--m-safe-b) + 68px);
+  bottom: calc(var(--m-safe-b) + 88px);
   display: flex;
   align-items: center;
   height: 48px;
@@ -270,7 +270,7 @@ html[data-ui='mobile'] .m-cp-nav__btn .material-symbols-outlined {
 /* Landscape phones: reclaim height. */
 @media (max-height: 480px) {
   html[data-ui='mobile'] #cockpit-hud .cockpit-compass {
-    bottom: calc(var(--m-safe-b) + 66px);
+    bottom: calc(var(--m-safe-b) + 86px);
     width: min(480px, 56vw);
   }
   html[data-ui='mobile']
@@ -285,7 +285,7 @@ html[data-ui='mobile'] .m-cp-nav__btn .material-symbols-outlined {
     top: calc(var(--m-safe-t) + 32px);
   }
   html[data-ui='mobile'] #mobile-cockpit-nav {
-    bottom: calc(var(--m-safe-b) + 76px);
+    bottom: calc(var(--m-safe-b) + 96px);
   }
 }
 
@@ -295,7 +295,7 @@ html[data-ui='mobile'] #mobile-cockpit-drawer {
   z-index: 150;
   left: 0;
   right: 0;
-  bottom: 0;
+  bottom: calc(var(--m-safe-b) + 26px);
   display: none;
   flex-direction: column;
   box-sizing: border-box;

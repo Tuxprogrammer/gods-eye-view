@@ -1,7 +1,7 @@
 /* Bottom sheet: root tile list + full-height pages. See sheet.js. */
 html[data-ui='mobile'] #mobile-sheet-backdrop {
   position: fixed;
-  inset: 0;
+  inset: 0 0 calc(var(--m-safe-b) + 26px) 0;
   z-index: var(--m-z-backdrop);
   background: rgba(0, 0, 0, 0.38);
   opacity: 0;
@@ -23,14 +23,14 @@ html[data-ui='mobile'] #mobile-sheet {
   position: fixed;
   left: 0;
   right: 0;
-  bottom: 0;
+  /* Leave the attribution strip (bottom-left) visible under the sheet. */
+  bottom: calc(var(--m-safe-b) + 26px);
   z-index: var(--m-z-sheet);
   display: flex;
   flex-direction: column;
-  height: min(92dvh, calc(100dvh - var(--m-safe-t) - 8px));
+  height: min(90dvh, calc(100dvh - var(--m-safe-t) - var(--m-safe-b) - 34px));
   max-width: 720px;
   margin: 0 auto;
-  padding-bottom: var(--m-safe-b);
   padding-left: var(--m-safe-l);
   padding-right: var(--m-safe-r);
   box-sizing: border-box;
@@ -235,5 +235,44 @@ html[data-ui='mobile'] .mobile-sheet__body input[type='range'] {
   }
   html[data-ui='mobile'] #mobile-sheet[data-peek='true'] {
     height: min(30vh, 260px);
+  }
+}
+
+/* Landscape (phones on their side, tablets): the sheet becomes a left drawer
+   beside the menu button so the map stays visible next to the open page. */
+@media (orientation: landscape) {
+  html[data-ui='mobile'] #mobile-sheet {
+    top: 0;
+    right: auto;
+    bottom: calc(var(--m-safe-b) + 26px);
+    left: calc(var(--m-safe-l) + 60px);
+    width: min(460px, 58vw);
+    height: auto;
+    max-width: none;
+    margin: 0;
+    padding-top: var(--m-safe-t);
+    padding-left: 0;
+    border: 1px solid var(--m-line);
+    border-top: 0;
+    border-bottom: 0;
+    border-radius: 0 var(--m-radius) var(--m-radius) 0;
+    box-shadow: 8px 0 32px rgba(0, 0, 0, 0.5);
+    transform: translateX(-110%);
+  }
+  html[data-ui='mobile'] #mobile-sheet[data-state='open'] {
+    transform: translateX(0);
+  }
+  html[data-ui='mobile'] #mobile-sheet[data-peek='true'] {
+    height: auto;
+  }
+  html[data-ui='mobile'] .mobile-sheet__handle {
+    display: none;
+  }
+  html[data-ui='mobile'] #mobile-sheet-backdrop[data-open='true'] {
+    background: rgba(0, 0, 0, 0.18);
+  }
+  /* One column of tiles: the drawer is narrow. */
+  html[data-ui='mobile'] .mobile-root {
+    grid-template-columns: 1fr;
   }
 }
