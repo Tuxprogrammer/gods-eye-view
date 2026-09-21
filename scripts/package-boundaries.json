@@ -1140,11 +1140,12 @@
       "src/maps/defaultSources.js",
       "src/maps/google3d.js",
       "src/maps/imagery.js",
+      "src/maps/openFreeMapRaster.js",
       "src/maps/registry.js",
       "src/maps/terrain.js",
       "src/keySetupCore.mjs"
     ],
-    "external": ["cesium"]
+    "external": ["cesium", "maplibre-gl"]
   },
   "voice-connection": {
     "exports": [
@@ -1578,6 +1579,7 @@
       "src/maps/defaultSources.js",
       "src/maps/google3d.js",
       "src/maps/imagery.js",
+      "src/maps/openFreeMapRaster.js",
       "src/maps/registry.js",
       "src/maps/terrain.js",
       "src/navigationPolicy.js",
@@ -1839,6 +1841,7 @@
       "@mapbox/vector-tile",
       "cesium",
       "egm96-universal",
+      "maplibre-gl",
       "mgrs",
       "pbf",
       "satellite.js"

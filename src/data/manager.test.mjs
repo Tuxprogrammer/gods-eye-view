@@ -2738,6 +2738,7 @@ function makeControlElement() {
     style: {},
     attributes: {},
     listeners: {},
+    handlers: {},
     textContent: '',
     hidden: false,
     disabled: false,
@@ -2756,8 +2757,25 @@ function makeControlElement() {
       if (globalThis.document?.activeElement === this) globalThis.document.activeElement = null;
     },
     focus() { if (globalThis.document) globalThis.document.activeElement = this; },
-    addEventListener(name, handler) { this.listeners[name] = handler; },
-    removeEventListener(name, handler) { if (this.listeners[name] === handler) delete this.listeners[name]; },
+    // Like a real element, several listeners may share one event type (the row
+    // controls bind click for chips, servers and list items); `listeners[name]`
+    // stays a single callable that dispatches to all of them.
+    addEventListener(name, handler) {
+      const all = (this.handlers[name] ??= []);
+      all.push(handler);
+      // Return the handlers' results so a test can await an async click.
+      this.listeners[name] = (event) => {
+        const results = [...all].map((h) => h(event));
+        return results.length === 1 ? results[0] : Promise.all(results);
+      };
+    },
+    removeEventListener(name, handler) {
+      const all = this.handlers[name];
+      if (!all) return;
+      const index = all.indexOf(handler);
+      if (index >= 0) all.splice(index, 1);
+      if (all.length === 0) { delete this.handlers[name]; delete this.listeners[name]; }
+    },
     setAttribute(name, value) { this.attributes[name] = String(value); },
     getAttribute(name) { return this.attributes[name] ?? null; },
     closest(selector) {

@@ -24,28 +24,46 @@ function radiusOf(params) {
 const MAX_BODY_BYTES = 16 * 1024;
 
 /**
+ * Whether a browser request came from this app's own page. Behind a reverse
+ * proxy the `Host` header is often the upstream address (nginx defaults to
+ * `$proxy_host`), so it cannot be compared with `Origin` alone.
+ * `Sec-Fetch-Site` is set by the browser and cannot be forged by page script,
+ * so it decides when present; otherwise `Origin` must match `Host` or the
+ * proxy's `X-Forwarded-Host`. A request with no `Origin` (curl, scripts) is
+ * allowed, as before: it is not a cross-site browser request.
+ */
+function isSameOrigin(headers) {
+  const site = String(headers['sec-fetch-site'] ?? '').toLowerCase();
+  if (site) return site === 'same-origin' || site === 'none';
+  const origin = headers.origin;
+  if (!origin) return true;
+  let host;
+  try {
+    host = new URL(origin).host;
+  } catch {
+    return false;
+  }
+  const forwarded = String(headers['x-forwarded-host'] ?? '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+  return host === headers.host || forwarded.includes(host);
+}
+
+/**
  * A JSON request body, refusing anything that a web page on another origin
  * could have sent: changing the server list needs `application/json` (which a
  * cross-origin form cannot send without a preflight) and a same-origin
- * `Origin`, when the browser supplies one.
+ * origin (see isSameOrigin).
  */
 async function readJsonBody(req) {
   const type = String(req.headers?.['content-type'] ?? '');
   if (!/^application\/json\b/i.test(type))
     throw Object.assign(new Error('Send application/json'), { status: 415 });
-  const origin = req.headers?.origin;
-  if (origin) {
-    let host = null;
-    try {
-      host = new URL(origin).host;
-    } catch {
-      /* falls through to the refusal */
-    }
-    if (host !== req.headers?.host)
-      throw Object.assign(new Error('Cross-origin request refused'), {
-        status: 403,
-      });
-  }
+  if (!isSameOrigin(req.headers ?? {}))
+    throw Object.assign(new Error('Cross-origin request refused'), {
+      status: 403,
+    });
   const chunks = [];
   let size = 0;
   for await (const chunk of req) {

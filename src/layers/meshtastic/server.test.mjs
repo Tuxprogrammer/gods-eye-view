@@ -775,3 +775,19 @@ test('node ids are the firmware `!` plus eight hex digits', () => {
   assert.equal(nodeId(0xffffffff), '!ffffffff');
   assert.equal(nodeId(1), '!00000001');
 });
+
+test('server list changes work behind a reverse proxy that rewrites Host', async () => {
+  const { store } = await openStore();
+  const { manager } = managerHarness(store);
+  manager.start();
+  const handler = createMeshtasticMiddleware({ store: () => store, servers: () => manager, storageError: () => null });
+  // nginx's default Host is the upstream address, not the public name.
+  const proxied = { 'content-type': 'application/json', host: '10.1.2.10:4173' };
+  const add = JSON.stringify({ name: 'Mine', host: 'mesh.example.org' });
+  const post = (headers) => call(handler, { method: 'POST', url: '/servers', headers: { ...proxied, ...headers }, body: add });
+  assert.equal((await post({ origin: 'https://gev.example.net' })).status, 403);
+  assert.equal((await post({ origin: 'https://gev.example.net', 'x-forwarded-host': 'gev.example.net' })).status, 200);
+  assert.equal((await post({ origin: 'https://gev.example.net', 'sec-fetch-site': 'same-origin' })).status, 200);
+  assert.equal((await post({ origin: 'https://gev.example.net', 'sec-fetch-site': 'cross-site', 'x-forwarded-host': 'gev.example.net' })).status, 403);
+  store.close();
+});
