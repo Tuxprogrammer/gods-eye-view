@@ -115,7 +115,12 @@ export async function checkPackageBoundaries(root) {
         assetsInlineLimit: 0,
         rollupOptions: {
           input,
-          external: group.external,
+          // A subpath of an external package (maplibre-gl/dist/x.mjs?url) is that
+          // package's code, not an owned module.
+          external: (id) =>
+            group.external.some(
+              (external) => id === external || id.startsWith(`${external}/`),
+            ),
           // Unused imports must still obey ownership; tree shaking is not a boundary.
           treeshake: false,
           preserveEntrySignatures: 'strict',

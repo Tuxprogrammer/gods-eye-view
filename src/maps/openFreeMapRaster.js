@@ -52,12 +52,6 @@ export async function createOpenFreeMapImagery({
   const style = absolutizeStyle(await response.json(), origin);
   const gl =
     maplibre || (await import('maplibre-gl').then((m) => m.default ?? m));
-  if (!maplibre) {
-    // Vite never emits maplibre's sibling worker module, so the default URL
-    // (/assets/maplibre-gl-worker.mjs) falls through to index.html in production.
-    const workerUrl = (await import('maplibre-gl/dist/maplibre-gl-worker.mjs?url')).default;
-    gl.setWorkerUrl(workerUrl);
-  }
 
   const container = doc.createElement('div');
   Object.assign(container.style, {
