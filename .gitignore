@@ -19,3 +19,6 @@ pinokio/.installed
 # case this rule is ever edited or dropped.
 /deploy/local/*
 !/deploy/local/.gitignore
+
+# Playwright MCP session output (snapshots, console logs)
+.playwright-mcp/

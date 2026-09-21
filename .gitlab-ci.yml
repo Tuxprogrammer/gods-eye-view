@@ -3,15 +3,15 @@ stages:
   - build
 
 variables:
-  STORAGE_DRIVER: "vfs"
-  BUILDAH_FORMAT: "docker"
-  BUILDAH_ISOLATION: "chroot"
-  UPSTREAM_REPO: "https://github.com/bilawalsidhu/gods-eye-view.git"
+  STORAGE_DRIVER: 'vfs'
+  BUILDAH_FORMAT: 'docker'
+  BUILDAH_ISOLATION: 'chroot'
+  UPSTREAM_REPO: 'https://github.com/bilawalsidhu/gods-eye-view.git'
   # GitLab's project-level default git depth grafts history, so `git merge
   # upstream/main` has no reachable merge base and fails with "refusing to
   # merge unrelated histories". Full clone needed for a real merge.
-  GIT_DEPTH: "0"
-  PUPPETEER_SKIP_DOWNLOAD: "true"
+  GIT_DEPTH: '0'
+  PUPPETEER_SKIP_DOWNLOAD: 'true'
 
 default:
   tags:
@@ -27,7 +27,7 @@ sync:upstream:
     # The GitHub fork syncs itself from upstream at 06:00 UTC
     # (.github/workflows/sync-upstream.yml). Merging it first means both
     # remotes share one merge commit instead of two different ones.
-    MIRROR_REPO: "https://github.com/Tuxprogrammer/gods-eye-view.git"
+    MIRROR_REPO: 'https://github.com/Tuxprogrammer/gods-eye-view.git'
   before_script:
     - apk add --no-cache git curl
   script:
@@ -75,9 +75,9 @@ build:image:
     # rewrite — cheaper to match a proven pattern than to find out multi-tag
     # buildah behaves subtly differently.
     - buildah --storage-driver="$STORAGE_DRIVER" bud --pull --layers --isolation="$BUILDAH_ISOLATION" --tls-verify=false
-        --build-arg CESIUM_ION_TOKEN="$CESIUM_ION_TOKEN"
-        --build-arg GOOGLE_MAPS_API_KEY="$GOOGLE_MAPS_API_KEY"
-        -t "$IMAGE_SHA" -f "$CI_PROJECT_DIR/Dockerfile" "$CI_PROJECT_DIR"
+      --build-arg CESIUM_ION_TOKEN="$CESIUM_ION_TOKEN"
+      --build-arg GOOGLE_MAPS_API_KEY="$GOOGLE_MAPS_API_KEY"
+      -t "$IMAGE_SHA" -f "$CI_PROJECT_DIR/Dockerfile" "$CI_PROJECT_DIR"
     - buildah --storage-driver="$STORAGE_DRIVER" push --tls-verify=false "$IMAGE_SHA" "docker://$IMAGE_SHA"
     - |
       if [ "$CI_COMMIT_BRANCH" = "$CI_DEFAULT_BRANCH" ]; then
