@@ -1819,7 +1819,15 @@
       "src/app/layers/propagation.js",
       "src/layers/propagation/tilesetQuality.js",
       "src/layers/propagation/stationInteraction.js",
-      "src/layers/propagation/horizon.js"
+      "src/layers/propagation/horizon.js",
+      "src/layers/aprs/model.js",
+      "src/layers/aprs/source.js",
+      "src/layers/aprs/controls.js",
+      "src/layers/aprs/rendering.js",
+      "src/layers/aprs/interaction.js",
+      "src/layers/aprs/popups.js",
+      "src/layers/aprs/index.js",
+      "src/app/layers/aprs.js"
     ],
     "external": [
       "@mapbox/vector-tile",
@@ -2223,7 +2231,15 @@
       "src/app/layers/propagation.js",
       "src/layers/propagation/tilesetQuality.js",
       "src/layers/propagation/stationInteraction.js",
-      "src/layers/propagation/horizon.js"
+      "src/layers/propagation/horizon.js",
+      "src/layers/aprs/model.js",
+      "src/layers/aprs/source.js",
+      "src/layers/aprs/controls.js",
+      "src/layers/aprs/rendering.js",
+      "src/layers/aprs/interaction.js",
+      "src/layers/aprs/popups.js",
+      "src/layers/aprs/index.js",
+      "src/app/layers/aprs.js"
     ],
     "external": [
       "cesium",

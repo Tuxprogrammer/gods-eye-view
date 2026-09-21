@@ -204,6 +204,14 @@ export const DATA_CREDITS = [
       'and its contributing stations, with the IRI-2020 model',
   },
   {
+    key: 'aprs-is',
+    html:
+      'Amateur radio positions, weather and messages: ' +
+      '<a href="https://www.aprs-is.net/" target="_blank" rel="noopener">APRS-IS</a> ' +
+      'network, as transmitted by licensed operators and ' +
+      '<a href="http://www.cwop.org/" target="_blank" rel="noopener">CWOP</a> weather observers',
+  },
+  {
     key: 'reearth-terrain',
     html:
       'Terrain (keyless globe stacks): ' +

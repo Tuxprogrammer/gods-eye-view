@@ -1,5 +1,12 @@
 # Changelog
 
+- Add an APRS layer: an always-on, receive-only APRS-IS client streams into a
+  24-hour SQLite store (Node's built-in `node:sqlite`, `.gev-cache/aprs/`), and the
+  layer shows stations by radius (up to the whole Earth, with the far side hidden),
+  recency window and type, with tracks, weather, message pop-ups and an
+  aprs.fi-style details card. The login passcode is computed from `APRS_CALLSIGN`.
+  The panel gains dropdown and text-filter widgets.
+
 - Distinguish PARTIAL vessel snapshots from STALE data in the layer panel, with
   accepted-record counts and unchanged retention, freshness and outage safeguards.
 

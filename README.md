@@ -63,6 +63,21 @@ Live shortwave-radio propagation, draped straight onto the photoreal 3D tiles: w
 
 Data comes from [prop.kc2g.com](https://prop.kc2g.com/)'s public rendered maps, which are built from [GIRO](https://giro.uml.edu/) ionosonde data (CC BY-NC-SA 4.0, **non-commercial use only**) and the IRI-2020 model. Credit is shown in the in-app attribution list and in [DATA_SOURCES.md](DATA_SOURCES.md). The site publishes no API terms, so the layer reads only what its own pages serve and validates it strictly: if the upstream layout changes, the layer reports itself unavailable instead of drawing something wrong.
 
+### 📻 APRS layer
+
+The 3D-globe version of [aprs.fi](https://aprs.fi/): every amateur-radio station, weather report, object and message on the APRS-IS network, on the same globe as everything else.
+
+<img src="docs/media/fork/aprs-whole-earth.png" alt="Whole-Earth view of APRS stations coloured by type, with a message pop-up beside its sender; stations on the far side of the planet are hidden" width="100%">
+
+- **Always listening.** The server logs in to the North American APRS-IS network when it starts (receive-only: nothing is ever transmitted) and streams every packet into a local SQLite database, keeping 24 hours and pruning the rest. History is there the moment you open the layer, whether or not anyone was watching.
+- **Radius:** 25 km to 5000 km around the point under the camera, or **Whole Earth**. Stations on the far side of the planet are hidden, so nothing shows through the globe.
+- **Heard within:** 10 minutes to 24 hours. **Tracks:** off, or the last 15 minutes to 24 hours of each moving station's path, draped on the ground.
+- **Message pop-ups:** when a station inside the radius sends a message, a bubble appears beside the sender, follows it as the camera moves, and fades out after a few seconds. Toggle it with **MSG POPUPS**.
+- **Hover a station** for an aprs.fi-style card: first and last heard, weather in plain words, position, speed and heading, comment, and the packet path. **Click** to pin it and get **CENTER**, **ZOOM**, a highlighted **24 h TRACK**, small weather charts and its recent messages.
+- **Filters** like aprs.fi's: callsign search with wildcards (`W4*, KQ4VYY-9`), weather stations only, moving only, objects on/off, labels on/off, imperial or metric. A legend counts what is drawn by type.
+
+Set your callsign in `.env` as `APRS_CALLSIGN`; the login passcode is computed from it, so there is no secret to manage. See [.env.example](.env.example) for the optional host, filter and database path. Packet text comes from strangers' radios and is only ever shown as text. Operators transmit to APRS-IS to be seen, and one who wants to blur their position can use APRS position ambiguity, which the layer honours: the station is drawn at the middle of the box they chose and the card says so. See [DATA_SOURCES.md](DATA_SOURCES.md).
+
 ### 🐳 Container image and CI
 
 A `Dockerfile` and `.gitlab-ci.yml` build the app into an image on every push to `main` and publish it to the project's container registry, so a host only has to pull and start it. A daily scheduled job merges upstream, runs the tests, boundary checks and format check, pushes on green and reports the outcome to a chat webhook.

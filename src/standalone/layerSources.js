@@ -14,6 +14,7 @@ import { createLaunchSource } from '../layers/launches/source.js';
 import { createOverpassAlprSource } from '../layers/alpr/source.js';
 import { createFirmsSource } from '../layers/firms/source.js';
 import { createPropagationSource } from '../layers/propagation/source.js';
+import { createAprsSource } from '../layers/aprs/source.js';
 import { createReferenceSources } from '../sources/reference.js';
 export { createReferenceSources as createStandaloneReferenceSources } from '../sources/reference.js';
 
@@ -37,5 +38,6 @@ export function createStandaloneLayerSources() {
     alpr: createOverpassAlprSource(),
     firms: createFirmsSource(),
     propagation: createPropagationSource(),
+    aprs: createAprsSource(),
   };
 }

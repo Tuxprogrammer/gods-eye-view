@@ -45,7 +45,7 @@ const PANEL_GROUPS = [
   },
   {
     label: 'Utilities',
-    ids: ['directions', 'radio', 'propagation'],
+    ids: ['directions', 'radio', 'propagation', 'aprs'],
   },
 ];
 const PANEL_ORDER = PANEL_GROUPS.flatMap(({ label, ids }) =>
@@ -62,6 +62,7 @@ const PANEL_LABELS = {
   'local-datacenters': 'Data Centers',
   'local-firms': 'Active Fires',
   propagation: 'HF Propagation',
+  aprs: 'APRS',
 };
 
 /** Class test over `className`, which every element (and test double) carries. */
@@ -273,6 +274,24 @@ export class LayerPanel {
           if (output) output.textContent = `${value}${slider.suffix || ''}`;
           slider.onInput?.(value);
         });
+        // Dropdowns and text filters commit on `change` (a choice made, or Enter
+        // / blur), so typing never refetches per keystroke.
+        this._bind(controls, 'change', (event) => {
+          const field = event.target?.closest?.(
+            '.data-toggle-select-input, .data-toggle-text-input',
+          );
+          if (!field || !this.isEnabled(layer.id)) return;
+          const live = this._rowControlsFor(layer.id);
+          if (hasClass(field, 'data-toggle-select-input')) {
+            live?.selects
+              ?.find((entry) => entry.id === field.dataset.selectId)
+              ?.onChange?.(field.value);
+          } else {
+            live?.texts
+              ?.find((entry) => entry.id === field.dataset.textId)
+              ?.onCommit?.(field.value);
+          }
+        });
         row.appendChild(controls);
         // An ordered list below the chips, for a layer whose row carries a
         // sequence (turn-by-turn directions). Its own delegated listener, its
@@ -325,12 +344,16 @@ export class LayerPanel {
     const legend = controls?.legend || [];
     const ramp = controls?.ramp || null;
     const sliders = controls?.sliders || [];
+    const selects = controls?.selects || [];
+    const texts = controls?.texts || [];
     this._syncRowList(listContainer, controls?.list || null);
     container.hidden =
       chips.length === 0 &&
       legend.length === 0 &&
       !ramp &&
-      sliders.length === 0;
+      sliders.length === 0 &&
+      selects.length === 0 &&
+      texts.length === 0;
 
     for (const node of [...container.children]) {
       if (
@@ -377,6 +400,8 @@ export class LayerPanel {
     }
     this._syncRamp(container, ramp);
     this._syncSliders(container, sliders);
+    this._syncSelects(container, selects);
+    this._syncTexts(container, texts);
   }
 
   /**
@@ -428,6 +453,98 @@ export class LayerPanel {
       'aria-label',
       `${ramp.caption}. Scale marks: ${ramp.ticks.map((tick) => tick.label).join(', ')}`,
     );
+  }
+
+  /**
+   * Dropdowns, reconciled in place by id. A select the user has open is never
+   * rewritten, so a refresh cannot snap a menu shut under their cursor.
+   * @param {HTMLElement} container The row's `.data-toggle-controls` node.
+   * @param {Array<{id: string, label: string, value: string, title?: string,
+   *   options: Array<{value: string, label: string}>}>} selects
+   */
+  _syncSelects(container, selects) {
+    const existing = new Map(
+      [...container.children]
+        .filter((child) => hasClass(child, 'data-toggle-select'))
+        .map((child) => [child.dataset.selectId, child]),
+    );
+    for (const select of selects) {
+      let label = existing.get(select.id);
+      existing.delete(select.id);
+      if (!label) {
+        label = document.createElement('label');
+        label.className = 'data-toggle-select';
+        label.dataset.selectId = select.id;
+        const name = document.createElement('span');
+        name.className = 'data-toggle-select-name';
+        const input = document.createElement('select');
+        input.className = 'data-toggle-select-input';
+        input.dataset.selectId = select.id;
+        label.append(name, input);
+        container.appendChild(label);
+      }
+      const [name, input] = label.children;
+      if (name.textContent !== select.label) name.textContent = select.label;
+      label.title = select.title || '';
+      input.setAttribute('aria-label', select.label);
+      const key = JSON.stringify(select.options);
+      if (input.dataset.optionKey !== key) {
+        input.dataset.optionKey = key;
+        input.replaceChildren(
+          ...select.options.map((option) => {
+            const node = document.createElement('option');
+            node.value = option.value;
+            node.textContent = option.label;
+            return node;
+          }),
+        );
+      }
+      if (document.activeElement !== input && input.value !== select.value)
+        input.value = select.value;
+    }
+    for (const label of existing.values()) label.remove();
+  }
+
+  /**
+   * Text filters, reconciled in place by id. The typed text is never rewritten
+   * while the field has focus.
+   * @param {HTMLElement} container The row's `.data-toggle-controls` node.
+   * @param {Array<{id: string, label: string, value: string,
+   *   placeholder?: string, title?: string}>} texts
+   */
+  _syncTexts(container, texts) {
+    const existing = new Map(
+      [...container.children]
+        .filter((child) => hasClass(child, 'data-toggle-text'))
+        .map((child) => [child.dataset.textId, child]),
+    );
+    for (const text of texts) {
+      let label = existing.get(text.id);
+      existing.delete(text.id);
+      if (!label) {
+        label = document.createElement('label');
+        label.className = 'data-toggle-text';
+        label.dataset.textId = text.id;
+        const name = document.createElement('span');
+        name.className = 'data-toggle-text-name';
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'data-toggle-text-input';
+        input.dataset.textId = text.id;
+        input.autocomplete = 'off';
+        input.spellcheck = false;
+        label.append(name, input);
+        container.appendChild(label);
+      }
+      const [name, input] = label.children;
+      if (name.textContent !== text.label) name.textContent = text.label;
+      label.title = text.title || '';
+      input.placeholder = text.placeholder || '';
+      input.setAttribute('aria-label', text.label);
+      if (document.activeElement !== input && input.value !== text.value)
+        input.value = text.value;
+    }
+    for (const label of existing.values()) label.remove();
   }
 
   /**
