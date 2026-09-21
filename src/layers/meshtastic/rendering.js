@@ -1,5 +1,5 @@
 import * as Cesium from 'cesium';
-import { createHorizon } from '../aprs/rendering.js';
+import { createHorizon, idsUnder } from '../aprs/rendering.js';
 import { hardwareImageUrl } from './hardware.js';
 import {
   CATEGORY_COLORS,
@@ -8,6 +8,7 @@ import {
   nodeCategory,
   nodeGlyph,
   nodeLabel,
+  spreadLabels,
 } from './model.js';
 
 export const NODE_ID_PREFIX = 'mesh-node:';
@@ -20,6 +21,19 @@ const ICON_SIZE = 40;
 const TRACK_WIDTH = 3;
 const SELECTED_TRACK_COLOR = Cesium.Color.fromCssColorString('#ffe45c');
 const LABEL_FONT = 'bold 12px Inter, sans-serif';
+/** Stacked labels are re-fanned this long after the camera stops changing. */
+const LABEL_LAYOUT_MS = 120;
+const LABEL_HORIZONTAL = {
+  left: Cesium.HorizontalOrigin.LEFT,
+  center: Cesium.HorizontalOrigin.CENTER,
+  right: Cesium.HorizontalOrigin.RIGHT,
+};
+const LABEL_VERTICAL = {
+  top: Cesium.VerticalOrigin.TOP,
+  center: Cesium.VerticalOrigin.CENTER,
+  bottom: Cesium.VerticalOrigin.BOTTOM,
+};
+const LABEL_HOME_OFFSET = new Cesium.Cartesian2(0, -ICON_SIZE * 0.62);
 
 const iconCache = new Map();
 /** Device picture URL -> {image, ready, waiters}; loaded once, on first use. */
@@ -122,6 +136,10 @@ export function createMeshtasticSurface({ viewer, classificationType }) {
   let showLabels = true;
   let remover = null;
   let destroyed = false;
+  let layoutTimer = null;
+  let cameraRemover = null;
+  let moveEndRemover = null;
+  const layoutScratch = new Cesium.Cartesian2();
   const render = () => scene.requestRender?.();
 
   const heightReference = (clamp) =>
@@ -148,7 +166,7 @@ export function createMeshtasticSurface({ viewer, classificationType }) {
           outlineColor: Cesium.Color.BLACK.withAlpha(0.95),
           outlineWidth: 4,
           style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-          pixelOffset: new Cesium.Cartesian2(0, -ICON_SIZE * 0.62),
+          pixelOffset: LABEL_HOME_OFFSET,
           verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
           disableDepthTestDistance: Number.POSITIVE_INFINITY,
           distanceDisplayCondition: new Cesium.DistanceDisplayCondition(
@@ -157,6 +175,7 @@ export function createMeshtasticSurface({ viewer, classificationType }) {
           ),
           position: record.billboard.position,
         });
+        record.labelSlot = null;
       } else if (record.label.text !== nodeLabel(node)) {
         record.label.text = nodeLabel(node);
       }
@@ -166,6 +185,58 @@ export function createMeshtasticSurface({ viewer, classificationType }) {
       labels.remove(record.label);
       record.label = null;
     }
+  }
+
+  /**
+   * Fan the labels of overlapping icons out around their dots so stacked nodes
+   * stay readable. Screen positions change with the camera, so this runs again
+   * once it settles; a node on its own keeps its label above the dot.
+   */
+  function layoutLabels() {
+    layoutTimer = null;
+    if (destroyed) return;
+    const points = [];
+    for (const [id, record] of records) {
+      if (!record.label || !record.label.show) continue;
+      const at = scene.cartesianToCanvasCoordinates(
+        record.billboard.position,
+        layoutScratch,
+      );
+      if (at) points.push({ id, x: at.x, y: at.y });
+    }
+    const slots = spreadLabels(points);
+    let changed = false;
+    for (const [id, record] of records) {
+      if (!record.label) continue;
+      const slot = slots.get(id) ?? null;
+      const key = slot ? `${slot.dx},${slot.dy},${slot.h},${slot.v}` : '';
+      if (record.labelSlot === key) continue;
+      record.labelSlot = key;
+      record.label.pixelOffset = slot
+        ? new Cesium.Cartesian2(slot.dx, slot.dy)
+        : LABEL_HOME_OFFSET;
+      record.label.horizontalOrigin = slot
+        ? LABEL_HORIZONTAL[slot.h]
+        : Cesium.HorizontalOrigin.CENTER;
+      record.label.verticalOrigin = slot
+        ? LABEL_VERTICAL[slot.v]
+        : Cesium.VerticalOrigin.BOTTOM;
+      changed = true;
+    }
+    if (changed) render();
+  }
+
+  function scheduleLabelLayout() {
+    if (layoutTimer !== null || destroyed) return;
+    layoutTimer = setTimeout(layoutLabels, LABEL_LAYOUT_MS);
+  }
+
+  function ensureLabelLayoutListener() {
+    if (cameraRemover || !records.size) return;
+    cameraRemover =
+      viewer.camera?.changed?.addEventListener(scheduleLabelLayout);
+    moveEndRemover =
+      viewer.camera?.moveEnd?.addEventListener(scheduleLabelLayout);
   }
 
   /** A device picture finished loading: redraw the icons that wait for it. */
@@ -312,6 +383,8 @@ export function createMeshtasticSurface({ viewer, classificationType }) {
       horizon.invalidate();
       horizon.update(records.values(), true);
       ensureHorizonListener();
+      ensureLabelLayoutListener();
+      scheduleLabelLayout();
       this.showTracks(tracks);
       render();
     },
@@ -377,6 +450,7 @@ export function createMeshtasticSurface({ viewer, classificationType }) {
         styleRecord(record, record.station, clamp);
       horizon.invalidate();
       horizon.update(records.values(), true);
+      scheduleLabelLayout();
       render();
     },
 
@@ -406,6 +480,11 @@ export function createMeshtasticSurface({ viewer, classificationType }) {
       return typeof text === 'string' && text.startsWith(NODE_ID_PREFIX)
         ? text.slice(NODE_ID_PREFIX.length)
         : null;
+    },
+
+    /** Every node under a canvas point, in a fixed order, for cycling a stack. */
+    idsAt(x, y) {
+      return idsUnder(scene, x, y, NODE_ID_PREFIX);
     },
 
     /** The record for a drawn node: its data and whether it is on screen. */
@@ -454,6 +533,12 @@ export function createMeshtasticSurface({ viewer, classificationType }) {
       emphasised = null;
       remover?.();
       remover = null;
+      cameraRemover?.();
+      cameraRemover = null;
+      moveEndRemover?.();
+      moveEndRemover = null;
+      if (layoutTimer !== null) clearTimeout(layoutTimer);
+      layoutTimer = null;
       render();
     },
 

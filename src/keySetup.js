@@ -179,6 +179,13 @@ export async function initKeySetup({
   signal?.addEventListener('abort', destroy, { once: true });
   const doFetch = fetchImpl || globalThis.fetch?.bind(globalThis);
 
+  // A production build never serves the endpoint, and probing it only puts a
+  // 404 in every visitor's console.
+  if (import.meta.env?.PROD && !fetchImpl) {
+    destroy();
+    return null;
+  }
+
   let status = null;
   try {
     const response = await doFetch('/api/setup/status', {

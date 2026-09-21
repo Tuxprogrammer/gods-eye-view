@@ -41,6 +41,26 @@ export function placeCard(anchor, size, bounds, { gap = 14, margin = 8 } = {}) {
  * @param {(id: string, signal: AbortSignal) => Promise<object>} options.loadDetail
  * @param {(id: string, near: boolean) => void} options.flyTo
  */
+/**
+ * What a click on a stack of overlapping stations should do. A lone station
+ * toggles its pin; with several under the pointer each click moves the pin to
+ * the next one, wrapping round, so every one of them can be reached.
+ * @param {string[]} ids Every station under the pointer, in a stable order.
+ * @param {string|null} pinnedId
+ * @returns {{action: 'unpin'} | {action: 'pin', id: string, index: number, count: number}}
+ */
+export function clickTarget(ids, pinnedId) {
+  if (ids.length === 0) return { action: 'unpin' };
+  if (ids.length === 1) {
+    return ids[0] === pinnedId
+      ? { action: 'unpin' }
+      : { action: 'pin', id: ids[0], index: 1, count: 1 };
+  }
+  const at = ids.indexOf(pinnedId);
+  const index = at === -1 ? 0 : (at + 1) % ids.length;
+  return { action: 'pin', id: ids[index], index: index + 1, count: ids.length };
+}
+
 export function createStationInteraction({
   viewer,
   surface,
@@ -74,10 +94,12 @@ export function createStationInteraction({
   const head = el('div', 'aprs-card-head');
   const glyph = el('span', 'aprs-card-glyph');
   const title = el('span', 'aprs-card-title');
+  const stack = el('span', 'aprs-card-stack');
+  stack.hidden = true;
   const close = el('button', 'aprs-card-close', '×');
   close.type = 'button';
   close.setAttribute('aria-label', 'Close station details');
-  head.append(glyph, title, close);
+  head.append(glyph, title, stack, close);
   const body = el('div', 'aprs-card-body');
   const charts = el('div', 'aprs-card-charts');
   const messages = el('div', 'aprs-card-messages');
@@ -218,6 +240,7 @@ export function createStationInteraction({
     detailRequest?.abort();
     detailRequest = null;
     pinnedId = null;
+    stack.hidden = true;
     followRemover?.();
     followRemover = null;
     setTrack(false);
@@ -257,12 +280,17 @@ export function createStationInteraction({
       : { x: card.offsetLeft, y: card.offsetTop };
   }
 
-  function pin(id, point) {
+  function pin(id, point, position) {
     const record = surface.recordFor(id);
     if (!record || !record.visible) return;
     pinnedId = id;
     pinnedDetail = null;
     render(record.station, true);
+    stack.hidden = !position || position.count < 2;
+    if (!stack.hidden) {
+      stack.textContent = `${position.index} of ${position.count}`;
+      stack.title = 'Overlapping stations here: click again for the next';
+    }
     charts.hidden = true;
     messages.hidden = true;
     surface.setEmphasis(id);
@@ -335,10 +363,13 @@ export function createStationInteraction({
       return;
     }
     down = null;
-    const id = surface.idAt(point.x, point.y);
-    if (id === null || id === pinnedId) return unpin();
+    // A surface that can list everything under the pointer lets a stack be cycled.
+    const top = surface.idAt(point.x, point.y);
+    const ids =
+      surface.idsAt?.(point.x, point.y) ?? (top === null ? [] : [top]);
+    const target = clickTarget(ids, pinnedId);
     unpin();
-    pin(id, point);
+    if (target.action === 'pin') pin(target.id, point, target);
   }
 
   const onKey = (event) => {

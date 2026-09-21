@@ -295,6 +295,75 @@ const CATEGORY_GLYPH = Object.freeze({
 export const nodeCategory = (node) => ROLE_CATEGORY[node.role] ?? 'client';
 export const nodeGlyph = (node) => CATEGORY_GLYPH[nodeCategory(node)];
 
+/** Icons closer than this on screen (px) count as one stack. */
+export const STACK_RADIUS_PX = 28;
+const LABEL_RING_PX = 32;
+const LABEL_RING_STEP_PX = 16;
+const LABEL_PER_RING = 8;
+
+/**
+ * Where each label goes so stacked nodes do not print over one another. Nodes
+ * whose icons lie within STACK_RADIUS_PX of each other share a stack, and the
+ * stack's labels fan out around their dots, starting at the top and going
+ * clockwise, on a second ring once eight are placed. A node on its own returns
+ * no entry: its label keeps the usual spot above the dot.
+ * Order is by id so a label does not jump when the camera moves.
+ * @param {Array<{id: string, x: number, y: number}>} points Screen positions.
+ * @returns {Map<string, {dx: number, dy: number, h: 'left'|'center'|'right', v: 'top'|'center'|'bottom'}>}
+ */
+export function spreadLabels(points) {
+  const sorted = [...points].sort((a, b) =>
+    a.id < b.id ? -1 : a.id > b.id ? 1 : 0,
+  );
+  const cell = STACK_RADIUS_PX;
+  const grid = new Map();
+  for (const p of sorted) {
+    const key = `${Math.floor(p.x / cell)},${Math.floor(p.y / cell)}`;
+    if (!grid.has(key)) grid.set(key, []);
+    grid.get(key).push(p);
+  }
+  const taken = new Set();
+  const out = new Map();
+  for (const seed of sorted) {
+    if (taken.has(seed.id)) continue;
+    const cx = Math.floor(seed.x / cell);
+    const cy = Math.floor(seed.y / cell);
+    const stack = [];
+    for (let gx = cx - 1; gx <= cx + 1; gx += 1)
+      for (let gy = cy - 1; gy <= cy + 1; gy += 1)
+        for (const p of grid.get(`${gx},${gy}`) ?? [])
+          if (
+            !taken.has(p.id) &&
+            Math.hypot(p.x - seed.x, p.y - seed.y) <= STACK_RADIUS_PX
+          )
+            stack.push(p);
+    for (const p of stack) taken.add(p.id);
+    if (stack.length < 2) continue;
+    stack.sort((a, b) => (a.id < b.id ? -1 : 1));
+    stack.forEach((p, i) => {
+      const ring = Math.floor(i / LABEL_PER_RING);
+      const inRing = Math.min(
+        LABEL_PER_RING,
+        stack.length - ring * LABEL_PER_RING,
+      );
+      const angle =
+        -Math.PI / 2 + ((i % LABEL_PER_RING) / inRing) * Math.PI * 2;
+      const radius = LABEL_RING_PX + ring * LABEL_RING_STEP_PX;
+      const dx = Math.round(Math.cos(angle) * radius);
+      const dy = Math.round(Math.sin(angle) * radius);
+      const across = Math.cos(angle);
+      const down = Math.sin(angle);
+      out.set(p.id, {
+        dx,
+        dy,
+        h: across > 0.3 ? 'left' : across < -0.3 ? 'right' : 'center',
+        v: down < -0.3 ? 'bottom' : down > 0.3 ? 'top' : 'center',
+      });
+    });
+  }
+  return out;
+}
+
 /** The short name the radio shows, else the last four hex digits of its id. */
 export const nodeLabel = (node) =>
   node.shortName || node.id.replace(/^!/, '').slice(-4);

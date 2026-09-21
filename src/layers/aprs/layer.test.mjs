@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createAprsLayer } from './index.js';
+import { clickTarget } from './interaction.js';
 import { createAprsSource } from './source.js';
 import { aprsRowControls } from './controls.js';
 import { createMessagePopups } from './popups.js';
@@ -315,4 +316,37 @@ test('message pop-ups fade, expire, follow the sender, cap their number and neve
   assert.equal(last.style.visibility, 'hidden', 'over the horizon: hidden, still expires');
   popups.destroy();
   assert.equal(popups.count, 0);
+});
+
+test('clicking a stack of stations walks through it and wraps; a lone station toggles', () => {
+  assert.deepEqual(clickTarget([], 'a'), { action: 'unpin' });
+  assert.deepEqual(clickTarget(['a'], null), { action: 'pin', id: 'a', index: 1, count: 1 });
+  assert.deepEqual(clickTarget(['a'], 'a'), { action: 'unpin' });
+  const stack = ['a', 'b', 'c'];
+  assert.deepEqual(clickTarget(stack, null), { action: 'pin', id: 'a', index: 1, count: 3 });
+  assert.deepEqual(clickTarget(stack, 'a'), { action: 'pin', id: 'b', index: 2, count: 3 });
+  assert.deepEqual(clickTarget(stack, 'c'), { action: 'pin', id: 'a', index: 1, count: 3 });
+  // Something pinned elsewhere starts the walk at the top of this stack.
+  assert.deepEqual(clickTarget(stack, 'z'), { action: 'pin', id: 'a', index: 1, count: 3 });
+});
+
+test('the stack pick keeps only stations of one layer, once each, in a fixed order', async () => {
+  const { idsUnder } = await import('./rendering.js');
+  const seen = [];
+  const scene = {
+    drillPick: (at, limit, w, h) => {
+      seen.push({ x: at.x, y: at.y, limit, w, h });
+      return [
+        { id: 'aprs-station:W2' },
+        { id: { id: 'aprs-station:W1' } },
+        { id: 'aprs-station:W2' },
+        { id: 'mesh-node:!abc' },
+        {},
+      ];
+    },
+  };
+  assert.deepEqual(idsUnder(scene, 10, 20, 'aprs-station:'), ['W1', 'W2']);
+  assert.deepEqual(idsUnder(scene, 10, 20, 'mesh-node:'), ['!abc']);
+  assert.equal(seen[0].x, 10);
+  assert.ok(seen[0].limit > 1 && seen[0].w > 1, 'reaches past the top station');
 });

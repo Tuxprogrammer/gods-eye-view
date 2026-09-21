@@ -92,6 +92,17 @@
   color: var(--accent);
 }
 
+.aprs-card-stack {
+  font-size: 10px;
+  letter-spacing: 0.4px;
+  color: var(--text-secondary, #b8bcc4);
+  white-space: nowrap;
+}
+
+.aprs-card-stack[hidden] {
+  display: none;
+}
+
 .aprs-card-close {
   display: none;
   padding: 0 4px;

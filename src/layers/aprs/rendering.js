@@ -11,6 +11,30 @@ import {
 } from './model.js';
 
 export const STATION_ID_PREFIX = 'aprs-station:';
+/** A click reaches this many stations deep, within this many pixels. */
+const STACK_LIMIT = 24;
+const STACK_PICK_PX = 6;
+
+/**
+ * Every station whose billboard id starts with `prefix` under a canvas point,
+ * prefix removed. The pick order shifts with draw order, so they come back
+ * sorted by id: clicking a stack walks it in a fixed order.
+ */
+export function idsUnder(scene, x, y, prefix) {
+  const picked = scene.drillPick(
+    new Cesium.Cartesian2(x, y),
+    STACK_LIMIT,
+    STACK_PICK_PX,
+    STACK_PICK_PX,
+  );
+  const ids = new Set();
+  for (const item of picked) {
+    const id = typeof item?.id === 'string' ? item.id : item?.id?.id;
+    if (typeof id === 'string' && id.startsWith(prefix))
+      ids.add(id.slice(prefix.length));
+  }
+  return [...ids].sort();
+}
 /** Labels drop out beyond this camera distance (metres). */
 const LABEL_RANGE_M = 400_000;
 /** Icons shrink a little with distance so a continent stays readable. */
@@ -432,6 +456,11 @@ export function createAprsSurface({ viewer, classificationType }) {
       return typeof text === 'string' && text.startsWith(STATION_ID_PREFIX)
         ? text.slice(STATION_ID_PREFIX.length)
         : null;
+    },
+
+    /** Every station under a canvas point, in a fixed order, for cycling a stack. */
+    idsAt(x, y) {
+      return idsUnder(scene, x, y, STATION_ID_PREFIX);
     },
 
     /** The record for a drawn station: its data and whether it is on screen. */

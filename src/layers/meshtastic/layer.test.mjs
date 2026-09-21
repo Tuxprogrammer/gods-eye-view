@@ -15,6 +15,7 @@ import {
   normalizeServer,
   serverSummary,
   serversSummary,
+  spreadLabels,
 } from './model.js';
 import { LayerPanel } from '../../ui/layerPanel.js';
 
@@ -474,4 +475,40 @@ test('a model shared by several listed devices is named for the first, and pictu
     assert.ok(url, `model ${model}`);
     assert.ok(existsSync(`public${url}`), `${url} is bundled`);
   }
+});
+
+test('stacked nodes get their labels fanned round the dots; a lone node keeps the usual spot', () => {
+  const alone = spreadLabels([{ id: '!a', x: 500, y: 500 }]);
+  assert.equal(alone.size, 0);
+
+  const far = spreadLabels([
+    { id: '!a', x: 100, y: 100 },
+    { id: '!b', x: 400, y: 100 },
+  ]);
+  assert.equal(far.size, 0, 'apart on screen, so not a stack');
+
+  const four = spreadLabels(
+    ['!d', '!b', '!a', '!c'].map((id) => ({ id, x: 300, y: 300 })),
+  );
+  assert.equal(four.size, 4);
+  // Sorted by id, first at the top, then clockwise: right, bottom, left.
+  assert.deepEqual([...four.keys()].sort(), ['!a', '!b', '!c', '!d']);
+  assert.deepEqual(four.get('!a'), { dx: 0, dy: -32, h: 'center', v: 'bottom' });
+  assert.deepEqual(four.get('!b'), { dx: 32, dy: 0, h: 'left', v: 'center' });
+  assert.deepEqual(four.get('!c'), { dx: 0, dy: 32, h: 'center', v: 'top' });
+  assert.deepEqual(four.get('!d'), { dx: -32, dy: 0, h: 'right', v: 'center' });
+
+  const spots = new Set(
+    [...spreadLabels(Array.from({ length: 12 }, (_, i) => ({ id: `!n${String(i).padStart(2, '0')}`, x: 50, y: 50 }))).values()].map(
+      (s) => `${s.dx},${s.dy}`,
+    ),
+  );
+  assert.equal(spots.size, 12, 'twelve labels, twelve different places');
+
+  // Icons just across a grid line are still one stack.
+  const edge = spreadLabels([
+    { id: '!a', x: 27, y: 10 },
+    { id: '!b', x: 29, y: 10 },
+  ]);
+  assert.equal(edge.size, 2);
 });
