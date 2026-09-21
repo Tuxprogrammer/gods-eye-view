@@ -16,6 +16,7 @@ import {
   serverSummary,
   serversSummary,
   spreadLabels,
+  topicWarning,
 } from './model.js';
 import { LayerPanel } from '../../ui/layerPanel.js';
 
@@ -511,4 +512,17 @@ test('stacked nodes get their labels fanned round the dots; a lone node keeps th
     { id: '!b', x: 29, y: 10 },
   ]);
   assert.equal(edge.size, 2);
+});
+
+test('a topic that can never match a Meshtastic packet is called out in the server row', () => {
+  assert.equal(topicWarning('msh/US/#'), null);
+  assert.equal(topicWarning('msh/US/AL/#'), null);
+  assert.equal(topicWarning('msh/US/2/e/LongFast/+'), null);
+  assert.equal(topicWarning('msh/US/2/e/LongFast/!abcd1234'), null, 'an exact five-level topic is fine');
+  assert.match(topicWarning('msh/US'), /matches nothing: add \/#, like msh\/US\/#/);
+  assert.match(topicWarning(''), /matches nothing/);
+  const row = { id: 'g', name: 'g', status: 'live', enabled: true, topic: 'msh/US', messagesPerMinute: 0, lastMessageAt: null };
+  assert.match(serverSummary(row, 1000), /matches nothing/);
+  assert.equal(serverSummary({ ...row, enabled: false, status: 'off' }, 1000), 'Off');
+  assert.match(serverSummary({ ...row, topic: 'msh/US/#' }, 1000), /no traffic lately/);
 });

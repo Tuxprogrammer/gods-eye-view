@@ -553,8 +553,24 @@ export const messageLine = (message) =>
 // Row status
 // ---------------------------------------------------------------------------
 
+/**
+ * Meshtastic packets sit at msh/<region>/2/e/<channel>/<gateway>, five levels
+ * or more, so a short filter with no wildcard (msh/US) is valid MQTT that can
+ * never match one. Say so rather than sit connected and silent.
+ * @returns {string|null}
+ */
+export function topicWarning(topic) {
+  const filter = String(topic ?? '');
+  if (/[#+]/.test(filter) || filter.split('/').length >= 5) return null;
+  return `Topic ${filter || '(empty)'} matches nothing: add /#, like msh/US/#`;
+}
+
 /** One short line for a server row. */
 export function serverSummary(server, now = Date.now()) {
+  if (server.enabled) {
+    const warning = topicWarning(server.topic);
+    if (warning) return warning;
+  }
   switch (server.status) {
     case 'off':
       return 'Off';
