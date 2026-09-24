@@ -657,16 +657,24 @@ test('the DISPLAY rail starts collapsed on a first run, and a stored choice wins
 // ── Voice: instruction-only, tool schema unchanged ─────────────────────
 
 test('the voice TOOL SCHEMA matches the pinned release — the mission mapping is instructions only', () => {
-  // ALPR deliberately adds its ID to the two layer menus and visibility aliases;
-  // this fork's APRS, HF propagation and Meshtastic layers add theirs too.
-  // Canonical serialization pins every tool name, description, property and
-  // ordering while allowing source formatting. Derived from the unchanged
-  // release schema before formatting (the previous source-byte pin passed).
-  const block = JSON.stringify(GEV_REALTIME_TOOLS);
-  assert.equal(block.length, 26257, 'serialized tool schema length drifted');
+  // ALPR deliberately adds its ID to the two layer menus and visibility
+  // aliases; analyst layers and the separate satellite-pass tool extend the
+  // schema too. Canonical serialization pins every tool name, description,
+  // property and ordering while allowing source formatting. Derived from the
+  // unchanged release schema before formatting (the previous pin passed).
+  const legacyTools = structuredClone(GEV_REALTIME_TOOLS).filter((tool) => tool.name !== 'set_cyber_sonar');
+  const hudLayout = legacyTools.find((tool) => tool.name === 'set_hud').parameters.properties.layout;
+  assert.deepEqual(hudLayout.enum, ['tactical', 'operator', 'minimal', 'cyber']);
+  // Cyber deliberately adds one layout; first-run missions still change no tools.
+  hudLayout.enum = hudLayout.enum.filter((layout) => layout !== 'cyber');
+  const block = JSON.stringify(legacyTools);
+  // Re-derived for the merged fork + upstream schema (Meshtastic-era map
+  // sources plus the additive `local-adsb` set_layer_visibility value and
+  // its common-name mapping); the missions still ride existing tools.
+  assert.equal(block.length, 27481, 'serialized tool schema length drifted');
   assert.equal(
     crypto.createHash('sha256').update(block).digest('hex'),
-    '1d1efb950da0229770f50aad6a78e81b61368093a8cff830d7fbe9675cb4e411',
+    '1edcc3b65e50dbd86aacf4f83e9c93599e95993dc85bd06ab4233afbdbc5c6cf',
     'the first-run missions must ride EXISTING tools: no schema edit, no cache bust',
   );
   const instructions = fs.readFileSync(new URL('../server/providers/openai/instructions.js', import.meta.url), 'utf8');

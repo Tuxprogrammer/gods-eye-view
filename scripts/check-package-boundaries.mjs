@@ -89,6 +89,10 @@ export async function checkPackageBoundaries(root) {
     const seen = new Set();
     await build({
       root,
+      // Keep this gate out of a running dev server's dependency cache
+      // (node_modules/.vite): a build there re-optimizes dependencies and the
+      // dev server's workers then fail with 504 "Outdated Optimize Dep".
+      cacheDir: path.join(root, 'node_modules/.vite-boundaries'),
       configFile: false,
       envFile: false,
       publicDir: false,
@@ -115,8 +119,9 @@ export async function checkPackageBoundaries(root) {
         assetsInlineLimit: 0,
         rollupOptions: {
           input,
-          // A subpath of an external package (maplibre-gl/dist/x.mjs?url) is that
-          // package's code, not an owned module.
+          // A subpath of a declared dependency (maplibre-gl/dist/x.mjs?url,
+          // @jtarrio/webrtlsdr/rtlsdr.js) is that package's code, not an
+          // owned module.
           external: (id) =>
             group.external.some(
               (external) => id === external || id.startsWith(`${external}/`),

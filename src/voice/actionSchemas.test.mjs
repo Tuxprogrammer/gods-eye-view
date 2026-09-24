@@ -15,13 +15,23 @@ const stable = (value) =>
         )
       : value;
 
-test('the complete Realtime tool payload retains its pre-extraction contract and wording', () => {
+test('the complete Realtime tool payload pins the additive analyst, satellite, Local ADS-B and Cyber release', () => {
   const digest = createHash('sha256')
-    .update(JSON.stringify(stable(GEV_REALTIME_TOOLS)))
+    .update(
+      JSON.stringify(
+        stable(
+          GEV_REALTIME_TOOLS.filter((tool) => tool.name !== 'set_cyber_sonar'),
+        ),
+      ),
+    )
     .digest('hex');
   assert.equal(
     digest,
-    'ab0313a71f3f0449967f8163a931011b1307f5b1881ae5559f35269f2c82fe4a',
+    // Re-derived for the merged fork + upstream schema: the additive
+    // `local-adsb` set_layer_visibility value and the Cyber HUD layout on
+    // top of the fork's own map-source and Meshtastic-era additions; the
+    // separate sonar tool is excluded above.
+    '305f7ba20765b5c54134114d9a1c7751b743690e77ad28969e76cdb2c2eccade',
   );
 });
 
@@ -75,4 +85,44 @@ test('metadata cannot add tools, fields, types or enum values', () => {
     { fly_to_location: { description: { nested: 'invalid' } } },
   ])
     assert.throws(() => createActionTools(descriptions), TypeError);
+});
+
+test('all legacy action arguments are byte-identical after removing the deliberate additions', () => {
+  const legacy = structuredClone(GEV_ACTION_SCHEMAS).filter(
+    (tool) => !['next_satellite_pass', 'set_cyber_sonar'].includes(tool.name),
+  );
+  const layers = legacy.find((tool) => tool.name === 'analyst_query').parameters
+    .properties.layers.items;
+  layers.enum = layers.enum.filter(
+    (key) =>
+      ![
+        'satellites',
+        'local-datacenters',
+        'local-dams',
+        'fire-perimeters',
+      ].includes(key),
+  );
+  // Local ADS-B is an additive set_layer_visibility enum value.
+  const visibility = legacy.find((tool) => tool.name === 'set_layer_visibility')
+    .parameters.properties.layerId;
+  visibility.enum = visibility.enum.filter(
+    (key) => !['local-adsb', 'fire-perimeters'].includes(key),
+  );
+  for (const tool of legacy) {
+    for (const value of Object.values(tool.parameters.properties)) {
+      if (value.enum)
+        value.enum = value.enum.filter((key) => key !== 'fire-perimeters');
+    }
+  }
+  // Independently derived by executing trusted c9f9896 actionSchemas in the restricted container.
+  // Re-derived after merging in this fork's own additive map-source enum
+  // values (carto-positron, carto-dark, openfreemap-dark), which predate and
+  // are unrelated to the upstream additions stripped above.
+  const hud = legacy.find((tool) => tool.name === 'set_hud').parameters
+    .properties.layout;
+  hud.enum = hud.enum.filter((layout) => layout !== 'cyber');
+  assert.equal(
+    createHash('sha256').update(JSON.stringify(legacy)).digest('hex'),
+    'cc5d90064dc56a97df3e23b9d9647c574ade8a4de80c458951138708271bc38c',
+  );
 });

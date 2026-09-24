@@ -9,10 +9,29 @@ export function createBrowserViteConfig({
   cesiumToken,
   host = 'localhost',
   port = 4173,
+  command,
 } = {}) {
   return {
     plugins: [cesium(), applicationHtmlPlugin(), ...plugins],
     ...(publicDir === undefined ? {} : { publicDir }),
+    // A production build must not clean the dependency cache a running dev
+    // server is still serving optimized module URLs from.
+    ...(command === 'build' ? { cacheDir: 'node_modules/.vite-build' } : {}),
+    optimizeDeps: {
+      // First reached through the SDR worker or a dynamic import. Pre-bundle
+      // them at startup so first use cannot invalidate already-transformed
+      // URLs with Vite's "Outdated Optimize Dep" 504 response.
+      include: [
+        '@jtarrio/signals/demod/demodulator.js',
+        '@jtarrio/signals/demod/modes.js',
+        '@jtarrio/webrtlsdr/rtlsdr.js',
+        'egm96-universal',
+      ],
+      // maplibre-gl ships its worker as a sibling module resolved from its
+      // own URL; the dependency optimizer drops that file, so serve it
+      // unbundled.
+      exclude: ['maplibre-gl'],
+    },
     server: {
       host: host || 'localhost',
       port: parseInt(port, 10) || 4173,
@@ -33,9 +52,6 @@ export function createBrowserViteConfig({
       'import.meta.env.GOOGLE_MAPS_API_KEY': JSON.stringify(googleApiKey),
       'import.meta.env.CESIUM_ION_TOKEN': JSON.stringify(cesiumToken),
     },
-    // maplibre-gl ships its worker as a sibling module resolved from its own
-    // URL; the dependency optimizer drops that file, so serve it unbundled.
-    optimizeDeps: { exclude: ['maplibre-gl'] },
     build: { chunkSizeWarningLimit: 1500 },
   };
 }
