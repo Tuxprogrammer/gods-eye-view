@@ -73,9 +73,12 @@ function installSlop(disposers, on) {
   const apply = async () => {
     if (undo || !isMobileUi()) return;
     try {
-      const Cesium = await import('cesium');
+      // Never bind the result to `Cesium`: vite-plugin-cesium rewrites this
+      // import to the global `Cesium`, which a local `const Cesium` would
+      // shadow (a TDZ ReferenceError in production builds only).
+      const { Scene } = await import('cesium');
       if (cancelled || undo || !isMobileUi()) return;
-      undo = installPickSlop(Cesium.Scene);
+      undo = installPickSlop(Scene);
     } catch (error) {
       console.warn('[mobile] pick slop unavailable', error);
     }

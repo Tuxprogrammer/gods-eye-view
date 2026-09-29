@@ -734,3 +734,8 @@ test('the mobile credit stays in its corner: safe-area bottom, clear of the mic 
   assert.ok(creditZ < backdropZ && backdropZ < sheetZ, `credit z-index ${creditZ} must sit below the backdrop (${backdropZ}) and sheet (${sheetZ})`);
   assert.equal(mobileDecl('z-index'), undefined, 'the mobile credit must inherit its stacking, not override it');
 });
+
+test('OSM-derived layers never force the desktop credit row into a stack', () => {
+  assert.doesNotMatch(css, /body:has\([^)]*alpr-cameras[^}]*#cesium-credits/);
+  assert.doesNotMatch(css, /#cesium-credits\s+\.cesium-credit-expand-link\s*\{[^}]*display:\s*block/);
+});
