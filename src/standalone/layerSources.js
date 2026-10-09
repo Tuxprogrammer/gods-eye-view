@@ -1,8 +1,8 @@
 import { createOpenFreeMapSource } from '../sources/openFreeMap.js';
 import {
-  createOpenSkySource,
-  createAdsbLolSource,
-  createAisStreamSource,
+  createFlightSource,
+  createMilitarySource,
+  createVesselSource,
 } from '../sources/live/standalone.js';
 import { createCctvSource } from '../layers/cctv/source.js';
 import { createRadioSource } from '../layers/radio/source.js';
@@ -20,6 +20,7 @@ import { createFirmsSource } from '../layers/firms/source.js';
 import { createPropagationSource } from '../layers/propagation/source.js';
 import { createAprsSource } from '../layers/aprs/source.js';
 import { createMeshtasticSource } from '../layers/meshtastic/source.js';
+import { createMapillarySource } from '../layers/streetLevel/providers/mapillary/source.js';
 import { createReferenceSources } from '../sources/reference.js';
 export { createReferenceSources as createStandaloneReferenceSources } from '../sources/reference.js';
 
@@ -28,10 +29,13 @@ export function createStandaloneLayerSources() {
   const mapTiles = createOpenFreeMapSource();
   return {
     ...createReferenceSources(),
-    flights: createOpenSkySource(),
-    military: createAdsbLolSource(),
-    vessels: createAisStreamSource({
-      apiUrl: import.meta.env?.VITE_AIS_LIVE_API_URL || '/api/ais-live',
+    flights: createFlightSource(),
+    military: createMilitarySource(),
+    vessels: createVesselSource({
+      apiUrl: import.meta.env?.VITE_AIS_LIVE_API_URL || '/api/vessels',
+      // Resolved against the document's address, which a panel host may
+      // serve from its own scheme.
+      origin: () => globalThis.document?.baseURI ?? 'http://localhost',
     }),
     cctv: createCctvSource(),
     radio: createRadioSource(),
@@ -49,5 +53,8 @@ export function createStandaloneLayerSources() {
     wind: createWindSource(),
     weather: createWeatherSource(),
     cyclones: createCycloneSource(),
+    mapillary: createMapillarySource({
+      token: import.meta.env?.MAPILLARY_CLIENT_TOKEN || '',
+    }),
   };
 }

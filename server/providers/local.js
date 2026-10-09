@@ -24,14 +24,18 @@ import { aisLiveProxy } from './vessels/ais-live.js';
 import { trackBackfillProxies } from './aircraft/tracks.js';
 import { openAiRealtimeProxy } from './openai.js';
 import { googlePlacesContextProxy } from './places.js';
+import { mapillaryProxy } from './mapillary.js';
 import { keySetupEndpoint } from '../standalone/key-setup.js';
 import { weatherProxy } from './weather.js';
 import { firePerimetersProxy } from './firePerimeters.js';
 import { cycloneProxy } from './cyclones.js';
 import { windProxy } from './wind.js';
 
-/** Construct the local provider plugins in their established order. */
-function localProviderPlugins() {
+/**
+ * Construct the local provider plugins in their established order.
+ * `realtime` configures the voice session token endpoint.
+ */
+function localProviderPlugins({ realtime } = {}) {
   return [
     openSkyProxy(),
     celestrakProxy(),
@@ -57,11 +61,12 @@ function localProviderPlugins() {
     adsbLolProxy(),
     aisLiveProxy(),
     trackBackfillProxies(),
-    openAiRealtimeProxy(),
+    openAiRealtimeProxy({ realtime }),
     googlePlacesContextProxy(),
     windProxy(),
     weatherProxy(),
     cycloneProxy(),
+    mapillaryProxy(),
     firePerimetersProxy(),
     keySetupEndpoint(),
   ];

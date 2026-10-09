@@ -38,14 +38,21 @@ function fakeWindow({ search = '', stored = null, matches = false } = {}) {
 }
 const fakeDoc = () => ({ documentElement: { dataset: {} } });
 
-test('index.html inline bootstrap query equals MOBILE_QUERY', () => {
+test('the external bootstrap query equals MOBILE_QUERY, and index.html has no inline script', () => {
   const html = fs.readFileSync(
     new URL('../../index.html', import.meta.url),
     'utf8',
   );
-  const match = html.match(/MOBILE_QUERY\s*=\s*'([^']+)'/);
-  assert.ok(match, 'index.html must define the inline MOBILE_QUERY');
+  const bootstrap = fs.readFileSync(
+    new URL('../../public/mobile-bootstrap.js', import.meta.url),
+    'utf8',
+  );
+  const match = bootstrap.match(/MOBILE_QUERY\s*=\s*'([^']+)'/);
+  assert.ok(match, 'mobile-bootstrap.js must define MOBILE_QUERY');
   assert.equal(match[1], MOBILE_QUERY);
+  // The CSP (build/vite.js BROWSER_CSP) blocks inline script outright.
+  assert.match(html, /<script src="\/mobile-bootstrap\.js"><\/script>/);
+  assert.doesNotMatch(html, /<script(?![^>]*\bsrc=)[^>]*>/);
   assert.match(html, /viewport-fit=cover/);
   assert.match(html, /interactive-widget=resizes-content/);
   assert.match(html, /width=device-width, initial-scale=1\.0/);
