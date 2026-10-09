@@ -1,4 +1,7 @@
-import { admitSameSiteRequest } from '../../../src/localRequestGate.mjs';
+import {
+  admitSameSiteRequest,
+  parsePublicOrigins,
+} from '../../../src/localRequestGate.mjs';
 
 /**
  * Cross-site request gate for cost-bearing and log endpoints. Feeds the
@@ -19,6 +22,8 @@ export function admitSameSite(req, res) {
     origin: req.headers?.origin,
     secFetchSite: req.headers?.['sec-fetch-site'],
     proxyHeaders: req.headers || {},
+    // Read per request so a restart is the only step after editing .env.
+    publicOrigins: parsePublicOrigins(process.env.GEV_PUBLIC_ORIGINS),
   });
   if (verdict.ok) return false;
   res.statusCode = verdict.status;

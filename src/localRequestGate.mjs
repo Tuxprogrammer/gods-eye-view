@@ -72,8 +72,42 @@ function requestAuthority(hostHeader, protocol) {
 }
 
 /**
+ * Parse the operator's public origins (GEV_PUBLIC_ORIGINS): the exact
+ * `scheme://host[:port]` addresses a reverse proxy serves the app from, comma
+ * separated. Anything that is not a bare origin (a path, a wildcard, `null`)
+ * is ignored, so a typo can only narrow the list.
+ * @param {string|undefined|null} value
+ * @returns {string[]}
+ */
+export function parsePublicOrigins(value) {
+  const origins = [];
+  for (const entry of String(value ?? '').split(',')) {
+    const raw = entry.trim();
+    if (!raw || raw.includes('*')) continue;
+    try {
+      const url = new URL(raw);
+      if (
+        ['http:', 'https:'].includes(url.protocol) &&
+        url.origin === raw.replace(/\/$/, '').toLowerCase()
+      )
+        origins.push(url.origin);
+    } catch {
+      /* not an origin */
+    }
+  }
+  return [...new Set(origins)];
+}
+
+/**
  * Decide whether a request to a cost-bearing/log endpoint is same-site enough
  * to admit. Pure: no I/O, no globals.
+ *
+ * `publicOrigins` (from GEV_PUBLIC_ORIGINS, empty by default) is this fork's
+ * opt-in for serving behind a TLS-terminating reverse proxy, where the app sees
+ * plain http and the proxy's Host, so no browser Origin can equal its own
+ * authority. A request whose Origin is listed passes; behind a proxy, one with
+ * no Origin passes only when the browser itself says `Sec-Fetch-Site:
+ * same-origin`. Every other rule below still applies.
  *
  * Policy, in order:
  *  1. any reverse-proxy / CDN signal header present (PROXY_SIGNALS) → 403;
@@ -87,7 +121,7 @@ function requestAuthority(hostHeader, protocol) {
  *  4. otherwise ok. Non-browser loopback tools and the LAN opt-in (which may
  *     carry neither `Origin` nor `Sec-Fetch-Site`) pass here.
  *
- * @param {{hostHeader?: string, protocol?: string, origin?: string, secFetchSite?: string, proxyHeaders?: Record<string,string>}} req
+ * @param {{hostHeader?: string, protocol?: string, origin?: string, secFetchSite?: string, proxyHeaders?: Record<string,string>, publicOrigins?: string[]}} req
  * @returns {{ok: true} | {ok: false, status: 403, error: string}}
  */
 export function admitSameSiteRequest({
@@ -96,10 +130,21 @@ export function admitSameSiteRequest({
   origin,
   secFetchSite,
   proxyHeaders = {},
+  publicOrigins = [],
 } = {}) {
+  const site = String(secFetchSite || '')
+    .trim()
+    .toLowerCase();
+  const hasOrigin = origin !== undefined && origin !== null && origin !== '';
+  const publicOrigin = hasOrigin && publicOrigins.includes(String(origin));
   // (1) A request carrying reverse-proxy / CDN forwarding headers did not
-  // originate on this machine, whatever its socket says.
-  if (hasProxySignals(proxyHeaders)) {
+  // originate on this machine, whatever its socket says — unless the operator
+  // named the proxy's public origin and the browser vouches for this request.
+  if (
+    hasProxySignals(proxyHeaders) &&
+    !publicOrigin &&
+    !(publicOrigins.length > 0 && !hasOrigin && site === 'same-origin')
+  ) {
     return {
       ok: false,
       status: 403,
@@ -109,9 +154,6 @@ export function admitSameSiteRequest({
   // (2) The browser tells us when a request is cross-site. `none` is a typed
   // URL / bookmark; `same-origin` is the app itself. Anything else (cross-site,
   // same-site but cross-origin) is refused.
-  const site = String(secFetchSite || '')
-    .trim()
-    .toLowerCase();
   if (site !== '' && site !== 'same-origin' && site !== 'none') {
     return {
       ok: false,
@@ -119,8 +161,9 @@ export function admitSameSiteRequest({
       error: 'Cross-site requests are not accepted',
     };
   }
-  // (3) If Origin is present it must exactly equal the request's own authority.
-  if (origin !== undefined && origin !== null && origin !== '') {
+  // (3) If Origin is present it must exactly equal the request's own authority
+  // (or be one of the operator's public origins).
+  if (hasOrigin && !publicOrigin) {
     if (origin === 'null') {
       return {
         ok: false,
