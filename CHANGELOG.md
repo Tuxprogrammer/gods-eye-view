@@ -1,5 +1,12 @@
 # Changelog
 
+- `OPENAI_BASE_URL` points the HUD summary and API-key voice at any OpenAI-compatible
+  gateway (for example a local LiteLLM in front of a self-hosted Realtime server) instead of
+  api.openai.com. Voice secrets are minted from the gateway and the browser's WebRTC offer is
+  relayed through the new same-origin `/api/realtime/calls`; such sessions are metered at $0.
+  ChatGPT OAuth voice always stays on OpenAI. Unset keeps OpenAI; a value that is not a plain
+  http(s) URL falls back to OpenAI rather than sending the key elsewhere.
+
 - Meshtastic nodes now show their hardware model on the hover card, above the firmware line, and
   nodes whose model has a picture are drawn with that device instead of the role glyph (other
   hardware keeps the glyph). The pictures are GPL v3 SVGs from meshtastic/web-flasher, pinned to

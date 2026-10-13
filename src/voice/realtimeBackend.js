@@ -4,6 +4,9 @@ import { DEFAULT_VOICE_TIER, resolveVoiceModel } from './voiceCost.js';
 export function createRealtimeBackend({
   tokenEndpoint = '/api/realtime/token',
   callsEndpoint = 'https://api.openai.com/v1/realtime/calls',
+  // Same-origin SDP relay used when the server minted the secret from a
+  // configured OPENAI_BASE_URL gateway (X-GEV-Voice-Gateway: local).
+  gatewayCallsEndpoint = '/api/realtime/calls',
   tokenTransport = (...args) => fetch(...args),
   connectionTransport = (...args) => fetch(...args),
   timeoutMs = 30_000,
@@ -66,6 +69,10 @@ export function createRealtimeBackend({
         tier: response.headers?.get?.('X-GEV-Voice-Tier') || null,
         transcribeModel:
           response.headers?.get?.('X-GEV-Voice-Transcribe-Model') || null,
+        gateway:
+          response.headers?.get?.('X-GEV-Voice-Gateway') === 'local'
+            ? 'local'
+            : null,
         expiresAt,
       };
     },
@@ -79,7 +86,9 @@ export function createRealtimeBackend({
         throw new Error(
           'Realtime client secret has expired; reconnect to request a new one',
         );
-      const response = await connectionTransport(callsEndpoint, {
+      const endpoint =
+        credential.gateway === 'local' ? gatewayCallsEndpoint : callsEndpoint;
+      const response = await connectionTransport(endpoint, {
         method: 'POST',
         body: offerSdp,
         signal,

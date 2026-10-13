@@ -129,6 +129,7 @@
   "server/providers/military-installations/constants.js",
   "server/providers/military-installations/query.js",
   "server/providers/openai.js",
+  "server/providers/openai/base-url.js",
   "server/providers/openai/constants.js",
   "server/providers/openai/debug-log.js",
   "server/providers/openai/hud-summary.js",
@@ -980,5 +981,6 @@
   "src/tools/views.test.mjs",
   "src/app/embed.test.mjs",
   "src/tools/globePanel.test.mjs",
-  "src/costEndpointThrottle.test.mjs"
+  "src/costEndpointThrottle.test.mjs",
+  "src/openAiBaseUrl.test.mjs"
 ]

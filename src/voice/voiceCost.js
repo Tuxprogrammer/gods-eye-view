@@ -436,10 +436,31 @@ export function formatCostUsd(usd) {
  * @param {{tier?: string, modelId?: string,
  *          limits?: {warnUsd?: number, capUsd?: number}}} [options]
  */
+/** Every rate zero: a session served by a local gateway costs nothing. */
+const LOCAL_VOICE_RATES = Object.freeze(
+  Object.fromEntries(
+    Object.keys(VOICE_MODELS.standard.rates).map((name) => [name, 0]),
+  ),
+);
+
+/** The meter's model for a gateway session: priced at zero, never "unknown". */
+function localVoiceModel(modelId, tier) {
+  return {
+    tier: resolveVoiceModel(tier).tier,
+    id:
+      typeof modelId === 'string' && modelId.trim() ? modelId.trim() : 'local',
+    label: 'LOCAL',
+    rates: LOCAL_VOICE_RATES,
+    recognized: true,
+  };
+}
+
 export function createVoiceCostTracker(options = {}) {
-  const model = options.modelId
-    ? resolveVoiceModelById(options.modelId)
-    : { ...resolveVoiceModel(options.tier), recognized: true };
+  const model = options.local
+    ? localVoiceModel(options.modelId, options.tier)
+    : options.modelId
+      ? resolveVoiceModelById(options.modelId)
+      : { ...resolveVoiceModel(options.tier), recognized: true };
   const limits = normalizeCostLimits(options.limits);
 
   let totalUsd = 0;

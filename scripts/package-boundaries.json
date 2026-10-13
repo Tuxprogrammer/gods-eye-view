@@ -295,6 +295,7 @@
       "server/providers/common/request.js",
       "server/providers/common/source-root.js",
       "server/providers/openai.js",
+      "server/providers/openai/base-url.js",
       "server/providers/openai/codex-auth.js",
       "server/providers/openai/constants.js",
       "server/providers/openai/debug-log.js",

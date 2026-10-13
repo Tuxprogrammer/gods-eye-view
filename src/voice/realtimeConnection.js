@@ -99,7 +99,9 @@ export class RealtimeConnection {
       // (OPENAI_REALTIME_MODEL[_MINI]) can point a tier at a different model,
       // and pricing by the tier we asked for would then under-meter and let the
       // cap be overrun. Unrecognised ids bill at worst-case rates.
-      const costState = this.cost.bindServedModel(minted.model);
+      const costState = this.cost.bindServedModel(minted.model, {
+        local: minted.gateway === 'local',
+      });
       this.cost.bindTranscriptionModel?.(minted.transcribeModel);
       if (!costState.ratesRecognized) {
         console.warn(

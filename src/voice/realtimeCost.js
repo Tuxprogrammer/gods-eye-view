@@ -185,7 +185,9 @@ export class RealtimeCost {
     }
     return this.applyCost(
       this.costTracker.recordUsd(
-        estimateTranscriptionCostUsd(usage, this.transcribeModel),
+        this.localVoice
+          ? 0
+          : estimateTranscriptionCostUsd(usage, this.transcribeModel),
       ),
     );
   }
@@ -252,6 +254,7 @@ export class RealtimeCost {
     this.sessionCloudVoiceAuth = this.cloudVoiceAuth;
     this.oauthUsage = { responses: 0, input: 0, output: 0, captions: 0 };
     this.costCapStopped = false;
+    this.localVoice = false;
     // Provisional meter (tier-priced) so the readout shows $0.00 while
     // connecting. It is REPLACED below with one bound to the model the server
     // actually served, before any usage can arrive.
@@ -260,10 +263,18 @@ export class RealtimeCost {
       limits: this.voiceLimits,
     });
   }
-  bindServedModel(model) {
+  /**
+   * `local` is set when the server minted the session from a configured
+   * OPENAI_BASE_URL gateway: nothing is billed by OpenAI, so responses and
+   * captions are metered at zero instead of at worst-case unknown-model rates.
+   */
+  bindServedModel(model, { local = false } = {}) {
+    this.localVoice = local;
     this.costTracker = createVoiceCostTracker({
       modelId: model || resolveVoiceModel(this.voiceTier).id,
+      tier: this.voiceTier,
       limits: this.voiceLimits,
+      local,
     });
     return this.costTracker.state();
   }

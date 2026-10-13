@@ -13,6 +13,8 @@ import {
   OPENAI_REALTIME_TRANSCRIBE_MODEL_DEFAULT,
 } from './constants.js';
 import { realtimeInstructions } from './instructions.js';
+import { OPENAI_BASE_URL_DEFAULT, resolveOpenAiBaseUrl } from './base-url.js';
+import { readRequestBody } from '../common/request.js';
 import { GEV_REALTIME_TOOLS } from './tools.js';
 import {
   preferCodexOAuth,
@@ -127,9 +129,19 @@ function createRealtimeOAuthLoginHandler({
   };
 }
 
+/**
+ * API-key voice follows OPENAI_BASE_URL, so a local OpenAI-compatible gateway
+ * can serve Realtime too. ChatGPT OAuth always stays on OpenAI: that token is
+ * the user's ChatGPT credential and must never be sent to another host.
+ */
+function realtimeGatewayBase(authMode, environment) {
+  if (authMode === 'oauth') return OPENAI_BASE_URL_DEFAULT;
+  return resolveOpenAiBaseUrl(environment.OPENAI_BASE_URL);
+}
+
 function createRealtimeTokenHandler({
   annotationGuidance,
-  endpoint = 'https://api.openai.com/v1/realtime/client_secrets',
+  endpoint,
   fetchImpl = (...args) => fetch(...args),
   resolveApiKey = () => process.env.OPENAI_API_KEY,
   resolveOAuthAccessToken = () => readCodexOAuthAccessToken(),
@@ -304,18 +316,23 @@ function createRealtimeTokenHandler({
       },
     };
 
+    const base = realtimeGatewayBase(authMode, environment);
+    const gateway = base !== OPENAI_BASE_URL_DEFAULT;
     try {
-      const response = await fetchImpl(endpoint, {
-        method: 'POST',
-        redirect: 'error',
-        signal: AbortSignal.timeout(30_000),
-        headers: {
-          Authorization: `Bearer ${bearer}`,
-          'Content-Type': 'application/json',
-          'OpenAI-Safety-Identifier': 'gev-local-dev',
+      const response = await fetchImpl(
+        endpoint || `${base}/realtime/client_secrets`,
+        {
+          method: 'POST',
+          redirect: 'error',
+          signal: AbortSignal.timeout(30_000),
+          headers: {
+            Authorization: `Bearer ${bearer}`,
+            'Content-Type': 'application/json',
+            'OpenAI-Safety-Identifier': 'gev-local-dev',
+          },
+          body: JSON.stringify(sessionConfig),
         },
-        body: JSON.stringify(sessionConfig),
-      });
+      );
       const body = await response.text();
       res.statusCode = response.status;
       // Which tier/model this secret was actually minted for. The upstream
@@ -336,6 +353,9 @@ function createRealtimeTokenHandler({
       if (requestedTier && !isKnownVoiceTier(requestedTier)) {
         res.setHeader('X-GEV-Voice-Tier-Fallback', '1');
       }
+      // A configured gateway means the browser negotiates through
+      // /api/realtime/calls and the session is not billed by OpenAI.
+      if (gateway) res.setHeader('X-GEV-Voice-Gateway', 'local');
       if (!response.ok) {
         console.warn(`[realtime-token] upstream HTTP ${response.status}`);
         res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -362,7 +382,80 @@ function createRealtimeTokenHandler({
   };
 }
 
+const SDP_MAX_BYTES = 64 * 1024;
+
+/**
+ * Same-origin WebRTC signalling relay for a configured OPENAI_BASE_URL gateway.
+ *
+ * The browser POSTs its SDP offer here with the ephemeral secret minted by
+ * /api/realtime/token; the server forwards both to `${base}/realtime/calls`
+ * and returns the answer. The browser never needs to reach the gateway host
+ * for signalling, and a secret a gateway issued is only ever presented back
+ * to that gateway. Without a gateway this route refuses: OpenAI sessions
+ * negotiate with OpenAI directly, as before.
+ */
+function createRealtimeCallsHandler({
+  fetchImpl = (...args) => fetch(...args),
+  environment = process.env,
+} = {}) {
+  return async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    const fail = (status, error) => {
+      res.statusCode = status;
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({ error }));
+    };
+    if (req.method !== 'POST') return fail(405, 'Method not allowed');
+    const base = realtimeGatewayBase('api-key', environment);
+    if (base === OPENAI_BASE_URL_DEFAULT)
+      return fail(404, 'No Realtime gateway is configured');
+    const authorization = String(req.headers?.authorization || '');
+    if (!/^Bearer \S+$/.test(authorization))
+      return fail(401, 'Missing Realtime client secret');
+    if (!enforceRateLimit(openAiRateLimiter(), req, res)) return;
+
+    let offer;
+    try {
+      offer = await readRequestBody(req, SDP_MAX_BYTES);
+    } catch (error) {
+      return fail(
+        error?.code === 'BODY_TOO_LARGE' ? 413 : 400,
+        'Invalid SDP offer',
+      );
+    }
+    if (!offer.startsWith('v=0')) return fail(400, 'Invalid SDP offer');
+
+    try {
+      const response = await fetchImpl(`${base}/realtime/calls`, {
+        method: 'POST',
+        redirect: 'error',
+        signal: AbortSignal.timeout(30_000),
+        headers: {
+          Authorization: authorization,
+          'Content-Type': 'application/sdp',
+        },
+        body: offer,
+      });
+      const answer = await response.text();
+      if (!response.ok) {
+        console.warn(`[realtime-calls] gateway HTTP ${response.status}`);
+        return fail(
+          response.status >= 500 ? 502 : response.status,
+          'Realtime SDP negotiation failed',
+        );
+      }
+      res.statusCode = response.status;
+      res.setHeader('Content-Type', 'application/sdp');
+      res.end(answer);
+    } catch {
+      console.warn('[realtime-calls] relay failed');
+      fail(502, 'Realtime SDP negotiation failed');
+    }
+  };
+}
+
 export {
+  createRealtimeCallsHandler,
   createRealtimeOAuthLoginHandler,
   createRealtimeOAuthStatusHandler,
   createRealtimeTokenHandler,
