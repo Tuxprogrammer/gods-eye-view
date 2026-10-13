@@ -4,6 +4,7 @@
  * minimum size, reload, and dock again. `--fail-on-retry` (or
  * QA_FAIL_ON_RETRY=1) fails on any header-press retry.
  */
+import { pinDesktopUi } from './qa-desktop-ui.mjs';
 import assert from 'node:assert/strict';
 import { pathToFileURL } from 'node:url';
 import { RESIZE_DIRECTIONS, resizeBox } from '../src/ui/panelResize.js';
@@ -100,6 +101,7 @@ async function main() {
   const monitors = [];
   try {
     const page = await browser.newPage();
+    await pinDesktopUi(page);
     await page.setViewport(VIEWPORT);
     const errors = [];
     monitors.push(watchPage(page, { name: 'panel', errors }));

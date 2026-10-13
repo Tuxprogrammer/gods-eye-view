@@ -12,6 +12,7 @@
  * (or QA_FAIL_ON_RETRY=1) fails a missed header press unless the panel moved.
  * A failed run saves evidence under qa-artifacts/street-level/.
  */
+import { pinDesktopUi } from './qa-desktop-ui.mjs';
 import assert from 'node:assert/strict';
 import { pathToFileURL } from 'node:url';
 import { LAYER_STATE_REGISTRY } from '../src/data/layerState.js';
@@ -595,6 +596,7 @@ async function main() {
       },
     );
     const page = await browser.newPage();
+    await pinDesktopUi(page);
     const fixture = newFixture();
     await watch(page, 'main');
     if (fixtures) await serveFixtures(page, fixture);
@@ -2087,6 +2089,7 @@ async function main() {
           'keyless install (a second page, no key on the server) gates the controls and reports KEY REQUIRED',
           async () => {
             const keyless = await browser.newPage();
+            await pinDesktopUi(keyless);
             await keyless.setViewport(VIEWPORTS[0]);
             await watch(keyless, 'keyless');
             await serveFixtures(keyless, newFixture({ configured: false }));
