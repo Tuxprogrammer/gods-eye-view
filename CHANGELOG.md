@@ -30,6 +30,33 @@
   recency window and type, with tracks, weather, message pop-ups and an
   aprs.fi-style details card. The login passcode is computed from `APRS_CALLSIGN`.
   The panel gains dropdown and text-filter widgets.
+- Treat explicitly current, complete empty vessel coverage as a successful update,
+  clearing obsolete contacts while retaining stale or incomplete snapshots.
+
+- Custom Street Level provider switches survive share links and stored state
+  using URL-safe stable provider IDs and a shared boolean-switch codec; existing
+  Mapillary links keep their meaning. Explicit provider toggles reach durable
+  state without adopting unrelated live switch changes.
+
+- Directions and Recent Imagery accept replaceable acquisition sources, including
+  route transport, imagery catalog, thumbnails, tile templates and attribution.
+  Explicitly removing either source leaves its layer unavailable; standalone
+  defaults preserve the existing providers.
+
+- Catalog source availability no longer modifies layer objects; unavailable
+  tooltips use layer display names.
+
+- Street Level with no providers uses the shared unavailable state and refuses
+  activation before initialization, while keeping its layer identity visible.
+
+- Application source configuration accepts replacements and explicit removal.
+  Missing catalog feeds leave their layers unavailable without blocking startup
+  or making fallback requests; malformed supplied feeds remain configuration errors.
+
+- Street Level providers are optional in application composition. Omitting a
+  Mapillary source no longer prevents startup; callers can inject a different
+  provider list or an empty list without changing layer identities or share links.
+
 - Vector tile sources take their allowed tile origin from the configured
   `tileJsonUrl`, so repointing only that URL at a mirror loads tiles from the
   mirror or fails visibly instead of silently using OpenFreeMap. Thanks to
@@ -97,6 +124,19 @@
   stale, moved-camera, invalid and oversized captures still fail closed.
 
 ## [Unreleased]
+
+- Street Level: Google Street View is the second provider. On the Google 3D
+  map (Google's terms keep it off other maps), light its chip (off by
+  default: every panorama is billed to the Google Maps key, which needs the
+  Maps JavaScript API) and click a street, or press OPEN STREET VIEW, to
+  open Google's own panorama in
+  the panel, with its arrows, the address and month in the caption, a link
+  to Google Maps and FOLLOW. Share links carry it in the provider switches
+  (`r.google-1`). One provider is lit at a time (lighting one switches the
+  other off), Mapillary by default since it is free. Street View's panoramas
+  are all 360°, so the IMAGERY and SINCE filters and the legend apply to
+  Mapillary only and hide while GOOGLE STREET VIEW is lit; its globe marker
+  is a Google-blue view cone.
 
 - Add an experimental ChatGPT/Codex OAuth option for cloud voice in Provider
   Settings. API-key voice remains the default. Local sign-in can start from
