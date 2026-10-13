@@ -17,8 +17,12 @@ COPY . .
 
 ARG CESIUM_ION_TOKEN
 ARG GOOGLE_MAPS_API_KEY
+# The Street Level viewer reads the Mapillary token from the bundle (build/vite.js
+# define), so it must be present at build time, not only in the runtime .env.
+ARG MAPILLARY_CLIENT_TOKEN
 ENV CESIUM_ION_TOKEN=$CESIUM_ION_TOKEN \
-    GOOGLE_MAPS_API_KEY=$GOOGLE_MAPS_API_KEY
+    GOOGLE_MAPS_API_KEY=$GOOGLE_MAPS_API_KEY \
+    MAPILLARY_CLIENT_TOKEN=$MAPILLARY_CLIENT_TOKEN
 RUN npm run build
 
 # The APRS layer keeps 24 h of packets in /app/.gev-cache/aprs (node:sqlite, built in
