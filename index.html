@@ -15,7 +15,10 @@
        for the tab. -->
   <link rel="icon" type="image/svg+xml" href="/logo.svg" />
   <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-180.png" />
-  <link rel="manifest" href="/manifest.webmanifest" />
+  <!-- use-credentials: browsers fetch the manifest without cookies by
+       default, so a sign-in proxy (Authentik on gev.tuxhpc.net) redirects it
+       to a login page that the CSP's manifest-src 'self' then blocks. -->
+  <link rel="manifest" href="/manifest.webmanifest" crossorigin="use-credentials" />
   <meta name="theme-color" content="#0a0a0f" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
