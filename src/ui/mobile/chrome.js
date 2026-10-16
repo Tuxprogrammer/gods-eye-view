@@ -11,6 +11,7 @@
  *   ttl   - ms before it fades (default 4000; 0 = stays until cleared)
  *   id    - optional key so one source can replace/clear its own message
  */
+import { t } from '../../i18n/index.js';
 import { movePanel, restorePanel } from './portal.js';
 import { openSheet, isSheetOpen, closeSheet } from './sheet.js';
 
@@ -24,7 +25,7 @@ export function installChrome(doc = document, win = window) {
   menu.id = 'mobile-menu-btn';
   menu.type = 'button';
   menu.className = 'mobile-menu-btn';
-  menu.setAttribute('aria-label', 'Menu');
+  menu.setAttribute('aria-label', t('Menu'));
   menu.setAttribute('aria-controls', 'mobile-sheet');
   menu.setAttribute('aria-expanded', 'false');
   const bars = doc.createElement('span');

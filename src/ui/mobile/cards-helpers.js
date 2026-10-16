@@ -2,6 +2,7 @@
  * Pure helpers for the mobile card surfaces (no DOM, no Cesium), so the logic
  * that decides what a tap does can be unit tested. See pages/cards.js.
  */
+import { t, tn } from '../../i18n/index.js';
 import {
   MAX_VERTICES,
   MIN_VERTICES,
@@ -36,37 +37,41 @@ export function drawToolbarState(session) {
       count: 0,
       canUndo: false,
       canFinish: false,
-      hint: 'Tap the map to start.',
-      finishLabel: 'Finish',
+      hint: t('Tap the map to start.'),
+      finishLabel: t('Finish'),
     };
   }
   const count = session.vertices.length;
   const shape = session.shape;
-  const finishLabel = shape === 'pin' ? 'Place pin' : 'Finish';
+  const finishLabel = shape === 'pin' ? t('Place pin') : t('Finish');
   const reason = finishReason(session);
   let hint;
   if (count === 0) {
     hint =
       shape === 'pin'
-        ? 'Tap where the pin goes.'
-        : 'Tap the map to add points.';
+        ? t('Tap where the pin goes.')
+        : t('Tap the map to add points.');
   } else if (reason === 'too-few') {
     const need = (MIN_VERTICES[shape] || 1) - count;
-    hint = `Tap ${need} more point${need === 1 ? '' : 's'}.`;
+    hint = tn(need, 'Tap {count} more point.', 'Tap {count} more points.');
   } else if (reason === 'degenerate') {
     hint =
       shape === 'area'
-        ? 'Those points are in a line. Move one off it.'
-        : 'That line has no length. Tap further away.';
+        ? t('Those points are in a line. Move one off it.')
+        : t('That line has no length. Tap further away.');
   } else if (reason === 'invalid') {
-    hint = 'A point is off the globe. Undo it.';
+    hint = t('A point is off the globe. Undo it.');
   } else {
     const measure = safeMeasure(session);
     hint =
       shape === 'pin'
-        ? `Tap ${finishLabel} to drop it, or tap the map to move it.`
-        : `${measure ? `${measure} · ` : ''}Tap Finish when done.`;
-    if (count >= MAX_VERTICES) hint += ' Point limit reached.';
+        ? t('Tap {button} to drop it, or tap the map to move it.', {
+            button: finishLabel,
+          })
+        : measure
+          ? t('{measure} · Tap Finish when done.', { measure })
+          : t('Tap Finish when done.');
+    if (count >= MAX_VERTICES) hint += ` ${t('Point limit reached.')}`;
   }
   return {
     count,

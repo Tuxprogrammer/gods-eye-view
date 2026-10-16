@@ -2,12 +2,13 @@
  * Pure state for the mobile cockpit drawer (no DOM). The drawer is a compact
  * bottom panel opened by the "i" button while cockpit mode is active.
  */
+import { msg } from '../../i18n/marker.js';
 export const COCKPIT_TABS = Object.freeze([
-  { id: 'contact', label: 'Contact' },
-  { id: 'route', label: 'Route' },
-  { id: 'brief', label: 'Brief' },
-  { id: 'display', label: 'Display' },
-  { id: 'radio', label: 'Radio' },
+  { id: 'contact', label: msg('Contact') },
+  { id: 'route', label: msg('Route') },
+  { id: 'brief', label: msg('Brief') },
+  { id: 'display', label: msg('Display') },
+  { id: 'radio', label: msg('Radio') },
 ]);
 
 export const DEFAULT_COCKPIT_TAB = 'contact';

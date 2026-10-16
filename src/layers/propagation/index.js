@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index.js';
 import {
   DEFAULT_PROPAGATION_FIELD,
   DEFAULT_PROPAGATION_OPACITY,
@@ -231,7 +232,7 @@ export function createPropagationLayer({
     } catch (error) {
       if (request.signal.aborted || !_enabled) return false;
       console.warn('[Data:Propagation] Fetch error:', error);
-      _lastError = error?.message || 'Propagation map unavailable';
+      _lastError = error?.message || t('Propagation map unavailable');
       return false;
     } finally {
       if (_request === request) {

@@ -9,6 +9,7 @@
  * tier and cost (text only, no ids) and proxies taps to the real buttons, so
  * the voice controller's cached element refs stay valid.
  */
+import { msg, t } from '../../../i18n/index.js';
 import { registerMobilePage } from '../sheet.js';
 import { movePanel } from '../portal.js';
 import { isMobileUi } from '../../mobileMode.js';
@@ -48,7 +49,7 @@ function tierState() {
   const button = q('#gev-voice-tier');
   return {
     mini: button?.getAttribute('aria-pressed') === 'true',
-    label: button?.textContent?.trim() || 'STD',
+    label: button?.textContent?.trim() || t('STD'),
     note: button?.title || '',
   };
 }
@@ -138,7 +139,7 @@ function attachFab(node) {
       if (!support.ok && !isSessionBusy(currentStatus())) {
         event.stopPropagation();
         event.preventDefault();
-        say('Voice needs https - see the Voice page', 'warn', 5000);
+        say(t('Voice needs https - see the Voice page'), 'warn', 5000);
         openVoicePage();
       }
     },
@@ -151,7 +152,7 @@ function attachFab(node) {
   mutationWatcher = new MutationObserver(() => {
     const status = currentStatus();
     if (status === 'error' && lastStatus !== 'error') {
-      say('Voice error - long-press the mic for details', 'error', 6000);
+      say(t('Voice error - long-press the mic for details'), 'error', 6000);
     }
     lastStatus = status;
     refreshAll();
@@ -177,7 +178,7 @@ function findAndAttach() {
 export function install() {
   handle = registerMobilePage({
     id: 'voice',
-    title: 'Voice',
+    title: t('Voice'),
     icon: '🎙',
     order: 80,
     summary,
@@ -210,7 +211,7 @@ function mount(container) {
 
   // Status + start/stop -------------------------------------------------
   const statusCard = el('section', 'mv-card mv-status');
-  statusCard.append(el('h3', 'mv-heading', 'Status'));
+  statusCard.append(el('h3', 'mv-heading', t('Status')));
   const word = el('div', 'mv-status-word');
   word.setAttribute('role', 'status');
   word.setAttribute('aria-live', 'polite');
@@ -226,20 +227,20 @@ function mount(container) {
   // Error ---------------------------------------------------------------
   const errorCard = el('section', 'mv-card mv-error');
   errorCard.setAttribute('role', 'alert');
-  errorCard.append(el('h3', 'mv-heading', 'Voice system error'));
+  errorCard.append(el('h3', 'mv-heading', t('Voice system error')));
   const errorText = el('div', 'mv-error-text');
   const errorHint = el(
     'p',
     'm-meta',
     'Check microphone permission and network access, then try again.',
   );
-  const retry = el('button', 'm-btn', 'Try again');
+  const retry = el('button', 'm-btn', t('Try again'));
   retry.type = 'button';
   retry.addEventListener('click', () => {
     dismissed = false;
     q('#gev-voice-button')?.click();
   });
-  const dismiss = el('button', 'm-btn', 'Dismiss');
+  const dismiss = el('button', 'm-btn', t('Dismiss'));
   dismiss.type = 'button';
   let dismissed = false;
   dismiss.addEventListener('click', () => {
@@ -253,12 +254,12 @@ function mount(container) {
 
   // Tier ------------------------------------------------------------------
   const tierCard = el('section', 'mv-card mv-tier');
-  tierCard.append(el('h3', 'mv-heading', 'Model tier'));
+  tierCard.append(el('h3', 'mv-heading', t('Model tier')));
   const seg = el('div', 'mv-seg');
   seg.setAttribute('role', 'group');
-  seg.setAttribute('aria-label', 'Voice model tier');
-  const stdBtn = el('button', 'm-btn mv-seg-btn', 'Standard');
-  const miniBtn = el('button', 'm-btn mv-seg-btn', 'Mini');
+  seg.setAttribute('aria-label', t('Voice model tier'));
+  const stdBtn = el('button', 'm-btn mv-seg-btn', t('Standard'));
+  const miniBtn = el('button', 'm-btn mv-seg-btn', t('Mini'));
   for (const [button, wantMini] of [
     [stdBtn, false],
     [miniBtn, true],
@@ -282,22 +283,22 @@ function mount(container) {
 
   // Cost ------------------------------------------------------------------
   const costCard = el('section', 'mv-card mv-cost');
-  costCard.append(el('h3', 'mv-heading', 'Session cost (estimate)'));
+  costCard.append(el('h3', 'mv-heading', t('Session cost (estimate)')));
   const costValue = el('div', 'mv-cost-value');
   const costNote = el('p', 'm-meta mv-note');
   costCard.append(costValue, costNote);
 
   // Help ------------------------------------------------------------------
   const help = el('section', 'mv-card mv-help');
-  help.append(el('h3', 'mv-heading', 'How to use'));
+  help.append(el('h3', 'mv-heading', t('How to use')));
   const list = el('ul', 'mv-help-list');
   for (const line of [
-    'Tap the mic button (bottom-right) to start. Tap it again to stop.',
-    'Long-press the mic button to open this page.',
-    'Just say what you want the map to do, or ask a question.',
-    'The microphone is only open while the status says Listening.',
+    msg('Tap the mic button (bottom-right) to start. Tap it again to stop.'),
+    msg('Long-press the mic button to open this page.'),
+    msg('Just say what you want the map to do, or ask a question.'),
+    msg('The microphone is only open while the status says Listening.'),
   ]) {
-    list.append(el('li', 'm-meta', line));
+    list.append(el('li', 'm-meta', t(line)));
   }
   help.append(list);
 
@@ -311,8 +312,8 @@ function mount(container) {
     word.textContent = statusWord(status);
     word.dataset.status = status;
     detail.textContent =
-      q('#gev-voice-detail')?.textContent?.trim() || 'Voice standby';
-    toggle.textContent = busy ? 'Stop voice' : 'Start voice';
+      q('#gev-voice-detail')?.textContent?.trim() || t('Voice standby');
+    toggle.textContent = busy ? t('Stop voice') : t('Start voice');
     toggle.disabled = !support.ok;
     toggle.dataset.busy = String(busy);
     const isError = status === 'error' && !dismissed;
@@ -320,7 +321,7 @@ function mount(container) {
     errorCard.hidden = !isError;
     errorText.textContent =
       q('#gev-voice-error-detail')?.textContent?.trim() ||
-      'Voice session could not be started.';
+      t('Voice session could not be started.');
     const tier = tierState();
     stdBtn.setAttribute('aria-pressed', String(!tier.mini));
     miniBtn.setAttribute('aria-pressed', String(tier.mini));

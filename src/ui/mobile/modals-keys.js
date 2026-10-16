@@ -7,6 +7,7 @@
  *  - tooltip-only explanations (tier, browser-side, configured externally,
  *    remove) are copied into visible help lines.
  */
+import { t } from '../../i18n/index.js';
 import { registerMobilePage } from './sheet.js';
 
 const HELP_SOURCES = [
@@ -74,19 +75,20 @@ export function installKeySetup(doc = document, win = window) {
     if (ready()) {
       page = registerMobilePage({
         id: 'provider-keys',
-        title: 'Provider keys',
+        title: t('Provider keys'),
         icon: 'bolt',
         order: 95,
         summary: label,
         mount(container, ctx) {
           const intro = doc.createElement('p');
           intro.className = 'm-meta';
-          intro.textContent =
-            'Developer setting. Only available when the app runs on its own dev server (localhost); keys are saved to this machine and never leave it.';
+          intro.textContent = t(
+            'Developer setting. Only available when the app runs on its own dev server (localhost); keys are saved to this machine and never leave it.',
+          );
           const open = doc.createElement('button');
           open.type = 'button';
           open.className = 'm-btn';
-          open.textContent = 'Open provider keys';
+          open.textContent = t('Open provider keys');
           open.addEventListener('click', () => {
             ctx.close();
             (doc.getElementById('key-setup-chip') ?? chip).click();

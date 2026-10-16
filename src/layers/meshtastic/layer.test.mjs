@@ -13,11 +13,13 @@ import {
   normalizeMessagesPayload,
   normalizeNodesPayload,
   normalizeServer,
+  spreadLabels,
+} from './model.js';
+import {
   serverSummary,
   serversSummary,
-  spreadLabels,
   topicWarning,
-} from './model.js';
+} from './serverStatus.js';
 import { LayerPanel } from '../../ui/layerPanel.js';
 
 const wait = (ms = 0) => new Promise((resolve) => setTimeout(resolve, ms));

@@ -78,7 +78,7 @@ build:image:
       --build-arg CESIUM_ION_TOKEN="$CESIUM_ION_TOKEN"
       --build-arg GOOGLE_MAPS_API_KEY="$GOOGLE_MAPS_API_KEY"
       --build-arg MAPILLARY_CLIENT_TOKEN="$MAPILLARY_CLIENT_TOKEN"
-      -t "$IMAGE_SHA" -f "$CI_PROJECT_DIR/Dockerfile" "$CI_PROJECT_DIR"
+      -t "$IMAGE_SHA" -f "$CI_PROJECT_DIR/Dockerfile.gev" "$CI_PROJECT_DIR"
     - buildah --storage-driver="$STORAGE_DRIVER" push --tls-verify=false "$IMAGE_SHA" "docker://$IMAGE_SHA"
     - |
       if [ "$CI_COMMIT_BRANCH" = "$CI_DEFAULT_BRANCH" ]; then

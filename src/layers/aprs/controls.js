@@ -1,3 +1,4 @@
+import { msg, t } from '../../i18n/index.js';
 import {
   CATEGORY_COLORS,
   RADIUS_OPTIONS,
@@ -7,16 +8,20 @@ import {
 } from './model.js';
 
 const CATEGORY_LABELS = Object.freeze({
-  weather: 'Weather',
-  mobile: 'Mobile',
-  fixed: 'Fixed',
-  infrastructure: 'Digi/Gate',
-  object: 'Objects',
-  air: 'Air',
-  marine: 'Marine',
+  weather: msg('Weather'),
+  mobile: msg('Mobile'),
+  fixed: msg('Fixed'),
+  infrastructure: msg('Digi/Gate'),
+  object: msg('Objects'),
+  air: msg('Air'),
+  marine: msg('Marine'),
 });
 
-const options = (list) => list.map(({ value, label }) => ({ value, label }));
+const options = (list) =>
+  list.map(({ value, label }) => ({
+    value,
+    label: t(label),
+  }));
 
 /**
  * Row controls for the layer panel: how far, how recent and how long a track
@@ -39,32 +44,33 @@ export function aprsRowControls(view, actions) {
     selects: [
       {
         id: 'radius',
-        label: 'RADIUS',
-        title:
+        label: t('RADIUS'),
+        title: t(
           'Stations within this distance of the point under the view. Whole Earth shows every station on the near side of the planet.',
+        ),
         value: settings.radius,
         options: options(RADIUS_OPTIONS),
         onChange: (value) => actions.set({ radius: value }),
       },
       {
         id: 'window',
-        label: 'HEARD',
-        title: 'Only stations heard within this long ago',
+        label: t('HEARD'),
+        title: t('Only stations heard within this long ago'),
         value: settings.window,
         options: options(WINDOW_OPTIONS),
         onChange: (value) => actions.set({ window: value }),
       },
       {
         id: 'track',
-        label: 'TRACK',
-        title: 'How far back each moving station’s track is drawn',
+        label: t('TRACK'),
+        title: t('How far back each moving station’s track is drawn'),
         value: settings.track,
         options: options(TRACK_OPTIONS),
         onChange: (value) => actions.set({ track: value }),
       },
       {
         id: 'units',
-        label: 'UNITS',
+        label: t('UNITS'),
         value: settings.units,
         options: options(UNIT_OPTIONS),
         onChange: (value) => actions.set({ units: value }),
@@ -73,10 +79,11 @@ export function aprsRowControls(view, actions) {
     texts: [
       {
         id: 'call',
-        label: 'CALL',
-        title:
+        label: t('CALL'),
+        title: t(
           'Show only these callsigns. Separate with commas; * matches any run of characters, e.g. W4*, KQ4VYY-9',
-        placeholder: 'all stations · W4*, KQ4VYY-9',
+        ),
+        placeholder: t('all stations · W4*, KQ4VYY-9'),
         value: settings.callFilter,
         onCommit: (value) => actions.set({ callFilter: value }),
       },
@@ -84,34 +91,38 @@ export function aprsRowControls(view, actions) {
     chips: [
       toggle(
         'toggle-weather',
-        'WX ONLY',
+        t('WX ONLY'),
         'weatherOnly',
-        'Show only stations reporting weather',
+        t('Show only stations reporting weather'),
       ),
       toggle(
         'toggle-moving',
-        'MOVING',
+        t('MOVING'),
         'movingOnly',
-        'Show only stations that are moving',
+        t('Show only stations that are moving'),
       ),
       toggle(
         'toggle-objects',
-        'OBJECTS',
+        t('OBJECTS'),
         'objects',
-        'Show objects and items: storm reports, repeaters, events and other things stations announce',
+        t(
+          'Show objects and items: storm reports, repeaters, events and other things stations announce',
+        ),
       ),
-      toggle('toggle-labels', 'LABELS', 'labels', 'Print each callsign'),
+      toggle('toggle-labels', t('LABELS'), 'labels', t('Print each callsign')),
       toggle(
         'toggle-popups',
-        'MSG POPUPS',
+        t('MSG POPUPS'),
         'popups',
-        'Pop up messages sent by stations inside the radius, beside the sender, then fade them out',
+        t(
+          'Pop up messages sent by stations inside the radius, beside the sender, then fade them out',
+        ),
       ),
     ],
     legend: Object.keys(CATEGORY_LABELS)
       .filter((key) => counts[key])
       .map((key) => ({
-        label: CATEGORY_LABELS[key],
+        label: t(CATEGORY_LABELS[key]),
         color: CATEGORY_COLORS[key],
         count: counts[key],
       })),

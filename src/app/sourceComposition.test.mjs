@@ -37,8 +37,8 @@ test('every acquisition source can be omitted without losing catalog membership'
 
 test('all acquisition sources may be absent, and enable fails before initializing or fetching', async (t) => {
   const actual = catalog({}, t);
-  // Upstream's 30 plus this fork's aprs, meshtastic and propagation.
-  assert.equal(actual.layers.length, 33);
+  // Upstream's 32 plus this fork's aprs, meshtastic and propagation.
+  assert.equal(actual.layers.length, 35);
   const manager = new LayerLifecycle(
     {},
     { getSourceAvailability: actual.getSourceAvailability },

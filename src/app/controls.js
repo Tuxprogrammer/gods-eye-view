@@ -2,6 +2,7 @@ import { catalogControlServices } from './catalog.js';
 import { StyleManager } from '../ui/composition.js';
 import { flyToAustin } from '../camera.js';
 import { initCockpitCloudEffects } from '../cockpitCloudEffects.js';
+import { t } from '../i18n/index.js';
 
 /** Construct the existing controls and camera presentation. */
 export function createApplicationControls({
@@ -41,10 +42,10 @@ export function createApplicationControls({
 
   // If no share link state, do the default startup fly-to
   if (!styleManager.hasShareState) {
-    loaderStatus.textContent = 'Flying to Huntsville, AL...';
+    loaderStatus.textContent = t('Flying to Huntsville, AL...');
     defer(flyToAustin(viewer));
   } else {
-    loaderStatus.textContent = 'Restoring shared view...';
+    loaderStatus.textContent = t('Restoring shared view...');
   }
 
   return { styleManager, weatherEffects, cockpitCloudEffects };

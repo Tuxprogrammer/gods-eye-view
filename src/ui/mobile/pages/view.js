@@ -10,6 +10,7 @@
  * button (styled in mobile-view.css). The FPS readout (backtick key) gets a
  * switch on this page and its readout moves out of the hidden #title-bar.
  */
+import { t } from '../../../i18n/index.js';
 import { registerMobilePage, closeSheet } from '../sheet.js';
 import { movePanel, restorePanel } from '../portal.js';
 import {
@@ -78,7 +79,7 @@ function switchRow(label, hint, onToggle) {
   const text = el('span', 'mv-switch__text');
   text.append(el('span', 'mv-switch__label', label));
   if (hint) text.append(el('span', 'm-meta mv-switch__hint', hint));
-  button.append(text, el('span', 'mv-switch__state', 'Off'));
+  button.append(text, el('span', 'mv-switch__state', t('Off')));
   button.addEventListener('click', onToggle);
   return button;
 }
@@ -90,7 +91,10 @@ function installOrbitButton(topRight) {
     button = el('button', 'mv-orbit-btn');
     button.id = 'mobile-orbit-btn';
     button.type = 'button';
-    button.setAttribute('aria-label', 'Toggle orbit around the current place');
+    button.setAttribute(
+      'aria-label',
+      t('Toggle orbit around the current place'),
+    );
     button.setAttribute('aria-pressed', 'false');
     const glyph = el('span', 'mv-orbit-btn__glyph', '↻');
     glyph.setAttribute('aria-hidden', 'true');
@@ -162,7 +166,7 @@ export function install() {
 
   handle = registerMobilePage({
     id: 'view',
-    title: 'View',
+    title: t('View'),
     icon: '🎛',
     order: 40,
     summary: () =>
@@ -240,24 +244,24 @@ function mountView(container, ctx, { fpsListeners, getFps }) {
   container.append(heading('camera', 'Camera'));
   const cam = el('div', 'mv-camera');
   const orbit = proxyButton({
-    label: 'Orbit',
+    label: t('Orbit'),
     glyph: '↻',
     targetId: 'mobile-orbit-btn',
     pressedFrom: true,
   });
   const tilt = proxyButton({
-    label: 'Tilt',
+    label: t('Tilt'),
     glyph: '◢',
     targetId: 'tilt-map-view',
     pressedFrom: true,
   });
   const north = proxyButton({
-    label: 'North up',
+    label: t('North up'),
     glyph: 'N',
     targetId: 'north-up-view',
   });
   const globe = proxyButton({
-    label: 'Full globe',
+    label: t('Full globe'),
     glyph: '○',
     targetId: 'reset-globe-view',
   });

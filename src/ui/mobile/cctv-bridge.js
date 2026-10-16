@@ -7,6 +7,7 @@
  *     CCTV page while a camera is active (the tap replacement for the desktop
  *     hover card / auto-expanding panel).
  */
+import { t } from '../../i18n/index.js';
 import {
   describeCctvActive,
   describeCctvSync,
@@ -93,7 +94,7 @@ export function installCctvBridge(page, getCtx) {
   button.id = 'mobile-cctv-btn';
   button.type = 'button';
   button.hidden = true;
-  button.setAttribute('aria-label', 'Open CCTV camera view');
+  button.setAttribute('aria-label', t('Open CCTV camera view'));
   button.textContent = '📹';
   button.addEventListener('click', () =>
     window.dispatchEvent(

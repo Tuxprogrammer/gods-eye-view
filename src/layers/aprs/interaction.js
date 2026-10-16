@@ -1,3 +1,4 @@
+import { msg, t } from '../../i18n/index.js';
 import { cardModel, chartSeries, sparklinePath } from './model.js';
 
 /** Hover picks are throttled: a GPU pick per mouse-move event is wasteful. */
@@ -73,7 +74,8 @@ export function createStationInteraction({
   cardModel: buildCard = cardModel,
   chartSeries: buildCharts = (detail, unit) =>
     chartSeries(detail?.weather ?? [], unit),
-  noun = 'APRS station',
+  // What the card describes, for screen readers (not a navigation noun).
+  cardNoun = msg('APRS station'),
   logTag = 'APRS',
   messageLine = (m) => `${m.from} › ${m.to}: ${m.text}`,
   now = Date.now,
@@ -91,6 +93,8 @@ export function createStationInteraction({
   };
 
   const card = el('div', 'aprs-card');
+  // Mobile touch previews show this under the card (mobile-cards.css).
+  card.setAttribute('data-tap-hint', t('Tap for details ›'));
   card.setAttribute('role', 'tooltip');
   card.hidden = true;
   const head = el('div', 'aprs-card-head');
@@ -100,7 +104,7 @@ export function createStationInteraction({
   stack.hidden = true;
   const close = el('button', 'aprs-card-close', '×');
   close.type = 'button';
-  close.setAttribute('aria-label', 'Close station details');
+  close.setAttribute('aria-label', t('Close station details'));
   head.append(glyph, title, stack, close);
   const body = el('div', 'aprs-card-body');
   const charts = el('div', 'aprs-card-charts');
@@ -156,7 +160,11 @@ export function createStationInteraction({
         svg.setAttribute('role', 'img');
         svg.setAttribute(
           'aria-label',
-          `${item.label}, last 24 hours: ${item.minText} to ${item.maxText}`,
+          t('{label}, last 24 hours: {min} to {max}', {
+            label: t(item.label),
+            min: item.minText,
+            max: item.maxText,
+          }),
         );
         const path = documentRef.createElementNS(SVG_NS, 'path');
         path.setAttribute(
@@ -168,7 +176,7 @@ export function createStationInteraction({
         path.setAttribute('stroke-width', '1.5');
         svg.appendChild(path);
         box.append(
-          el('div', 'aprs-chart-label', item.label),
+          el('div', 'aprs-chart-label', t(item.label)),
           svg,
           el('div', 'aprs-chart-range', `${item.minText} – ${item.maxText}`),
         );
@@ -194,7 +202,10 @@ export function createStationInteraction({
     renderLines(model);
     card.classList.toggle('pinned', pinned);
     card.setAttribute('role', pinned ? 'dialog' : 'tooltip');
-    card.setAttribute('aria-label', `${station.id} ${noun} details`);
+    card.setAttribute(
+      'aria-label',
+      t('{id} {noun} details', { id: station.id, noun: t(cardNoun) }),
+    );
     actions.hidden = !pinned;
     if (!pinned) {
       charts.hidden = true;
@@ -328,8 +339,11 @@ export function createStationInteraction({
     render(record.station, true);
     stack.hidden = !position || position.count < 2;
     if (!stack.hidden) {
-      stack.textContent = `${position.index} of ${position.count}`;
-      stack.title = 'Overlapping stations here: click again for the next';
+      stack.textContent = t('{index} of {count}', {
+        index: position.index,
+        count: position.count,
+      });
+      stack.title = t('Overlapping stations here: click again for the next');
     }
     charts.hidden = true;
     messages.hidden = true;

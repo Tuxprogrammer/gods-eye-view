@@ -62,7 +62,8 @@ html[data-ui='mobile']
 }
 html[data-ui='mobile']
   :is(.aprs-card, .propagation-station-card).touch-preview:not(.pinned)::after {
-  content: 'Tap for details ›';
+  /* Set, translated, by the card's script (data-tap-hint). */
+  content: attr(data-tap-hint);
   display: block;
   margin-top: 6px;
   padding-top: 6px;

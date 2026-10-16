@@ -1,3 +1,4 @@
+import { msg, t } from '../../i18n/index.js';
 import * as Cesium from 'cesium';
 import {
   MESHTASTIC_LAYER_ID,
@@ -11,9 +12,9 @@ import {
   newMessages,
   nodesQuery,
   radiusOption,
-  serversSummary,
   unitOption,
 } from './model.js';
+import { serversSummary } from './serverStatus.js';
 import { meshtasticRowControls } from './controls.js';
 import { createMeshtasticSurface } from './rendering.js';
 import { createStationInteraction as defaultInteraction } from '../aprs/interaction.js';
@@ -136,7 +137,7 @@ export function createMeshtasticLayer({
     } catch (error) {
       if (request.signal.aborted || !_enabled) return false;
       console.warn('[Data:Meshtastic] Fetch error:', error);
-      _lastError = error?.message || 'Meshtastic unavailable';
+      _lastError = error?.message || t('Meshtastic unavailable');
       if (error?.servers?.length) _servers = error.servers;
       return false;
     } finally {
@@ -385,7 +386,7 @@ export function createMeshtasticLayer({
         flyTo,
         cardModel,
         chartSeries,
-        noun: 'Meshtastic node',
+        cardNoun: msg('Meshtastic node'),
         logTag: 'Meshtastic',
         messageLine,
         now,

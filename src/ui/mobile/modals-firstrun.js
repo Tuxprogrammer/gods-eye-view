@@ -3,6 +3,7 @@
  * card only closes on a tile, the suppress checkbox, or ESC) and rewrites the
  * dock-specific tip. Markup, ids and data-first-run-* hooks are untouched.
  */
+import { t } from '../../i18n/index.js';
 export const OLD_TIP_PREFIX = 'Tip: the GEV MIC button in the dock';
 export const MOBILE_TIP = 'Tip: tap the mic button to talk to the map.';
 
@@ -30,9 +31,9 @@ export function installFirstRun(doc = document) {
     skip.type = 'button';
     skip.className = 'first-run-skip';
     skip.dataset.firstRunSkip = '';
-    skip.setAttribute('aria-label', 'Skip and close');
+    skip.setAttribute('aria-label', t('Skip and close'));
     const label = doc.createElement('span');
-    label.textContent = 'SKIP';
+    label.textContent = t('SKIP');
     const icon = doc.createElement('span');
     icon.className = 'material-symbols-outlined';
     icon.setAttribute('aria-hidden', 'true');

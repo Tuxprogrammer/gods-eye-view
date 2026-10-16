@@ -10,6 +10,7 @@
  *  - share via navigator.share when available (else the original clipboard
  *    handler runs and its toast is routed by the status owner).
  */
+import { t } from '../../../i18n/index.js';
 import { registerMobilePage } from '../sheet.js';
 import { movePanel } from '../portal.js';
 import {
@@ -68,7 +69,7 @@ function installPlaybackBar() {
     type: 'button',
     'aria-label': 'Stop scene playback',
   });
-  stopBtn.textContent = '■ Stop';
+  stopBtn.textContent = t('■ Stop');
   stopBtn.addEventListener('click', () => {
     const target = $('scene-stop-btn');
     if (target && !target.disabled) target.click();
@@ -137,7 +138,7 @@ export function install() {
     }
     const actions = make('div', 'm-dialog__actions');
     const cancel = make('button', 'm-btn', { type: 'button' });
-    cancel.textContent = 'Cancel';
+    cancel.textContent = t('Cancel');
     const ok = make(
       'button',
       `m-btn m-dialog__ok${danger ? ' m-dialog__ok--danger' : ''}`,
@@ -186,8 +187,9 @@ export function install() {
       event.preventDefault();
       event.stopPropagation();
       navigator
+        // i18n-ignore: the product name
         .share({ title: "God's Eye View", url: window.location.href })
-        .then(() => status('Shared'))
+        .then(() => status(t('Shared')))
         .catch((error) => {
           if (error?.name === 'AbortError') return;
           bypass = true;
@@ -265,12 +267,12 @@ export function install() {
       const actions = row.querySelector('.scene-shot-actions');
       if (!label || !actions || actions.querySelector('.m-rename-btn'))
         continue;
-      label.title = 'Long-press or tap RENAME to rename';
+      label.title = t('Long-press or tap RENAME to rename');
       const rename = make('button', 'scene-shot-btn m-rename-btn', {
         type: 'button',
         'aria-label': 'Rename shot',
       });
-      rename.textContent = 'RENAME';
+      rename.textContent = t('RENAME');
       rename.addEventListener('click', () => startRename(label));
       actions.insertBefore(rename, actions.querySelector('.scene-shot-danger'));
     }
@@ -318,7 +320,7 @@ export function install() {
     if (shareBtn) {
       if (!shareBtn.querySelector('.m-btn-label')) {
         const label = make('span', 'm-btn-label');
-        label.textContent = 'Share this view';
+        label.textContent = t('Share this view');
         shareBtn.append(label);
       }
       shareBtn.classList.add('m-btn', 'm-scenes__share');
@@ -345,7 +347,7 @@ export function install() {
 
   page = registerMobilePage({
     id: 'scenes',
-    title: 'Scenes',
+    title: t('Scenes'),
     icon: '🎬',
     order: 30,
     summary: () => scenesSummary(readSceneState()),

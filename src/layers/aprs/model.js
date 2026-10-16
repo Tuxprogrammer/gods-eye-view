@@ -1,48 +1,49 @@
 /** Pure model, formatting and query helpers for the APRS layer. */
+import { msg } from '../../i18n/marker.js';
 
 export const APRS_LAYER_ID = 'aprs';
 
 /** Radius choices, centred on the point under the camera. `earth` = no limit. */
 export const RADIUS_OPTIONS = Object.freeze([
-  { value: '25', km: 25, label: '25 km' },
-  { value: '50', km: 50, label: '50 km' },
-  { value: '100', km: 100, label: '100 km' },
-  { value: '250', km: 250, label: '250 km' },
-  { value: '500', km: 500, label: '500 km' },
-  { value: '1000', km: 1000, label: '1000 km' },
-  { value: '2500', km: 2500, label: '2500 km' },
-  { value: '5000', km: 5000, label: '5000 km' },
-  { value: 'earth', km: null, label: 'Whole Earth' },
+  { value: '25', km: 25, label: msg('25 km') },
+  { value: '50', km: 50, label: msg('50 km') },
+  { value: '100', km: 100, label: msg('100 km') },
+  { value: '250', km: 250, label: msg('250 km') },
+  { value: '500', km: 500, label: msg('500 km') },
+  { value: '1000', km: 1000, label: msg('1000 km') },
+  { value: '2500', km: 2500, label: msg('2500 km') },
+  { value: '5000', km: 5000, label: msg('5000 km') },
+  { value: 'earth', km: null, label: msg('Whole Earth') },
 ]);
 export const DEFAULT_RADIUS = '500';
 
 /** How recently a station must have been heard to be shown (minutes). */
 export const WINDOW_OPTIONS = Object.freeze([
-  { value: '10', minutes: 10, label: '10 min' },
-  { value: '30', minutes: 30, label: '30 min' },
-  { value: '60', minutes: 60, label: '1 hour' },
-  { value: '180', minutes: 180, label: '3 hours' },
-  { value: '360', minutes: 360, label: '6 hours' },
-  { value: '720', minutes: 720, label: '12 hours' },
-  { value: '1440', minutes: 1440, label: '24 hours' },
+  { value: '10', minutes: 10, label: msg('10 min') },
+  { value: '30', minutes: 30, label: msg('30 min') },
+  { value: '60', minutes: 60, label: msg('1 hour') },
+  { value: '180', minutes: 180, label: msg('3 hours') },
+  { value: '360', minutes: 360, label: msg('6 hours') },
+  { value: '720', minutes: 720, label: msg('12 hours') },
+  { value: '1440', minutes: 1440, label: msg('24 hours') },
 ]);
 export const DEFAULT_WINDOW = '60';
 
 /** How far back a station's track is drawn (minutes; 0 = no tracks). */
 export const TRACK_OPTIONS = Object.freeze([
-  { value: '0', minutes: 0, label: 'Off' },
-  { value: '15', minutes: 15, label: '15 min' },
-  { value: '30', minutes: 30, label: '30 min' },
-  { value: '60', minutes: 60, label: '1 hour' },
-  { value: '180', minutes: 180, label: '3 hours' },
-  { value: '360', minutes: 360, label: '6 hours' },
-  { value: '1440', minutes: 1440, label: '24 hours' },
+  { value: '0', minutes: 0, label: msg('Off') },
+  { value: '15', minutes: 15, label: msg('15 min') },
+  { value: '30', minutes: 30, label: msg('30 min') },
+  { value: '60', minutes: 60, label: msg('1 hour') },
+  { value: '180', minutes: 180, label: msg('3 hours') },
+  { value: '360', minutes: 360, label: msg('6 hours') },
+  { value: '1440', minutes: 1440, label: msg('24 hours') },
 ]);
 export const DEFAULT_TRACK = '60';
 
 export const UNIT_OPTIONS = Object.freeze([
-  { value: 'imperial', label: 'Imperial' },
-  { value: 'metric', label: 'Metric' },
+  { value: 'imperial', label: msg('Imperial') },
+  { value: 'metric', label: msg('Metric') },
 ]);
 export const DEFAULT_UNITS = 'imperial';
 
@@ -544,10 +545,18 @@ export function cardModel(station, units = DEFAULT_UNITS, now = Date.now()) {
 // ---------------------------------------------------------------------------
 
 const CHARTS = [
-  { key: 'tempF', label: 'Temperature', format: formatTemperature },
-  { key: 'pressureMb', label: 'Pressure', format: (v) => formatPressure(v) },
-  { key: 'humidity', label: 'Humidity', format: (v) => `${Math.round(v)}%` },
-  { key: 'windSpeedMph', label: 'Wind', format: formatWind },
+  { key: 'tempF', label: msg('Temperature'), format: formatTemperature },
+  {
+    key: 'pressureMb',
+    label: msg('Pressure'),
+    format: (v) => formatPressure(v),
+  },
+  {
+    key: 'humidity',
+    label: msg('Humidity'),
+    format: (v) => `${Math.round(v)}%`,
+  },
+  { key: 'windSpeedMph', label: msg('Wind'), format: formatWind },
 ];
 
 /**

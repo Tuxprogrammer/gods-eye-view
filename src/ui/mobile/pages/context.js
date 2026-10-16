@@ -10,6 +10,7 @@
  * of the panel those rules simply stop matching, and the panel keeps its
  * persisted collapsed state (share links) untouched.
  */
+import { t } from '../../../i18n/index.js';
 import { registerMobilePage } from '../sheet.js';
 import { movePanel, isPanelMoved } from '../portal.js';
 import { contextTileSummary } from '../context-summary.js';
@@ -100,7 +101,7 @@ export function install() {
 
   page = registerMobilePage({
     id: 'context',
-    title: 'Context',
+    title: t('Context'),
     icon: '🌐',
     order: 50,
     summary,

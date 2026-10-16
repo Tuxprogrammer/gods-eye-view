@@ -36,11 +36,12 @@ test('the complete Realtime tool payload pins the manifest-generated layer relea
     // consolidated tool wording (each policy stated once); model-facing tools
     // omit top-level anyOf (OpenAI rejects it). Contacts list routing preserves
     // requested radius and center authority in descriptions only.
-    // Street Level adds its toggle enum values and generated alias hint.
+    // Street Level and GNSS extend the manifest; tracked and analyst aircraft describe broadcasts.
+    // Air quality (ECCC AQHI) extends the manifest.
     // Re-derived for this fork's three extra set_map_stack values
     // (carto-positron, carto-dark, openfreemap-dark); without them the
-    // payload hashes to upstream's 9eb11345…ad0f.
-    '539c97603a5471457f72c2a56f3366b608ebf02f690b9821847b357d3887d250',
+    // payload hashes to upstream's 775ba323…3969.
+    '94461a849d0a2c8470a46554b8b0eb315b3def0c2fadd3f8149928076acf4a5c',
   );
 });
 

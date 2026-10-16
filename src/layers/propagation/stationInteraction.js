@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index.js';
 import * as Cesium from 'cesium';
 import { placeCard } from './model.js';
 import { STATION_ID_PREFIX } from './rendering.js';
@@ -48,6 +49,8 @@ export function createStationInteraction({
 
   const card = documentRef.createElement('div');
   card.className = 'propagation-station-card';
+  // Mobile touch previews show this under the card (mobile-cards.css).
+  card.setAttribute('data-tap-hint', t('Tap for details ›'));
   card.setAttribute('role', 'tooltip');
   card.hidden = true;
   const head = documentRef.createElement('div');
@@ -57,7 +60,7 @@ export function createStationInteraction({
   const close = documentRef.createElement('button');
   close.type = 'button';
   close.className = 'propagation-station-card-close';
-  close.setAttribute('aria-label', 'Close station details');
+  close.setAttribute('aria-label', t('Close station details'));
   close.textContent = '×';
   head.append(title, close);
   const table = documentRef.createElement('table');
@@ -104,7 +107,10 @@ export function createStationInteraction({
     );
     card.classList.toggle('pinned', pinned);
     card.setAttribute('role', pinned ? 'dialog' : 'tooltip');
-    card.setAttribute('aria-label', `${details.name} ionosonde details`);
+    card.setAttribute(
+      'aria-label',
+      t('{name} ionosonde details', { name: details.name }),
+    );
   }
 
   function place(anchor) {

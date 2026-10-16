@@ -15,6 +15,7 @@
  *  - Touch hit slop for every Cesium pick (cards-slop.js).
  * Scene action panels / pack credit cards are styled by CSS only.
  */
+import { t } from '../../../i18n/index.js';
 import { UI_MODE_EVENT, isMobileUi } from '../../mobileMode.js';
 import { closeSheet, isSheetOpen } from '../sheet.js';
 import { getActiveTrackedReadoutId } from '../../../data/trackedReadout.js';
@@ -147,7 +148,9 @@ function enhanceCard(card) {
 function touchCopy(panel) {
   const status = panel.querySelector('[role="status"]');
   if (status && /Tab and Enter/.test(status.textContent))
-    status.textContent = 'Tap a feature on the map, or choose an action below.';
+    status.textContent = t(
+      'Tap a feature on the map, or choose an action below.',
+    );
 }
 
 function installCardEnhancer(disposers) {
@@ -320,7 +323,7 @@ function installServerUi(on) {
       if (!form || form.dataset.mReady) return;
       form.dataset.mReady = '1';
       const bar = el('div', 'm-form-bar');
-      bar.append(el('strong', 'm-form-bar__title', 'Add MQTT server'));
+      bar.append(el('strong', 'm-form-bar__title', t('Add MQTT server')));
       const close = button('m-btn', 'Close', 'Close the add-server form');
       close.addEventListener('click', () => {
         details.open = false;
@@ -346,7 +349,7 @@ function installDrawToolbar(disposers, on) {
   bar.dataset.mobileUi = '';
   bar.hidden = true;
   bar.setAttribute('role', 'toolbar');
-  bar.setAttribute('aria-label', 'Drawing tools');
+  bar.setAttribute('aria-label', t('Drawing tools'));
   const hint = el('div', 'm-draw__hint');
   hint.setAttribute('aria-live', 'polite');
   const row = el('div', 'm-draw__row');
@@ -364,8 +367,8 @@ function installDrawToolbar(disposers, on) {
   const label = el('input', 'm-draw__label');
   label.type = 'text';
   label.maxLength = 120;
-  label.placeholder = 'Label (optional)';
-  label.setAttribute('aria-label', 'Label for the next shape');
+  label.placeholder = t('Label (optional)');
+  label.setAttribute('aria-label', t('Label for the next shape'));
   label.setAttribute('autocomplete', 'off');
   const colour = button('m-draw__colour', '●', 'Change the drawing colour');
   row.append(seg, label, colour);
@@ -497,10 +500,10 @@ function installDeselect(disposers, on) {
       box.hidden = true;
       return;
     }
-    title.textContent = vessel ? vessel.title : 'Target selected';
+    title.textContent = vessel ? vessel.title : t('Target selected');
     detail.textContent = vessel
       ? vessel.lines.join(' · ')
-      : 'Tap Deselect to release it';
+      : t('Tap Deselect to release it');
     box.hidden = false;
   }
   const timer = window.setInterval(() => {

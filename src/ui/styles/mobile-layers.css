@@ -111,7 +111,7 @@ html[data-ui='mobile'] .m-layers .data-layer-group-heading {
   user-select: none;
 }
 html[data-ui='mobile'] .m-layers .data-layer-group-heading::after {
-  content: '\25BE';
+  content: '▾';
   font-size: 16px;
   transition: transform 0.15s ease;
 }

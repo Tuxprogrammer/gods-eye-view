@@ -5,6 +5,7 @@
  * LocationSearch and the Q/W/E/R/T hotkeys keep working untouched.
  * Also hosts Orbit (keyboard O -> button) and Share (navigator.share -> copy).
  */
+import { t } from '../../../i18n/index.js';
 import { registerMobilePage } from '../sheet.js';
 import { movePanel } from '../portal.js';
 import { isMobileUi } from '../../mobileMode.js';
@@ -59,7 +60,7 @@ export function install() {
   bindOrbitChip();
   handle = registerMobilePage({
     id: 'places',
-    title: 'Places',
+    title: t('Places'),
     icon: '📍',
     order: 10,
     summary: () =>
@@ -84,30 +85,30 @@ function mount(container, ctx) {
 
   // 1. Current place ------------------------------------------------------
   const here = el('section', 'mp-card mp-here');
-  here.append(el('h3', 'mp-heading', 'Current place'));
+  here.append(el('h3', 'mp-heading', t('Current place')));
   const status = byId('location-mini-status');
   if (status) movePanel(status, here, `${PAGE_KEY}:status`);
 
   // 2. Search ---------------------------------------------------------------
   const search = el('section', 'mp-card mp-search');
-  search.append(el('h3', 'mp-heading', 'Search'));
+  search.append(el('h3', 'mp-heading', t('Search')));
   const input = byId('location-search');
   const box = el('div', 'mp-search-box');
   if (input) {
     input.setAttribute('enterkeyhint', 'search');
     input.setAttribute('autocapitalize', 'off');
     input.setAttribute('autocorrect', 'off');
-    input.setAttribute('placeholder', 'City, address, or lat, lon');
+    input.setAttribute('placeholder', t('City, address, or lat, lon'));
     input.classList.add('expanded');
     movePanel(input, box, `${PAGE_KEY}:search`);
   }
   const clear = el('button', 'm-btn mp-clear', '✕');
   clear.type = 'button';
-  clear.setAttribute('aria-label', 'Clear search');
+  clear.setAttribute('aria-label', t('Clear search'));
   clear.hidden = true;
-  const go = el('button', 'm-btn mp-go', 'Go');
+  const go = el('button', 'm-btn mp-go', t('Go'));
   go.type = 'button';
-  go.setAttribute('aria-label', 'Search location');
+  go.setAttribute('aria-label', t('Search location'));
   box.append(clear, go);
   const message = el('p', 'm-meta mp-message');
   message.setAttribute('role', 'status');
@@ -165,13 +166,13 @@ function mount(container, ctx) {
 
   // 3. Cities ------------------------------------------------------------------
   const cities = el('section', 'mp-card mp-cities');
-  cities.append(el('h3', 'mp-heading', 'Cities'));
+  cities.append(el('h3', 'mp-heading', t('Cities')));
   const pills = byId('location-pills');
   if (pills) movePanel(pills, cities, `${PAGE_KEY}:pills`);
 
   // 4. Landmarks ---------------------------------------------------------------
   const pois = el('section', 'mp-card mp-pois');
-  pois.append(el('h3', 'mp-heading', 'Landmarks'));
+  pois.append(el('h3', 'mp-heading', t('Landmarks')));
   const poiRow = byId('poi-row');
   if (poiRow) {
     movePanel(poiRow, pois, `${PAGE_KEY}:pois`);
@@ -182,7 +183,7 @@ function mount(container, ctx) {
     });
   }
   pois.append(
-    el('p', 'm-meta mp-hint', 'Pick a city above to list its landmarks.'),
+    el('p', 'm-meta mp-hint', t('Pick a city above to list its landmarks.')),
   );
   // A city tap fills #poi-row: bring the landmarks into view.
   pills?.addEventListener('click', (event) => {
@@ -194,8 +195,8 @@ function mount(container, ctx) {
 
   // 5. Tools: orbit + share ------------------------------------------------
   const tools = el('section', 'mp-card mp-tools');
-  tools.append(el('h3', 'mp-heading', 'Camera and sharing'));
-  const orbit = el('button', 'm-btn mp-tool', '↻ Orbit landmark');
+  tools.append(el('h3', 'mp-heading', t('Camera and sharing')));
+  const orbit = el('button', 'm-btn mp-tool', t('↻ Orbit landmark'));
   orbit.type = 'button';
   orbit.setAttribute('aria-pressed', String(orbitActive()));
   orbit.addEventListener('click', () => {
@@ -208,13 +209,13 @@ function mount(container, ctx) {
     'm-meta mp-hint-line',
     'Circles the last landmark you flew to. Tap the ORBIT chip on the map to stop.',
   );
-  const share = el('button', 'm-btn mp-tool', 'Share this view');
+  const share = el('button', 'm-btn mp-tool', t('Share this view'));
   share.type = 'button';
   const shareOut = el('input', 'mp-share-url');
   shareOut.type = 'text';
   shareOut.readOnly = true;
   shareOut.hidden = true;
-  shareOut.setAttribute('aria-label', 'Share link');
+  shareOut.setAttribute('aria-label', t('Share link'));
   shareOut.addEventListener('focus', () => shareOut.select());
   const shareNote = el('p', 'm-meta mp-hint-line');
   share.addEventListener('click', async () => {
@@ -223,6 +224,7 @@ function mount(container, ctx) {
     const url = window.location.href;
     if (canWebShare()) {
       try {
+        // i18n-ignore: the product name
         await navigator.share({ title: "God's Eye View", url });
         return;
       } catch (error) {
@@ -234,8 +236,9 @@ function mount(container, ctx) {
     if (!window.isSecureContext || !navigator.clipboard) {
       shareOut.value = url;
       shareOut.hidden = false;
-      shareNote.textContent =
-        'Copying is blocked on this connection. Press and hold the link to copy it.';
+      shareNote.textContent = t(
+        'Copying is blocked on this connection. Press and hold the link to copy it.',
+      );
     }
   });
   tools.append(orbit, orbitNote, share, shareOut, shareNote);
@@ -243,7 +246,7 @@ function mount(container, ctx) {
   function syncOrbit() {
     const on = orbitActive();
     orbit.setAttribute('aria-pressed', String(on));
-    orbit.textContent = on ? '↻ Stop orbit' : '↻ Orbit landmark';
+    orbit.textContent = on ? t('↻ Stop orbit') : t('↻ Orbit landmark');
   }
   const stopOrbitWatch = observe(
     byId('orbit-indicator'),

@@ -2,6 +2,7 @@
  * Pure-ish helpers for the mobile View page. Kept free of module state so they
  * can be unit-tested with a tiny fake document (view-helpers.test.mjs).
  */
+import { t } from '../../i18n/index.js';
 
 /** Keyboard shortcuts that have no on-screen control on desktop. */
 export const KEY_ACTIONS = Object.freeze({
@@ -81,7 +82,7 @@ export function setSwitchState(button, on) {
     button.setAttribute('aria-checked', value);
   else button.setAttribute('aria-pressed', value);
   const state = button.querySelector?.('.mv-switch__state');
-  if (state) state.textContent = on ? 'On' : 'Off';
+  if (state) state.textContent = on ? t('On') : t('Off');
 }
 
 /**

@@ -1,3 +1,4 @@
+import { t } from '../../../i18n/index.js';
 import pkg from '../../../../package.json' with { type: 'json' };
 import { registerMobilePage } from '../sheet.js';
 import { UI_STORAGE_KEY } from '../../mobileMode.js';
@@ -77,7 +78,7 @@ export function replayWelcome(win = window) {
 export function install() {
   return registerMobilePage({
     id: 'more',
-    title: 'More',
+    title: t('More'),
     icon: '⋯',
     order: 90,
     summary: () => `v${pkg.version}`,

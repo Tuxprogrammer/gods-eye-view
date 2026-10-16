@@ -10,6 +10,7 @@
  * so it sits behind a toggle with a desktop-recommended note; the numeric
  * chips are the touch path.
  */
+import { t } from '../../../i18n/index.js';
 import { registerMobilePage } from '../sheet.js';
 import { movePanel } from '../portal.js';
 import { currentCctvSummary, installCctvBridge } from '../cctv-bridge.js';
@@ -53,7 +54,7 @@ function mount(container, ctx) {
   const calToggle = make('button', 'm-btn m-cctv__cal-toggle');
   calToggle.type = 'button';
   calToggle.setAttribute('aria-expanded', 'false');
-  calToggle.textContent = 'Calibration (advanced)';
+  calToggle.textContent = t('Calibration (advanced)');
   calToggle.addEventListener('click', () => {
     const open = !container.classList.contains('is-cal-open');
     container.classList.toggle('is-cal-open', open);
@@ -88,7 +89,7 @@ export function install() {
   if (page) return page;
   page = registerMobilePage({
     id: 'cctv',
-    title: 'CCTV',
+    title: 'CCTV', // i18n-ignore: the camera layer's name, as on desktop
     icon: '📹',
     order: 60,
     summary: currentCctvSummary,

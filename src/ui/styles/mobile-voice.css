@@ -247,3 +247,13 @@ html[data-ui='mobile'] .mv-voice .mv-help-list {
   flex-direction: column;
   gap: 6px;
 }
+
+/* Upstream's bottom-right corner row (language picker; the POWER UP chip is
+   hidden on mobile) would sit under the mic FAB, which takes every tap there.
+   Lift it just above the FAB; its list still opens upward (locale-picker.css). */
+html[data-ui='mobile'] #corner-actions {
+  inset-inline-end: calc(var(--m-safe-r) + 12px);
+  inset-block-end: calc(var(--m-safe-b) + 72px);
+  /* One above the FAB (150), so the open list draws over the mic. */
+  z-index: 151;
+}

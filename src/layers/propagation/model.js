@@ -1,4 +1,5 @@
 /** Pure model and pixel helpers for the HF propagation heatmap layer. */
+import { msg } from '../../i18n/marker.js';
 
 export const PROPAGATION_LAYER_ID = 'propagation';
 
@@ -7,12 +8,12 @@ export const PROPAGATION_FIELDS = Object.freeze([
   Object.freeze({
     id: 'muf',
     chip: 'MUF 3000',
-    title: 'Maximum usable frequency for a 3000 km path',
+    title: msg('Maximum usable frequency for a 3000 km path'),
   }),
   Object.freeze({
     id: 'fof2',
     chip: 'foF2',
-    title: 'F2-layer critical frequency (vertical incidence)',
+    title: msg('F2-layer critical frequency (vertical incidence)'),
   }),
 ]);
 export const DEFAULT_PROPAGATION_FIELD = 'muf';

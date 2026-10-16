@@ -1,20 +1,25 @@
+import { msg, t } from '../../i18n/index.js';
 import {
   CATEGORY_COLORS,
   RADIUS_OPTIONS,
   TRACK_OPTIONS,
   UNIT_OPTIONS,
   WINDOW_OPTIONS,
-  serverSummary,
 } from './model.js';
+import { serverSummary } from './serverStatus.js';
 
 const CATEGORY_LABELS = Object.freeze({
-  client: 'Client',
-  infrastructure: 'Router/Repeater',
-  tracker: 'Tracker',
-  sensor: 'Sensor',
+  client: msg('Client'),
+  infrastructure: msg('Router/Repeater'),
+  tracker: msg('Tracker'),
+  sensor: msg('Sensor'),
 });
 
-const options = (list) => list.map(({ value, label }) => ({ value, label }));
+const options = (list) =>
+  list.map(({ value, label }) => ({
+    value,
+    label: t(label),
+  }));
 
 /**
  * Row controls for the layer panel: the list of MQTT servers (each with an
@@ -36,7 +41,7 @@ export function meshtasticRowControls(view, actions) {
   });
   return {
     servers: {
-      heading: 'MQTT SERVERS',
+      heading: t('MQTT SERVERS'),
       items: servers.map((server) => ({
         id: server.id,
         name: server.name,
@@ -45,7 +50,7 @@ export function meshtasticRowControls(view, actions) {
         statusText: serverSummary(server, now),
         enabled: server.enabled,
         topic: server.topic,
-        removeLabel: `Delete ${server.name}`,
+        removeLabel: t('Delete {name}', { name: server.name }),
         onToggle: () => actions.toggleServer(server.id),
         onTopic: (topic) => actions.setServerTopic(server.id, topic),
         onRemove: () => actions.removeServer(server.id),
@@ -55,32 +60,33 @@ export function meshtasticRowControls(view, actions) {
     selects: [
       {
         id: 'radius',
-        label: 'RADIUS',
-        title:
+        label: t('RADIUS'),
+        title: t(
           'Nodes within this distance of the point under the view. Whole Earth shows every node on the near side of the planet.',
+        ),
         value: settings.radius,
         options: options(RADIUS_OPTIONS),
         onChange: (value) => actions.set({ radius: value }),
       },
       {
         id: 'window',
-        label: 'HEARD',
-        title: 'Only nodes heard within this long ago',
+        label: t('HEARD'),
+        title: t('Only nodes heard within this long ago'),
         value: settings.window,
         options: options(WINDOW_OPTIONS),
         onChange: (value) => actions.set({ window: value }),
       },
       {
         id: 'track',
-        label: 'TRACK',
-        title: 'How far back each moving node’s track is drawn',
+        label: t('TRACK'),
+        title: t('How far back each moving node’s track is drawn'),
         value: settings.track,
         options: options(TRACK_OPTIONS),
         onChange: (value) => actions.set({ track: value }),
       },
       {
         id: 'units',
-        label: 'UNITS',
+        label: t('UNITS'),
         value: settings.units,
         options: options(UNIT_OPTIONS),
         onChange: (value) => actions.set({ units: value }),
@@ -89,10 +95,11 @@ export function meshtasticRowControls(view, actions) {
     texts: [
       {
         id: 'filter',
-        label: 'NAME',
-        title:
+        label: t('NAME'),
+        title: t(
           'Show only these nodes, by short name, long name or !id. Separate with commas; * matches any run of characters, e.g. HT*, !0af87081',
-        placeholder: 'all nodes · HT*, !0af87081',
+        ),
+        placeholder: t('all nodes · HT*, !0af87081'),
         value: settings.filter,
         onCommit: (value) => actions.set({ filter: value }),
       },
@@ -100,22 +107,29 @@ export function meshtasticRowControls(view, actions) {
     chips: [
       toggle(
         'toggle-moving',
-        'MOVING',
+        t('MOVING'),
         'movingOnly',
-        'Show only nodes whose position has changed',
+        t('Show only nodes whose position has changed'),
       ),
-      toggle('toggle-labels', 'LABELS', 'labels', 'Print each node’s name'),
+      toggle(
+        'toggle-labels',
+        t('LABELS'),
+        'labels',
+        t('Print each node’s name'),
+      ),
       toggle(
         'toggle-popups',
-        'MSG POPUPS',
+        t('MSG POPUPS'),
         'popups',
-        'Pop up text messages sent by nodes inside the radius, beside the sender, then fade them out',
+        t(
+          'Pop up text messages sent by nodes inside the radius, beside the sender, then fade them out',
+        ),
       ),
     ],
     legend: Object.keys(CATEGORY_LABELS)
       .filter((key) => counts[key])
       .map((key) => ({
-        label: CATEGORY_LABELS[key],
+        label: t(CATEGORY_LABELS[key]),
         color: CATEGORY_COLORS[key],
         count: counts[key],
       })),

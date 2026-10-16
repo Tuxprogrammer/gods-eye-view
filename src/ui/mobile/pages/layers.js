@@ -4,6 +4,7 @@
  * #clear-selected-layers into the sheet; adds a search box, collapsible
  * groups and a live "N on" tile summary. Cesium layer behaviour is untouched.
  */
+import { t, tn } from '../../../i18n/index.js';
 import { registerMobilePage } from '../sheet.js';
 import { movePanel } from '../portal.js';
 import { computeLayerVisibility, countMatches } from '../layers-filter.js';
@@ -78,7 +79,11 @@ export function install() {
       );
     if (countLine) {
       const { on, total } = countEnabledLayers();
-      countLine.textContent = total ? `${on} of ${total} layers on` : '';
+      countLine.textContent = total
+        ? tn(total, '{on} of {count} layer on', '{on} of {count} layers on', {
+            on,
+          })
+        : '';
     }
   }
 
@@ -103,8 +108,8 @@ export function install() {
     const search = make('input', 'm-layers__search', {
       type: 'search',
       id: 'mobile-layer-search',
-      placeholder: 'Search layers',
-      'aria-label': 'Search layers',
+      placeholder: t('Search layers'),
+      'aria-label': t('Search layers'),
       enterkeyhint: 'search',
       autocomplete: 'off',
       autocapitalize: 'off',
@@ -120,7 +125,7 @@ export function install() {
     if (clear) {
       if (!clear.querySelector('.m-btn-label')) {
         const label = make('span', 'm-btn-label');
-        label.textContent = 'All off';
+        label.textContent = t('All off');
         clear.append(label);
       }
       clear.classList.add('m-btn', 'm-layers__clear');
@@ -129,7 +134,7 @@ export function install() {
 
     countLine = make('p', 'm-meta m-layers__count');
     emptyLine = make('p', 'm-meta m-layers__empty');
-    emptyLine.textContent = 'No layers match your search.';
+    emptyLine.textContent = t('No layers match your search.');
     emptyLine.hidden = true;
     container.append(toolbar, countLine);
 
@@ -164,7 +169,7 @@ export function install() {
 
   page = registerMobilePage({
     id: 'layers',
-    title: 'Layers',
+    title: t('Layers'),
     icon: '🗂',
     order: 20,
     summary: () => layersSummary(),

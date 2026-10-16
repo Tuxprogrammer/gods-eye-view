@@ -15,6 +15,7 @@
  * New nodes: #mobile-cockpit-drawer, #mobile-cockpit-info (in #view-switcher),
  * #mobile-cockpit-nav (prev/next contact proxies that click the originals).
  */
+import { t } from '../../i18n/index.js';
 import { movePanel } from './portal.js';
 import { isMobileUi, UI_MODE_EVENT } from '../mobileMode.js';
 import {
@@ -89,7 +90,7 @@ export function installCockpitDrawer(doc = document, win = window) {
       'aria-controls': `m-cp-pane-${tab.id}`,
       'data-tab': tab.id,
     });
-    button.textContent = tab.label;
+    button.textContent = t(tab.label);
     tabs.append(button);
     tabButtons.set(tab.id, button);
     const pane = make(doc, 'section', 'm-cp__pane', {
@@ -146,7 +147,7 @@ export function installCockpitDrawer(doc = document, win = window) {
     return button;
   };
   const navLabel = make(doc, 'span', 'm-cp-nav__label');
-  navLabel.textContent = 'CONTACT';
+  navLabel.textContent = t('CONTACT');
   nav.append(
     navButton(
       'mobile-cockpit-ctx-prev',

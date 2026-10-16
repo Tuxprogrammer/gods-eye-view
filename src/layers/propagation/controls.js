@@ -1,3 +1,4 @@
+import { t, tn } from '../../i18n/index.js';
 import { PROPAGATION_FIELDS, formatRangeValue, thinTicks } from './model.js';
 
 /** Chip state for an overlay toggle: it must never read ON before its data exists. */
@@ -36,7 +37,7 @@ export function propagationRowControls(view, actions) {
     return {
       id: `field-${field.id}`,
       label: field.chip,
-      title: field.title,
+      title: t(field.title),
       active,
       state: loading ? 'loading' : active ? 'active' : 'idle',
       busy: loading,
@@ -48,35 +49,43 @@ export function propagationRowControls(view, actions) {
   const ringsState = overlayState(contours, ringsHeld);
   chips.push({
     id: 'toggle-contours',
-    label: 'RINGS',
+    label: t('RINGS'),
     breakBefore: true,
     active: contours.on,
     state: ringsState,
     busy: ringsState === 'loading',
     title: contours.error
-      ? `Contour rings unavailable: ${contours.error}`
+      ? t('Contour rings unavailable: {error}', { error: contours.error })
       : contours.on
         ? ringsHeld
-          ? `${contours.lines} contour lines mark where the map crosses each labelled value. Click to hide.`
-          : 'Loading contour rings…'
-        : 'Show contour rings: lines that encircle the same value',
+          ? tn(
+              contours.lines,
+              '{count} contour line marks where the map crosses each labelled value. Click to hide.',
+              '{count} contour lines mark where the map crosses each labelled value. Click to hide.',
+            )
+          : t('Loading contour rings…')
+        : t('Show contour rings: lines that encircle the same value'),
     onClick: () => actions.setContours(!contours.on),
   });
   const stationsHeld = stations.count !== null;
   const stationsState = overlayState(stations, stationsHeld);
   chips.push({
     id: 'toggle-stations',
-    label: 'STATIONS',
+    label: t('STATIONS'),
     active: stations.on,
     state: stationsState,
     busy: stationsState === 'loading',
     title: stations.error
-      ? `Stations unavailable: ${stations.error}`
+      ? t('Stations unavailable: {error}', { error: stations.error })
       : stations.on
         ? stationsHeld
-          ? `${stations.count} ionosondes reporting this quantity. Bubbles use the map's colour scale, so a bubble that matches the colour beneath it agrees with the model. Hover or click a bubble for its details; click here to hide.`
-          : 'Loading ionosonde stations…'
-        : 'Show the ionosondes whose measurements the map is built from',
+          ? tn(
+              stations.count,
+              "{count} ionosonde reporting this quantity. Bubbles use the map's colour scale, so a bubble that matches the colour beneath it agrees with the model. Hover or click a bubble for its details; click here to hide.",
+              "{count} ionosondes reporting this quantity. Bubbles use the map's colour scale, so a bubble that matches the colour beneath it agrees with the model. Hover or click a bubble for its details; click here to hide.",
+            )
+          : t('Loading ionosonde stations…')
+        : t('Show the ionosondes whose measurements the map is built from'),
     onClick: () => actions.setStations(!stations.on),
   });
 
@@ -88,7 +97,12 @@ export function propagationRowControls(view, actions) {
           min: formatRangeValue(payload.range.min),
           max: formatRangeValue(payload.range.max),
           unit: payload.unit,
-          caption: `${payload.label} · ${payload.unit} · ${formatRangeValue(payload.range.min)}–${formatRangeValue(payload.range.max)} (log)`,
+          caption: t('{label} · {unit} · {min}–{max} (log)', {
+            label: payload.label,
+            unit: payload.unit,
+            min: formatRangeValue(payload.range.min),
+            max: formatRangeValue(payload.range.max),
+          }),
           ticks: thinTicks(payload.ticks),
         }
       : null;
@@ -99,7 +113,7 @@ export function propagationRowControls(view, actions) {
     sliders: [
       {
         id: 'opacity',
-        label: 'OPACITY',
+        label: t('OPACITY'),
         min: 10,
         max: 100,
         step: 5,

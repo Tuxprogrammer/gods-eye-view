@@ -82,7 +82,8 @@ html[data-ui='mobile'] #mobile-sheet .m-context #tr3b-toggle:not([hidden]) {
   font-size: 18px;
 }
 html[data-ui='mobile'] #mobile-sheet .m-context #tr3b-toggle::after {
-  content: 'Reclassify tracked contact as TR-3B';
+  /* The button's translated aria-label (context.html), so CSS holds no copy. */
+  content: attr(aria-label);
   font:
     13px/1.2 var(--font-mono, monospace);
   letter-spacing: 0.03em;

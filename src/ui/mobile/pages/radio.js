@@ -10,6 +10,7 @@
  * 56px transport, and a searchable station list that tunes through the
  * `gev:radio-tune-to` hook in radioBindings.js.
  */
+import { t } from '../../../i18n/index.js';
 import { registerMobilePage } from '../sheet.js';
 import { movePanel } from '../portal.js';
 import {
@@ -57,18 +58,18 @@ function buildStationList() {
   const section = make('section', 'm-radio__stations');
   section.hidden = true;
   const head = make('div', 'm-radio__stations-head');
-  const title = make('strong', '', 'STATIONS');
+  const title = make('strong', '', t('STATIONS'));
   const count = make('span', 'm-meta');
   head.append(title, count);
   const search = make('input', 'm-radio__search');
   search.type = 'search';
-  search.placeholder = 'Search stations';
-  search.setAttribute('aria-label', 'Search stations');
+  search.placeholder = t('Search stations');
+  search.setAttribute('aria-label', t('Search stations'));
   search.setAttribute('enterkeyhint', 'search');
   search.autocomplete = 'off';
   search.spellcheck = false;
   const list = make('div', 'm-radio__list');
-  const more = make('button', 'm-btn m-radio__more', 'Show more');
+  const more = make('button', 'm-btn m-radio__more', t('Show more'));
   more.type = 'button';
   section.append(head, search, list, more);
 
@@ -116,7 +117,9 @@ function buildStationList() {
     });
     list.replaceChildren(...rows);
     more.hidden = entries.length <= shown;
-    more.textContent = `Show more (${entries.length - shown})`;
+    more.textContent = t('Show more ({count})', {
+      count: entries.length - shown,
+    });
     highlight();
   };
 
@@ -145,7 +148,7 @@ function mount(container, ctx) {
   container.classList.add('m-radio');
   const inner = byId('radio-panel')?.querySelector('.radio-panel-inner');
   if (!inner) {
-    container.append(make('p', 'm-meta', 'Radio is unavailable.'));
+    container.append(make('p', 'm-meta', t('Radio is unavailable.')));
     return;
   }
 
@@ -187,7 +190,7 @@ export function install() {
   if (page) return page;
   page = registerMobilePage({
     id: 'radio',
-    title: 'Radio',
+    title: t('Radio'),
     icon: '📻',
     order: 70,
     summary,

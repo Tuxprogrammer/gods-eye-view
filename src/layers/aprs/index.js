@@ -1,3 +1,4 @@
+import { t } from '../../i18n/index.js';
 import * as Cesium from 'cesium';
 import {
   APRS_LAYER_ID,
@@ -136,7 +137,7 @@ export function createAprsLayer({
     } catch (error) {
       if (request.signal.aborted || !_enabled) return false;
       console.warn('[Data:APRS] Fetch error:', error);
-      _lastError = error?.message || 'APRS unavailable';
+      _lastError = error?.message || t('APRS unavailable');
       if (error?.feed) _feed = error.feed;
       return false;
     } finally {

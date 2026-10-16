@@ -1,3 +1,4 @@
+import { msg } from '../../i18n/marker.js';
 import {
   DEFAULT_UNITS,
   MESSAGE_FADE_MS,
@@ -401,7 +402,8 @@ export function formatRange(km, units) {
     : formatDistance(km, units);
 }
 
-const t = (value) => ({ t: value });
+// Card text segments (not the i18n `t`).
+const seg = (value) => ({ t: value });
 const b = (value) => ({ t: value, b: true });
 
 const formatUptime = (seconds) => {
@@ -417,35 +419,35 @@ const formatUptime = (seconds) => {
  */
 export function cardModel(node, units = DEFAULT_UNITS, now = Date.now()) {
   const lines = [];
-  const who = [b(nodeLabel(node)), t(` · ${node.id}`)];
-  if (node.role) who.push(t(` · ${ROLE_TEXT[node.role] ?? node.role}`));
+  const who = [b(nodeLabel(node)), seg(` · ${node.id}`)];
+  if (node.role) who.push(seg(` · ${ROLE_TEXT[node.role] ?? node.role}`));
   lines.push(who);
   lines.push([
-    t(`${formatTime(node.firstHeard)} - ${formatTime(node.lastHeard)}`),
+    seg(`${formatTime(node.firstHeard)} - ${formatTime(node.lastHeard)}`),
   ]);
   if (node.posAt !== null)
     lines.push([
-      t(`Position ${formatTime(node.posAt)} (${formatAge(node.posAt, now)})`),
+      seg(`Position ${formatTime(node.posAt)} (${formatAge(node.posAt, now)})`),
     ]);
-  const where = [t(formatCoords(node.lat, node.lon))];
+  const where = [seg(formatCoords(node.lat, node.lon))];
   if (node.alt !== null)
-    where.push(t(' · '), b(formatAltitude(node.alt, units)));
+    where.push(seg(' · '), b(formatAltitude(node.alt, units)));
   lines.push(where);
   // The channel's position precision is the operator's choice; say what it means.
   // One short line; the ring on the ground shows the same distance.
   if (node.precisionKm > 0)
     lines.push([
-      t(`Position within ~${formatRange(node.precisionKm / 2, units)}`),
+      seg(`Position within ~${formatRange(node.precisionKm / 2, units)}`),
     ]);
   if (node.speedKmh !== null && node.speedKmh >= 1) {
     const move = [b(formatSpeed(node.speedKmh, units))];
     if (node.course !== null)
-      move.push(t(` heading ${Math.round(node.course)}°`));
+      move.push(seg(` heading ${Math.round(node.course)}°`));
     lines.push(move);
   }
   if (node.distanceKm !== null)
     lines.push([
-      t(`${formatDistance(node.distanceKm, units)} from view centre`),
+      seg(`${formatDistance(node.distanceKm, units)} from view centre`),
     ]);
 
   const link = [];
@@ -457,7 +459,7 @@ export function cardModel(node, units = DEFAULT_UNITS, now = Date.now()) {
         ? 'direct'
         : `${node.hops} hop${node.hops === 1 ? '' : 's'}`,
     );
-  if (link.length) lines.push([t(`Signal: ${link.join(' · ')}`)]);
+  if (link.length) lines.push([seg(`Signal: ${link.join(' · ')}`)]);
 
   const device = [];
   if (node.battery !== null)
@@ -466,7 +468,7 @@ export function cardModel(node, units = DEFAULT_UNITS, now = Date.now()) {
   if (node.channelUtil !== null) device.push(`channel ${node.channelUtil}%`);
   if (node.airUtilTx !== null) device.push(`air TX ${node.airUtilTx}%`);
   if (node.uptime !== null) device.push(`up ${formatUptime(node.uptime)}`);
-  if (device.length) lines.push([t('Device: '), b(device.join(' · '))]);
+  if (device.length) lines.push([seg('Device: '), b(device.join(' · '))]);
 
   const env = node.env;
   if (env) {
@@ -475,11 +477,11 @@ export function cardModel(node, units = DEFAULT_UNITS, now = Date.now()) {
       parts.push(formatTemperature((env.tempC * 9) / 5 + 32, units));
     if (env.humidity !== undefined) parts.push(`${env.humidity}% RH`);
     if (env.pressureHpa !== undefined) parts.push(`${env.pressureHpa} hPa`);
-    if (parts.length) lines.push([t('Sensors: '), b(parts.join(' · '))]);
+    if (parts.length) lines.push([seg('Sensors: '), b(parts.join(' · '))]);
   }
 
   const hardware = hardwareName(node.hwModel);
-  if (hardware) lines.push([t('Hardware: '), b(hardware)]);
+  if (hardware) lines.push([seg('Hardware: '), b(hardware)]);
   const radio = [
     node.firmware && `fw ${node.firmware}`,
     node.region,
@@ -487,12 +489,12 @@ export function cardModel(node, units = DEFAULT_UNITS, now = Date.now()) {
   ]
     .filter(Boolean)
     .join(' · ');
-  if (radio) lines.push([t(radio)]);
+  if (radio) lines.push([seg(radio)]);
   const via = [];
   if (node.gateway) via.push(`via ${node.gateway}`);
   if (node.channel) via.push(`on ${node.channel}`);
   if (node.root) via.push(`(${node.root})`);
-  if (via.length) lines.push([t(`Heard ${via.join(' ')}`)]);
+  if (via.length) lines.push([seg(`Heard ${via.join(' ')}`)]);
   return {
     title: node.longName || nodeLabel(node),
     glyph: nodeGlyph(node),
@@ -502,16 +504,16 @@ export function cardModel(node, units = DEFAULT_UNITS, now = Date.now()) {
 }
 
 const CHARTS = [
-  { key: 'battery', label: 'Battery', format: (v) => `${Math.round(v)}%` },
-  { key: 'voltage', label: 'Voltage', format: (v) => `${v.toFixed(2)} V` },
+  { key: 'battery', label: msg('Battery'), format: (v) => `${Math.round(v)}%` },
+  { key: 'voltage', label: msg('Voltage'), format: (v) => `${v.toFixed(2)} V` },
   {
     key: 'channelUtil',
-    label: 'Channel use',
+    label: msg('Channel use'),
     format: (v) => `${v.toFixed(1)}%`,
   },
   {
     key: 'tempC',
-    label: 'Temperature',
+    label: msg('Temperature'),
     format: (v, units) => formatTemperature((v * 9) / 5 + 32, units),
   },
 ];
@@ -548,60 +550,3 @@ export function chartSeries(detail, units = DEFAULT_UNITS) {
 /** `Short › #Channel: text` for the recent-messages list on the card. */
 export const messageLine = (message) =>
   `${message.from} › ${message.to === '^all' ? `#${message.channel ?? 'everyone'}` : message.to}: ${message.text}`;
-
-// ---------------------------------------------------------------------------
-// Row status
-// ---------------------------------------------------------------------------
-
-/**
- * Meshtastic packets sit at msh/<region>/2/e/<channel>/<gateway>, five levels
- * or more, so a short filter with no wildcard (msh/US) is valid MQTT that can
- * never match one. Say so rather than sit connected and silent.
- * @returns {string|null}
- */
-export function topicWarning(topic) {
-  const filter = String(topic ?? '');
-  if (/[#+]/.test(filter) || filter.split('/').length >= 5) return null;
-  return `Topic ${filter || '(empty)'} matches nothing: add /#, like msh/US/#`;
-}
-
-/** One short line for a server row. */
-export function serverSummary(server, now = Date.now()) {
-  if (server.enabled) {
-    const warning = topicWarning(server.topic);
-    if (warning) return warning;
-  }
-  switch (server.status) {
-    case 'off':
-      return 'Off';
-    case 'live': {
-      const quiet =
-        server.lastMessageAt === null ||
-        now - server.lastMessageAt > MESHTASTIC_STALE_AFTER_MS;
-      return quiet
-        ? 'Connected, no traffic lately'
-        : `Live · ${server.messagesPerMinute}/min`;
-    }
-    case 'connecting':
-    case 'reconnecting':
-      return server.error ? `Reconnecting · ${server.error}` : 'Connecting…';
-    case 'auth-failed':
-      return server.error || 'Login refused';
-    default:
-      return server.error || 'Unavailable';
-  }
-}
-
-/** The layer row's meta line: what the enabled servers are doing, honestly. */
-export function serversSummary(servers, now = Date.now()) {
-  if (!servers.length) return 'Meshtastic MQTT';
-  const on = servers.filter((server) => server.enabled);
-  if (!on.length) return 'Turn a server on to listen';
-  const live = on.filter((server) => server.status === 'live');
-  if (!live.length)
-    return on.length === 1
-      ? `${on[0].name}: ${serverSummary(on[0], now)}`
-      : `${on.length} servers connecting…`;
-  const rate = live.reduce((sum, s) => sum + s.messagesPerMinute, 0);
-  return `${live.length}/${on.length} server${on.length === 1 ? '' : 's'} live · ${rate}/min`;
-}

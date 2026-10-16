@@ -27,7 +27,9 @@ import { createApplicationEarthquakes } from './layers/earthquakes.js';
 import { createApplicationPropagation } from './layers/propagation.js';
 import { createApplicationAprs } from './layers/aprs.js';
 import { createApplicationMeshtastic } from './layers/meshtastic.js';
+import { createApplicationAirQuality } from './layers/airQuality.js';
 import { createApplicationFirePerimeters } from './layers/perimeters.js';
+import { createApplicationGnssIntegrity } from './layers/gnss.js';
 import { createApplicationCables } from './layers/submarineCables.js';
 import { createApplicationStreetLevel } from './layers/streetLevel.js';
 import { createInfrastructureLayers } from '../data/infrastructure.js';
@@ -123,8 +125,12 @@ export function createApplicationCatalog({
         createApplicationPropagation({ source: sources.propagation }),
         createApplicationAprs({ source: sources.aprs }),
         createApplicationMeshtastic({ source: sources.meshtastic }),
+        createApplicationAirQuality({ source: sources['air-quality'] }),
         createApplicationFirePerimeters({
           source: sources['fire-perimeters'],
+        }),
+        createApplicationGnssIntegrity({
+          source: sources['gnss-integrity'],
         }),
         createApplicationAlpr({ surface, source: sources.alpr }),
         createApplicationStreetLevel({

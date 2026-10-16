@@ -12,6 +12,7 @@
  *       .mobile-page[data-page=<id>] > .mobile-page__body (mount container)
  * Events: listens `gev:mobile-open` {page}.
  */
+import { t } from '../../i18n/index.js';
 const pages = new Map(); // id -> { def, mounted, body, section, tile }
 let sheet = null; // live DOM/state once installSheet ran
 
@@ -198,7 +199,7 @@ export function installSheet(doc = document, win = window) {
       record.def.mount(pageBody, ctxFor(record.def.id));
     } catch (error) {
       console.error('[mobile] page mount failed', record.def.id, error);
-      pageBody.textContent = 'This section failed to load.';
+      pageBody.textContent = t('This section failed to load.');
     }
   }
 
