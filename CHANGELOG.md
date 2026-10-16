@@ -37,6 +37,12 @@
   recency window and type, with tracks, weather, message pop-ups and an
   aprs.fi-style details card. The login passcode is computed from `APRS_CALLSIGN`.
   The panel gains dropdown and text-filter widgets.
+- GBFS v3 station names use English translations when available, then the first
+  usable translation or short name. Empty or malformed names no longer appear as
+  `[object Object]` or interrupt station loading; legacy string names remain
+  supported in the globe and bike-share tools. Thanks to
+  [Kristóf Kékesi](https://github.com/KristofKekesi) (#61).
+
 - Treat explicitly current, complete empty vessel coverage as a successful update,
   clearing obsolete contacts while retaining stale or incomplete snapshots.
 
