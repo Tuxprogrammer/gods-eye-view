@@ -18,8 +18,13 @@ import {
 } from './locale.js';
 import es from './locales/es.json' with { type: 'json' };
 import ru from './locales/ru.json' with { type: 'json' };
+// This fork's own translations, under upstream's: scripts/i18n-fork.mjs.
+import fork from './fork/catalogs.json' with { type: 'json' };
 
-const CATALOGS = Object.freeze({ es, ru });
+const CATALOGS = Object.freeze({
+  es: { ...fork.es, ...es },
+  ru: { ...fork.ru, ...ru },
+});
 
 let currentLocale = DEFAULT_LOCALE;
 

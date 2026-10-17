@@ -14,6 +14,12 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  forkCatalogErrors,
+  mergeForkCatalog,
+  readForkSameAsEnglish,
+  writeCatalogLayers,
+} from './i18n-fork.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LOCALES_DIR = path.join(ROOT, 'src/i18n/locales');
@@ -447,8 +453,11 @@ export function catalogPath(locale) {
   return path.join(LOCALES_DIR, `${locale}.json`);
 }
 
+const readUpstreamCatalog = (locale) =>
+  JSON.parse(readFileSync(catalogPath(locale), 'utf8'));
+
 export function readCatalog(locale) {
-  return JSON.parse(readFileSync(catalogPath(locale), 'utf8'));
+  return mergeForkCatalog(locale, readUpstreamCatalog(locale));
 }
 
 export function shippedLocales() {
@@ -460,7 +469,7 @@ export function shippedLocales() {
 /** Messages a locale keeps exactly as in English, on purpose. */
 export function readSameAsEnglish(locale) {
   const lists = JSON.parse(readFileSync(SAME_AS_ENGLISH, 'utf8'));
-  return new Set(lists[locale] || []);
+  return new Set([...(lists[locale] || []), ...readForkSameAsEnglish(locale)]);
 }
 
 /** The English a message shows: its text without the "context|" prefix. */
@@ -578,10 +587,7 @@ function main(args) {
       catalog = Object.fromEntries(
         Object.entries(catalog).filter(([text]) => messages.has(text)),
       );
-      writeFileSync(
-        catalogPath(locale),
-        `${JSON.stringify(catalog, null, 2)}\n`,
-      );
+      writeCatalogLayers(locale, catalog, catalogPath(locale));
       console.log(`${locale}: pruned ${stale.length} unused entries`);
     } else if (stale.length) {
       failed = true;
@@ -598,6 +604,7 @@ function main(args) {
       for (const text of missing)
         console.log(`  ${JSON.stringify(text)}  ${messages.get(text).where}`);
     }
+    errors.push(...forkCatalogErrors(locale, readUpstreamCatalog(locale)));
     for (const error of errors) {
       failed = true;
       console.log(`${locale}: ${error}`);

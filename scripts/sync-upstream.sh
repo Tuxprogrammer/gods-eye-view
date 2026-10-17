@@ -23,7 +23,11 @@
 #
 # Exit: 0 merged or already up to date (compare HEAD before/after to tell),
 #       10 conflict needing a human (merge aborted, files listed on stdout),
-#       20 could not fetch a remote.
+#       20 could not fetch a remote,
+#       1  the post-merge fork fix-up (scripts/fork-boundaries.mjs) failed.
+#
+# After an upstream merge, scripts/fork-boundaries.mjs lists the fork's modules
+# in any package upstream added, as its own commit.
 
 set -u
 
@@ -98,5 +102,17 @@ if [ -n "${MIRROR_REPO:-}" ]; then
 fi
 
 fetch_remote upstream "$UPSTREAM_REPO" "$UPSTREAM_BRANCH" || exit 20
+before_upstream="$(git rev-parse HEAD)"
 merge_ref "upstream/$UPSTREAM_BRANCH" || exit $?
+
+# A package upstream added may own a module the fork hooks into (say
+# src/i18n/index.js); list the fork's module there too, or the boundary check
+# fails on an otherwise clean merge.
+if [ "$(git rev-parse HEAD)" != "$before_upstream" ]; then
+  node scripts/fork-boundaries.mjs || exit 1
+  if ! git diff --quiet -- scripts/package-boundaries.json; then
+    git commit -q -m "chore(sync): list fork modules in new upstream packages" \
+      -- scripts/package-boundaries.json
+  fi
+fi
 exit 0

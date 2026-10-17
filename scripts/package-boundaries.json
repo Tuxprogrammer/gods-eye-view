@@ -421,6 +421,7 @@
       "src/ui/applicationShortcuts.js",
       "src/ui/styleParameters.js",
       "src/i18n/index.js",
+      "src/i18n/fork/catalogs.json",
       "src/i18n/locale.js",
       "src/i18n/locales/es.json",
       "src/i18n/locales/ru.json"
@@ -446,6 +447,7 @@
       "src/styles/noir.js",
       "src/styles/snow.js",
       "src/i18n/index.js",
+      "src/i18n/fork/catalogs.json",
       "src/i18n/locale.js",
       "src/i18n/locales/es.json",
       "src/i18n/locales/ru.json"
@@ -463,6 +465,7 @@
       "src/keySetupCore.mjs",
       "src/localRequestGate.mjs",
       "src/i18n/index.js",
+      "src/i18n/fork/catalogs.json",
       "src/i18n/locale.js",
       "src/i18n/locales/es.json",
       "src/i18n/locales/ru.json"
@@ -492,6 +495,7 @@
       "src/data/feedState.js",
       "src/data/layerSnapshot.js",
       "src/i18n/index.js",
+      "src/i18n/fork/catalogs.json",
       "src/i18n/locale.js",
       "src/i18n/locales/es.json",
       "src/i18n/locales/ru.json",
@@ -511,6 +515,7 @@
       "src/locationStatus.js",
       "src/app/stateChannel.js",
       "src/i18n/index.js",
+      "src/i18n/fork/catalogs.json",
       "src/i18n/locale.js",
       "src/i18n/locales/es.json",
       "src/i18n/locales/ru.json"
@@ -526,6 +531,7 @@
       "src/ui/radioPresentation.js",
       "src/ui/radioTunerModel.js",
       "src/i18n/index.js",
+      "src/i18n/fork/catalogs.json",
       "src/i18n/locale.js",
       "src/i18n/locales/es.json",
       "src/i18n/locales/ru.json"
@@ -543,6 +549,7 @@
       "src/ui/cctvVideo.js",
       "src/ui/cctvPresentation.js",
       "src/i18n/index.js",
+      "src/i18n/fork/catalogs.json",
       "src/i18n/locale.js",
       "src/i18n/locales/es.json",
       "src/i18n/locales/ru.json",
@@ -567,6 +574,7 @@
       "src/rightRailPolicy.js",
       "src/ui/panelRailGeometry.js",
       "src/i18n/index.js",
+      "src/i18n/fork/catalogs.json",
       "src/i18n/locale.js",
       "src/i18n/locales/es.json",
       "src/i18n/locales/ru.json",
@@ -601,6 +609,7 @@
       "src/cockpitVisionPolicy.js",
       "src/ui/panelRailGeometry.js",
       "src/i18n/index.js",
+      "src/i18n/fork/catalogs.json",
       "src/i18n/locale.js",
       "src/i18n/locales/es.json",
       "src/i18n/locales/ru.json",
@@ -615,6 +624,7 @@
       "src/ui/sceneControls.js",
       "src/ui/scenePresentation.js",
       "src/i18n/index.js",
+      "src/i18n/fork/catalogs.json",
       "src/i18n/locale.js",
       "src/i18n/locales/es.json",
       "src/i18n/locales/ru.json",
@@ -765,6 +775,7 @@
       "src/ui/localSdrPresentation.js",
       "src/data/cameraArrival.js",
       "src/i18n/index.js",
+      "src/i18n/fork/catalogs.json",
       "src/i18n/locale.js",
       "src/i18n/locales/es.json",
       "src/i18n/locales/ru.json",
@@ -883,6 +894,7 @@
       "src/ui/sceneSharing.js",
       "src/data/cameraArrival.js",
       "src/i18n/index.js",
+      "src/i18n/fork/catalogs.json",
       "src/i18n/locale.js",
       "src/i18n/locales/es.json",
       "src/i18n/locales/ru.json",
@@ -947,6 +959,7 @@
       "src/data/inputOwnership.js",
       "src/data/modelEligibility.js",
       "src/i18n/index.js",
+      "src/i18n/fork/catalogs.json",
       "src/i18n/locale.js",
       "src/i18n/locales/es.json",
       "src/i18n/locales/ru.json",
@@ -993,6 +1006,7 @@
       "src/data/inputOwnership.js",
       "src/data/modelEligibility.js",
       "src/i18n/index.js",
+      "src/i18n/fork/catalogs.json",
       "src/i18n/locale.js",
       "src/i18n/locales/es.json",
       "src/i18n/locales/ru.json"
@@ -1051,6 +1065,7 @@
       "src/layers/vessels/snapshotRenderer.js",
       "src/data/inputOwnership.js",
       "src/i18n/index.js",
+      "src/i18n/fork/catalogs.json",
       "src/i18n/locale.js",
       "src/i18n/locales/es.json",
       "src/i18n/locales/ru.json"
@@ -1079,6 +1094,7 @@
       "src/layers/recentImagery/thumbnails.js",
       "src/maps/imageryHost.js",
       "src/i18n/index.js",
+      "src/i18n/fork/catalogs.json",
       "src/i18n/locale.js",
       "src/i18n/locales/es.json",
       "src/i18n/locales/ru.json",
@@ -1108,6 +1124,7 @@
       "src/layers/firms/viewport.js",
       "src/data/inputOwnership.js",
       "src/i18n/index.js",
+      "src/i18n/fork/catalogs.json",
       "src/i18n/locale.js",
       "src/i18n/locales/es.json",
       "src/i18n/locales/ru.json"
@@ -1138,6 +1155,7 @@
       "src/layers/satellites/tracking.js",
       "src/data/inputOwnership.js",
       "src/i18n/index.js",
+      "src/i18n/fork/catalogs.json",
       "src/i18n/locale.js",
       "src/i18n/locales/es.json",
       "src/i18n/locales/ru.json",
@@ -1170,6 +1188,7 @@
       "src/layers/launches/testing.js",
       "src/data/inputOwnership.js",
       "src/i18n/index.js",
+      "src/i18n/fork/catalogs.json",
       "src/i18n/locale.js",
       "src/i18n/locales/es.json",
       "src/i18n/locales/ru.json"
@@ -1211,6 +1230,7 @@
       "src/layers/installations/namedMarkers.js",
       "src/data/infrastructureOverlayEntry.js",
       "src/i18n/index.js",
+      "src/i18n/fork/catalogs.json",
       "src/i18n/locale.js",
       "src/i18n/locales/es.json",
       "src/i18n/locales/ru.json",
@@ -1245,6 +1265,7 @@
       "src/layers/awareness/testing.js",
       "src/ui/panelRailGeometry.js",
       "src/i18n/index.js",
+      "src/i18n/fork/catalogs.json",
       "src/i18n/locale.js",
       "src/i18n/locales/es.json",
       "src/i18n/locales/ru.json",
@@ -1293,6 +1314,7 @@
       "src/sources/phaseTiming.js",
       "src/layers/traffic/roadModes.js",
       "src/i18n/index.js",
+      "src/i18n/fork/catalogs.json",
       "src/i18n/locale.js",
       "src/i18n/locales/es.json",
       "src/i18n/locales/ru.json"
@@ -1320,6 +1342,7 @@
       "src/data/inputOwnership.js",
       "src/data/cameraSensitivity.js",
       "src/i18n/index.js",
+      "src/i18n/fork/catalogs.json",
       "src/i18n/locale.js",
       "src/i18n/locales/es.json",
       "src/i18n/locales/ru.json"
@@ -1366,6 +1389,7 @@
       "src/data/inputOwnership.js",
       "src/layers/cctv/sourcePolicy.js",
       "src/i18n/index.js",
+      "src/i18n/fork/catalogs.json",
       "src/i18n/locale.js",
       "src/i18n/locales/es.json",
       "src/i18n/locales/ru.json"
@@ -1431,6 +1455,7 @@
       "src/layers/streetLevel/providers/mapillary/source.js",
       "scripts/qa-street-level.mjs",
       "src/i18n/index.js",
+      "src/i18n/fork/catalogs.json",
       "src/i18n/locale.js",
       "src/i18n/locales/es.json",
       "src/i18n/locales/ru.json"
@@ -1458,6 +1483,7 @@
       "src/sources/phaseTiming.js",
       "src/layers/alpr/floors.js",
       "src/i18n/index.js",
+      "src/i18n/fork/catalogs.json",
       "src/i18n/locale.js",
       "src/i18n/locales/es.json",
       "src/i18n/locales/ru.json"
@@ -1497,6 +1523,7 @@
       "src/ui/radioTunerModel.js",
       "src/data/inputOwnership.js",
       "src/i18n/index.js",
+      "src/i18n/fork/catalogs.json",
       "src/i18n/locale.js",
       "src/i18n/locales/es.json",
       "src/i18n/locales/ru.json"
@@ -1519,6 +1546,7 @@
       "src/layers/submarineCables/surface.js",
       "src/data/inputOwnership.js",
       "src/i18n/index.js",
+      "src/i18n/fork/catalogs.json",
       "src/i18n/locale.js",
       "src/i18n/locales/es.json",
       "src/i18n/locales/ru.json"
@@ -1574,6 +1602,7 @@
       "src/localRequestGate.mjs",
       "src/maps/imageryHost.js",
       "src/i18n/index.js",
+      "src/i18n/fork/catalogs.json",
       "src/i18n/locale.js",
       "src/i18n/locales/es.json",
       "src/i18n/locales/ru.json"
@@ -1631,6 +1660,7 @@
       "src/voice/pointerContext.js",
       "src/voice/pointerReticle.js",
       "src/i18n/index.js",
+      "src/i18n/fork/catalogs.json",
       "src/i18n/locale.js",
       "src/i18n/locales/es.json",
       "src/i18n/locales/ru.json",
@@ -2513,6 +2543,7 @@
       "src/view/index.js",
       "src/app/embed.js",
       "src/i18n/index.js",
+      "src/i18n/fork/catalogs.json",
       "src/i18n/locale.js",
       "src/i18n/locales/es.json",
       "src/i18n/locales/ru.json",
@@ -3114,6 +3145,7 @@
       "src/data/infrastructureOverlayEntry.js",
       "src/sources/infrastructureData.js",
       "src/i18n/index.js",
+      "src/i18n/fork/catalogs.json",
       "src/i18n/locale.js",
       "src/i18n/locales/es.json",
       "src/i18n/locales/ru.json",
@@ -3222,7 +3254,8 @@
       "src/i18n/locale.js",
       "src/i18n/locales/es.json",
       "src/i18n/locales/ru.json",
-      "src/i18n/index.js"
+      "src/i18n/index.js",
+      "src/i18n/fork/catalogs.json"
     ],
     "external": ["cesium"]
   },
@@ -3240,6 +3273,7 @@
       "src/ui/shareRestoration.js",
       "src/ui/uiLifetime.js",
       "src/i18n/index.js",
+      "src/i18n/fork/catalogs.json",
       "src/i18n/locale.js",
       "src/i18n/locales/es.json",
       "src/i18n/locales/ru.json"
@@ -3272,6 +3306,7 @@
       "src/ui/visualPresets.js",
       "src/ui/visualSettings.js",
       "src/i18n/index.js",
+      "src/i18n/fork/catalogs.json",
       "src/i18n/locale.js",
       "src/i18n/locales/es.json",
       "src/i18n/locales/ru.json"
@@ -3296,6 +3331,7 @@
       "src/ui/rightPanelRail.js",
       "src/ui/uiLifetime.js",
       "src/i18n/index.js",
+      "src/i18n/fork/catalogs.json",
       "src/i18n/locale.js",
       "src/i18n/locales/es.json",
       "src/i18n/locales/ru.json"
@@ -3386,6 +3422,7 @@
       "src/layers/directions/source.js",
       "src/data/routeSteps.js",
       "src/i18n/index.js",
+      "src/i18n/fork/catalogs.json",
       "src/i18n/locale.js",
       "src/i18n/locales/es.json",
       "src/i18n/locales/ru.json",
@@ -3445,6 +3482,7 @@
       "src/ui/unitLabels.js",
       "src/voice/pointerReticle.js",
       "src/i18n/index.js",
+      "src/i18n/fork/catalogs.json",
       "src/i18n/locale.js",
       "src/i18n/locales/es.json",
       "src/i18n/locales/ru.json",
@@ -3694,6 +3732,7 @@
       "src/sources/featureSource.js",
       "src/sources/capability.js",
       "src/i18n/index.js",
+      "src/i18n/fork/catalogs.json",
       "src/i18n/locale.js",
       "src/i18n/locales/es.json",
       "src/i18n/locales/ru.json"
@@ -3735,6 +3774,7 @@
       "src/layers/transit/source.js",
       "src/sources/transitHistory.js",
       "src/i18n/index.js",
+      "src/i18n/fork/catalogs.json",
       "src/i18n/locale.js",
       "src/i18n/locales/es.json",
       "src/i18n/locales/ru.json"
@@ -3786,6 +3826,7 @@
       "src/layers/perimeters/cards.js",
       "src/layers/perimeters/inciweb.js",
       "src/i18n/index.js",
+      "src/i18n/fork/catalogs.json",
       "src/i18n/locale.js",
       "src/i18n/locales/es.json",
       "src/i18n/locales/ru.json"
@@ -3801,6 +3842,7 @@
       "src/layers/gnss/source.js",
       "src/layers/gnss/records.js",
       "src/i18n/index.js",
+      "src/i18n/fork/catalogs.json",
       "src/i18n/locale.js",
       "src/i18n/locales/es.json",
       "src/i18n/locales/ru.json",
@@ -3992,6 +4034,7 @@
       "src/sources/httpBody.js",
       "src/i18n/marker.js",
       "src/i18n/index.js",
+      "src/i18n/fork/catalogs.json",
       "src/i18n/locale.js",
       "src/i18n/locales/es.json",
       "src/i18n/locales/ru.json",

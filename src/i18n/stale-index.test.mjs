@@ -25,6 +25,10 @@ function sandbox() {
     path.join(HERE, '../../scripts/i18n.mjs'),
     path.join(root, 'scripts/i18n.mjs'),
   );
+  copyFileSync(
+    path.join(HERE, '../../scripts/i18n-fork.mjs'),
+    path.join(root, 'scripts/i18n-fork.mjs'),
+  );
   writeFileSync(path.join(root, 'src/a.js'), "export const x = t('Hello');\n");
   writeFileSync(path.join(root, 'index.html'), '<p data-i18n>Hello</p>\n');
   const git = (...args) =>
