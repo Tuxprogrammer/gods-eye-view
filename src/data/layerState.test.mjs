@@ -29,6 +29,7 @@ import radioLayer from './radio.js';
 import { stampInitialShareGesture } from '../navigationPolicy.js';
 import { MAX_SINCE_DAYS } from '../layers/streetLevel/policy.js';
 import { SINCE_STOPS } from '../ui/streetLevelPresentation.js';
+import { FORK_LAYER_IDS } from '../testSupport/fork.mjs';
 
 function deferred() {
   let resolve;
@@ -202,9 +203,8 @@ function encode(state) {
 
 test('production registry is exact, canonical, and rejects incomplete contracts', async () => {
   assert.equal(validateLayerStateRegistry(), true);
-  // Upstream's 31 plus this fork's aprs, meshtastic and propagation.
-  assert.equal(REGISTERED_LAYER_IDS.length, 34);
-  assert.equal(new Set(REGISTERED_LAYER_IDS).size, 34);
+  assert.equal(REGISTERED_LAYER_IDS.length, 31 + FORK_LAYER_IDS.length);
+  assert.equal(new Set(REGISTERED_LAYER_IDS).size, 31 + FORK_LAYER_IDS.length);
   assert.ok(REGISTERED_LAYER_IDS.includes('transit'));
   assert.deepEqual(REGISTERED_LAYER_IDS, [...REGISTERED_LAYER_IDS].sort());
   assert.deepEqual(LEGACY_LAYER_STATE_TOKENS, {

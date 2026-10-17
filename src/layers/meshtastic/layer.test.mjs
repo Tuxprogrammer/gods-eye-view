@@ -20,7 +20,7 @@ import {
   serversSummary,
   topicWarning,
 } from './serverStatus.js';
-import { LayerPanel } from '../../ui/layerPanel.js';
+import * as rowControls from '../../ui/forkRowControls.js';
 
 const wait = (ms = 0) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -408,10 +408,10 @@ const item = (id, extra = {}) => ({
 
 test('the server list is built once, with the delete button first, and kept in order across refreshes', () =>
   withDocument(() => {
-    const panel = LayerPanel.prototype;
+    const panel = rowControls;
     const container = new FakeElement('div');
     for (let i = 0; i < 4; i += 1)
-      panel._syncServers(container, { heading: 'MQTT SERVERS', items: [item('global'), item('almesh')] });
+      panel.syncServers(container, { heading: 'MQTT SERVERS', items: [item('global'), item('almesh')] });
     const block = container.children.find((c) => c.className === 'data-servers');
     assert.equal(container.children.length, 1);
     const list = block.children[1];
@@ -422,7 +422,7 @@ test('the server list is built once, with the delete button first, and kept in o
     assert.equal(toggle.textContent, 'ON');
     assert.equal(body.children[2].value, 'msh/US/#');
     const form = block.children[2];
-    panel._syncServers(container, {
+    panel.syncServers(container, {
       heading: 'MQTT SERVERS',
       items: [item('almesh', { enabled: false, statusText: 'Off', status: 'off' }), item('mine')],
       error: 'nope',
@@ -432,19 +432,19 @@ test('the server list is built once, with the delete button first, and kept in o
     assert.equal(list.children[0].children[2].textContent, 'OFF');
     assert.equal(block.children[3].textContent, 'nope');
     assert.equal(block.children[3].hidden, false);
-    panel._syncServers(container, null);
+    panel.syncServers(container, null);
     assert.equal(container.children.length, 0);
   }));
 
 test('a topic being typed is not overwritten by a refresh', () =>
   withDocument(() => {
-    const panel = LayerPanel.prototype;
+    const panel = rowControls;
     const container = new FakeElement('div');
-    panel._syncServers(container, { items: [item('global')] });
+    panel.syncServers(container, { items: [item('global')] });
     const topic = container.children[0].children[1].children[0].children[1].children[2];
     globalThis.document.activeElement = topic;
     topic.value = 'msh/US/AL/#';
-    panel._syncServers(container, { items: [item('global')] });
+    panel.syncServers(container, { items: [item('global')] });
     assert.equal(topic.value, 'msh/US/AL/#');
   }));
 

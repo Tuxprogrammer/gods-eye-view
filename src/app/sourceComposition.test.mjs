@@ -8,6 +8,7 @@ import { createApplicationCatalog } from './constructCatalog.js';
 import { createSurfaceServices } from './surfaceServices.js';
 import { createStandaloneLayerSources } from '../standalone/layerSources.js';
 import { LayerLifecycle } from '../data/lifecycle.js';
+import { FORK_LAYER_IDS } from '../testSupport/fork.mjs';
 
 function catalog(sources, t) {
   const lifetime = new AbortController();
@@ -37,8 +38,7 @@ test('every acquisition source can be omitted without losing catalog membership'
 
 test('all acquisition sources may be absent, and enable fails before initializing or fetching', async (t) => {
   const actual = catalog({}, t);
-  // Upstream's 32 plus this fork's aprs, meshtastic and propagation.
-  assert.equal(actual.layers.length, 35);
+  assert.equal(actual.layers.length, 32 + FORK_LAYER_IDS.length);
   const manager = new LayerLifecycle(
     {},
     { getSourceAvailability: actual.getSourceAvailability },

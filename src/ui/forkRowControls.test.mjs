@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { LayerPanel } from './layerPanel.js';
+import * as rowControls from './forkRowControls.js';
 
 /** The smallest element that the panel's reconcilers touch. */
 class FakeElement {
@@ -65,9 +65,9 @@ const sliderLabels = (container) =>
 
 test('a slider is created once and reused across refreshes', () =>
   withDocument(() => {
-    const panel = LayerPanel.prototype;
+    const panel = rowControls;
     const container = new FakeElement('div');
-    for (let i = 0; i < 5; i++) panel._syncSliders(container, [opacity(60)]);
+    for (let i = 0; i < 5; i++) panel.syncSliders(container, [opacity(60)]);
     assert.equal(sliderLabels(container).length, 1);
     const input = sliderLabels(container)[0].children[1];
     assert.equal(input.type, 'range');
@@ -78,24 +78,24 @@ test('a slider is created once and reused across refreshes', () =>
 
 test('a slider follows the descriptor, except while it is being dragged', () =>
   withDocument((document) => {
-    const panel = LayerPanel.prototype;
+    const panel = rowControls;
     const container = new FakeElement('div');
-    panel._syncSliders(container, [opacity(60)]);
+    panel.syncSliders(container, [opacity(60)]);
     const input = sliderLabels(container)[0].children[1];
-    panel._syncSliders(container, [opacity(90)]);
+    panel.syncSliders(container, [opacity(90)]);
     assert.equal(input.value, '90', 'a switched map shows its own setting');
     document.activeElement = input;
     input.value = '35';
-    panel._syncSliders(container, [opacity(90)]);
+    panel.syncSliders(container, [opacity(90)]);
     assert.equal(input.value, '35', 'a refresh must not fight the drag');
   }));
 
 test('a slider that leaves the descriptor is removed', () =>
   withDocument(() => {
-    const panel = LayerPanel.prototype;
+    const panel = rowControls;
     const container = new FakeElement('div');
-    panel._syncSliders(container, [opacity(60)]);
-    panel._syncSliders(container, []);
+    panel.syncSliders(container, [opacity(60)]);
+    panel.syncSliders(container, []);
     assert.equal(sliderLabels(container).length, 0);
   }));
 
@@ -107,11 +107,13 @@ const ramp = (ticks = [{ position: 0.5, label: '10' }]) => ({
 
 test('the colour ramp is created once, updated in place and removed with the layer', () =>
   withDocument(() => {
-    const panel = LayerPanel.prototype;
+    const panel = rowControls;
     const container = new FakeElement('div');
-    for (let i = 0; i < 4; i++) panel._syncRamp(container, ramp());
+    for (let i = 0; i < 4; i++) panel.syncRamp(container, ramp());
     const nodes = () =>
-      container.children.filter((node) => node.className === 'data-toggle-ramp');
+      container.children.filter(
+        (node) => node.className === 'data-toggle-ramp',
+      );
     assert.equal(nodes().length, 1);
     const [bar, ticks, caption] = nodes()[0].children;
     assert.equal(bar.style.background, 'linear-gradient(90deg, red, blue)');
@@ -121,9 +123,9 @@ test('the colour ramp is created once, updated in place and removed with the lay
     assert.match(bar.attributes.get('aria-label'), /Scale marks: 10/);
 
     const first = ticks.children[0];
-    panel._syncRamp(container, ramp());
+    panel.syncRamp(container, ramp());
     assert.equal(ticks.children[0], first, 'unchanged ticks are not rebuilt');
-    panel._syncRamp(
+    panel.syncRamp(
       container,
       ramp([
         { position: 0.1, label: '5' },
@@ -134,6 +136,6 @@ test('the colour ramp is created once, updated in place and removed with the lay
       ticks.children.map((tick) => tick.textContent),
       ['5', '30'],
     );
-    panel._syncRamp(container, null);
+    panel.syncRamp(container, null);
     assert.equal(nodes().length, 0);
   }));

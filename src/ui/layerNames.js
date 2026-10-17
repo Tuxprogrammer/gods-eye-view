@@ -10,6 +10,7 @@
  * @module ui/layerNames
  */
 import { msg, t, translateKnown } from '../i18n/index.js';
+import { FORK_LAYER_NAME_KEYS } from '../fork/manifest.js';
 
 /** English module names (`layer.name`) by layer id. */
 export const LAYER_NAME_KEYS = Object.freeze({
@@ -42,11 +43,7 @@ export const LAYER_NAME_KEYS = Object.freeze({
   'air-quality': msg('Air quality'),
   directions: msg('Directions'),
   'alpr-cameras': msg('ALPR Cameras'),
-  // This fork's layers. APRS and Meshtastic are product names, kept as
-  // English in same-as-english.json.
-  propagation: msg('HF Propagation'),
-  aprs: msg('APRS'),
-  meshtastic: msg('Meshtastic'),
+  ...FORK_LAYER_NAME_KEYS,
 });
 
 /** The layer panel's own English names, where they differ from the module's. */

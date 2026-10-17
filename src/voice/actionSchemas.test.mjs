@@ -7,6 +7,7 @@ import {
   validateArgs,
   validateCall,
 } from '../../scripts/voice-bench/grade.mjs';
+import { withoutForkMapStacks } from '../testSupport/fork.mjs';
 
 const stable = (value) =>
   Array.isArray(value)
@@ -140,9 +141,7 @@ test('all legacy action arguments are byte-identical after removing the delibera
   }
   // This fork adds its own map stacks; strip them so upstream's pin holds.
   const stack = property('set_map_stack').stack;
-  stack.enum = stack.enum.filter(
-    (id) => !['carto-positron', 'carto-dark', 'openfreemap-dark'].includes(id),
-  );
+  stack.enum = withoutForkMapStacks(stack.enum);
   // Cyber adds one HUD layout.
   const hud = property('set_hud').layout;
   hud.enum = hud.enum.filter((layout) => layout !== 'cyber');

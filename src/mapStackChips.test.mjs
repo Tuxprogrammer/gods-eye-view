@@ -20,6 +20,7 @@ import {
   renderMapStackChips,
   syncMapStackChips,
 } from './mapStackChips.js';
+import { FORK_MAP_STACK_IDS } from './testSupport/fork.mjs';
 
 /** Minimal element stand-in — the row only needs create/append/attr/class. */
 function makeElement(tagName = 'div') {
@@ -145,9 +146,7 @@ test('the row renders exactly the owner-approved sources present in the controll
     'bing-labels',
     'esri-imagery',
     'osm',
-    'carto-positron',
-    'carto-dark',
-    'openfreemap-dark',
+    ...FORK_MAP_STACK_IDS,
   ]);
   assert.ok(
     container.children.every(

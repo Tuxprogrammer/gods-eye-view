@@ -25,14 +25,8 @@ import {
   checkLayerStateTokens,
   readPublishedLayerStateReservations,
 } from '../../scripts/check-layer-state-tokens.mjs';
+import { FORK_LAYER_STATE_TOKENS as FORK_RESERVATIONS } from '../testSupport/fork.mjs';
 
-// This fork's own layers, kept at the far end of the two-character space so
-// upstream's digits-first allocator does not reach them.
-const FORK_RESERVATIONS = Object.freeze({
-  aprs: 'zz',
-  meshtastic: 'zy',
-  propagation: 'zx',
-});
 const FORK_COUNT = Object.keys(FORK_RESERVATIONS).length;
 const LEDGER_PATH = 'src/data/layerStateTokenReservations.json';
 const SOURCE_PATH = 'src/data/layerState.js';

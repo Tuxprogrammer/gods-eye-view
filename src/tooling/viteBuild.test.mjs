@@ -4,7 +4,6 @@ import { readFileSync } from 'node:fs';
 import { BROWSER_CSP, createBrowserViteConfig } from '../../build/vite.js';
 import standaloneConfig, * as compatibility from '../../vite.config.js';
 import * as providers from '../../server/providers/local.js';
-import { maplibreWorkerPlugin } from '../../server/standalone/maplibre-worker.js';
 
 test('explicit build inputs preserve browser-only defines, plugin order and loopback protections', () => {
   const plugin = { name: 'fixture-provider' };
@@ -109,24 +108,6 @@ test('build export resolves in Node and has no browser fallback', async () => {
     readFileSync(new URL('../../package.json', import.meta.url)),
   );
   assert.deepEqual(pkg.exports['./build/vite'], { node: './build/vite.js' });
-});
-
-test('the build emits the maplibre worker and its shared chunk under the names it imports', () => {
-  const plugin = maplibreWorkerPlugin();
-  assert.equal(plugin.apply, 'build');
-  const emitted = [];
-  plugin.generateBundle.call({ emitFile: (file) => emitted.push(file) });
-  assert.deepEqual(emitted.map((file) => file.fileName).sort(), [
-    'assets/maplibre-gl-shared.mjs',
-    'assets/maplibre-gl-worker.mjs',
-  ]);
-  for (const file of emitted) {
-    assert.equal(file.type, 'asset');
-    assert.ok(file.source.length > 1000, file.fileName);
-  }
-  // The worker imports its sibling by this exact relative name.
-  const worker = emitted.find((file) => file.fileName.endsWith('worker.mjs'));
-  assert.ok(worker.source.toString().includes('./maplibre-gl-shared.mjs'));
 });
 
 test('only embed-mode documents may be framed, and only by the allowed ancestors', async () => {

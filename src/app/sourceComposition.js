@@ -1,3 +1,4 @@
+import { FORK_SOURCE_CONTRACTS } from '../fork/manifest.js';
 const contract = (layers, methods) =>
   Object.freeze({
     layers: Object.freeze(layers),
@@ -50,10 +51,7 @@ export const CATALOG_SOURCE_CONTRACTS = Object.freeze({
   'gnss-integrity': contract(['gnss-integrity'], ['getSnapshot']),
   cables: contract(['telegeography-submarine-cables'], ['fetch']),
   transit: contract(['transit'], ['requestSnapshot', 'getHistory']),
-  // This fork's own layers.
-  propagation: contract(['propagation'], ['getMap']),
-  aprs: contract(['aprs'], ['getStations']),
-  meshtastic: contract(['meshtastic'], ['getNodes']),
+  ...FORK_SOURCE_CONTRACTS,
 });
 
 /** An omitted provider is unavailable, never an authoritative empty dataset. */

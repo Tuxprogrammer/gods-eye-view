@@ -1,4 +1,5 @@
 import * as Cesium from 'cesium';
+import { FORK_DATA_CREDITS } from '../fork/manifest.js';
 
 /**
  * Per-layer data attribution registered into Cesium's credit display.
@@ -347,38 +348,7 @@ export const DATA_CREDITS = [
       '<a href="https://www.radio-browser.info/" target="_blank" rel="noopener">Radio Browser</a> ' +
       '(public domain; audio delivered directly by each broadcaster)',
   },
-  {
-    key: 'kc2g-propagation',
-    html:
-      'HF propagation maps (MUF 3000 km, foF2): ' +
-      '<a href="https://prop.kc2g.com/" target="_blank" rel="noopener">prop.kc2g.com</a> ' +
-      'from ionosonde data of the ' +
-      '<a href="https://giro.uml.edu/" target="_blank" rel="noopener">Global Ionospheric Radio Observatory (GIRO)</a> ' +
-      'and its contributing stations, with the IRI-2020 model',
-  },
-  {
-    key: 'aprs-is',
-    html:
-      'Amateur radio positions, weather and messages: ' +
-      '<a href="https://www.aprs-is.net/" target="_blank" rel="noopener">APRS-IS</a> ' +
-      'network, as transmitted by licensed operators and ' +
-      '<a href="http://www.cwop.org/" target="_blank" rel="noopener">CWOP</a> weather observers',
-  },
-  {
-    key: 'aprs-symbols',
-    html:
-      'APRS map symbols: ' +
-      '<a href="http://github.com/hessu/aprs-symbols/" target="_blank" rel="noopener">aprs-symbols</a> ' +
-      'by Heikki Hannikainen (OH7LZB), the set used by aprs.fi',
-  },
-  {
-    key: 'meshtastic-mqtt',
-    html:
-      'Mesh radio node positions and messages: ' +
-      '<a href="https://meshtastic.org/" target="_blank" rel="noopener">Meshtastic</a> ' +
-      'nodes whose operators publish to MQTT (the project’s public broker and community brokers such as ' +
-      '<a href="https://almesh.net/" target="_blank" rel="noopener">ALmesh</a>)',
-  },
+  ...FORK_DATA_CREDITS,
   {
     key: 'reearth-terrain',
     html:

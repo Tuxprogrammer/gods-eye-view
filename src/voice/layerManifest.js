@@ -1,3 +1,4 @@
+import { FORK_VOICE_OFF_LAYERS } from '../fork/manifest.js';
 /**
  * Voice manifest for every data layer the application catalog constructs.
  *
@@ -410,11 +411,7 @@ const layers = [
 export const VOICE_OFF_LAYERS = Object.freeze({
   'bhote-koshi-2026': 'scene-driven event layer (control_scene)',
   'bhote-koshi-locator': 'scene-driven event layer (control_scene)',
-  // This fork's own layers have never been voice-reachable; giving them
-  // aliases, toggles and analyst fields is a feature of its own.
-  aprs: 'fork layer, not yet wired for voice',
-  meshtastic: 'fork layer, not yet wired for voice',
-  propagation: 'fork layer, not yet wired for voice',
+  ...FORK_VOICE_OFF_LAYERS,
 });
 
 const TYPE_NAMES = Object.freeze({

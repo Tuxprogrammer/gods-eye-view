@@ -18,6 +18,7 @@ import {
   setFirstRunSuppressed,
   shouldShowFirstRun,
 } from './firstRunExperience.js';
+import { withoutForkMapStacks } from './testSupport/fork.mjs';
 
 function memoryStorage(key, value = null) {
   const values = new Map(value == null ? [] : [[key, value]]);
@@ -988,7 +989,7 @@ test('the voice TOOL SCHEMA matches the pinned contract — the mission mapping 
   hudLayout.enum = hudLayout.enum.filter((layout) => layout !== 'cyber');
   // This fork's own map stacks are additive; strip them so upstream's pin holds.
   const mapStack = legacyTools.find((tool) => tool.name === 'set_map_stack').parameters.properties.stack;
-  mapStack.enum = mapStack.enum.filter((id) => !['carto-positron', 'carto-dark', 'openfreemap-dark'].includes(id));
+  mapStack.enum = withoutForkMapStacks(mapStack.enum);
   const block = JSON.stringify(legacyTools);
   // Re-derived for the voice layer manifest (generated layer enums, alias and
   // field hints), point-and-ask's pointer/referent arguments and the prompt

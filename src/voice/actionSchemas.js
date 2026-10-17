@@ -6,6 +6,7 @@ import {
   VOICE_QUERY_LAYER_IDS,
   VOICE_TOGGLE_LAYER_IDS,
 } from './layerManifest.js';
+import { FORK_MAP_STACK_IDS } from '../fork/mapStacks.js';
 
 // Layer enums come from the voice layer manifest so every shipped layer is
 // reachable; the manifest test keeps it in step with the layer catalog.
@@ -351,9 +352,7 @@ const schemas = [
             'bing-labels',
             'esri-imagery',
             'osm',
-            'carto-positron',
-            'carto-dark',
-            'openfreemap-dark',
+            ...FORK_MAP_STACK_IDS,
           ],
         },
       },

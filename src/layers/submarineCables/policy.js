@@ -1,4 +1,5 @@
 import * as Cesium from 'cesium';
+import { FORK_MAP_STACK_IDS } from '../../fork/mapStacks.js';
 
 export const BASE_CABLE_COLOR = '#39d5ff';
 
@@ -83,9 +84,7 @@ export const CABLE_GLOBE_STACK_IDS = Object.freeze(
     'bing-labels',
     'esri-imagery',
     'osm',
-    'carto-positron',
-    'carto-dark',
-    'openfreemap-dark',
+    ...FORK_MAP_STACK_IDS,
   ]),
 );
 

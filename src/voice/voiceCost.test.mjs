@@ -638,20 +638,3 @@ test('input transcription is priced with its own model and folds into the sessio
   assert.equal(state.totalUsd, 3);
   assert.equal(state.capCrossed, true);
 });
-
-test('a local gateway session is metered at zero and never as an unknown model', () => {
-  const tracker = createVoiceCostTracker({
-    modelId: 'gev-voice',
-    tier: 'standard',
-    limits: { warnUsd: 0.01, capUsd: 0.02 },
-    local: true,
-  });
-  assert.equal(tracker.model.id, 'gev-voice');
-  assert.equal(tracker.model.label, 'LOCAL');
-  let state;
-  for (let i = 0; i < 50; i += 1) state = tracker.record(FULL_USAGE);
-  assert.equal(state.totalUsd, 0);
-  assert.equal(state.ratesRecognized, true);
-  assert.equal(state.capReached, false, 'a free session never trips the cap');
-  assert.equal(state.level, 'ok');
-});

@@ -6,6 +6,7 @@ import { createStandaloneLayerSources } from '../standalone/layerSources.js';
 import { catalogControlServices } from './catalog.js';
 import { LayerLifecycle } from '../data/lifecycle.js';
 import { fakeStreetLevelProvider } from '../testSupport/streetLevelFakes.mjs';
+import { FORK_LAYER_IDS } from '../testSupport/fork.mjs';
 
 function fixtureSources(ids, calls) {
   const sources = createStandaloneLayerSources();
@@ -40,8 +41,7 @@ test('catalogs construct distinct layers and classification from their supplied 
     signal: b.signal,
     surface: fixtureSurface(b.signal),
   });
-  // Upstream's 32 plus this fork's aprs, meshtastic and propagation.
-  assert.equal(first.layers.length, 35);
+  assert.equal(first.layers.length, 32 + FORK_LAYER_IDS.length);
   assert.ok(first.get('local-adsb'), 'Local ADS-B is registered');
   assert.deepEqual(
     first.metadata.find(({ id }) => id === 'local-adsb'),
@@ -61,9 +61,7 @@ test('catalogs construct distinct layers and classification from their supplied 
       '2026-09-21T12:00:00.000Z',
     );
   assert.ok(first.get('fire-perimeters'));
-  assert.ok(first.get('propagation'));
-  assert.ok(first.get('aprs'));
-  assert.ok(first.get('meshtastic'));
+  for (const id of FORK_LAYER_IDS) assert.ok(first.get(id), id);
   assert.ok(first.get('gnss-integrity'));
   assert.ok(first.get('transit'));
   const order = first.layers.map(({ id }) => id);
@@ -158,8 +156,7 @@ test('Mapillary can be omitted or replaced without changing catalog membership',
     surface: fixtureSurface(lifetime.signal),
   };
   const catalog = createApplicationCatalog(options);
-  // Upstream's 32 plus this fork's aprs, meshtastic and propagation.
-  assert.equal(catalog.layers.length, 35);
+  assert.equal(catalog.layers.length, 32 + FORK_LAYER_IDS.length);
   assert.deepEqual(catalog.get('street-level').providerIds, []);
   assert.equal(
     catalogControlServices(catalog).streetLevelLayer,

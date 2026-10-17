@@ -12,6 +12,7 @@
 
 import { keySetupRequirementEnvVars } from './keySetupCore.mjs';
 import { t } from './i18n/index.js';
+import { FORK_MAP_STACK_IDS } from './fork/mapStacks.js';
 
 export const MAP_STACK_CHIP_CLASS = 'map-stack-chip';
 export const PRESENTED_MAP_STACK_IDS = Object.freeze([
@@ -20,9 +21,7 @@ export const PRESENTED_MAP_STACK_IDS = Object.freeze([
   'bing-labels',
   'esri-imagery',
   'osm',
-  'carto-positron',
-  'carto-dark',
-  'openfreemap-dark',
+  ...FORK_MAP_STACK_IDS,
 ]);
 
 /**

@@ -47,6 +47,7 @@ import { unavailablePlaceSearch } from '../search/placeSearch.js';
 import * as defaultAnnotationResolver from '../annotations/annotationResolver.js';
 import { normalizeRadioCountryInput } from '../data/radioCountry.js';
 import { TR3B_CLASS } from '../data/tr3bRegistry.js';
+import { FORK_MAP_STACK_ALIASES } from '../fork/mapStacks.js';
 
 const ALLOWED_STYLES = new Set([
   'normal',
@@ -243,18 +244,7 @@ const STACK_ALIASES = new Map([
   ['road', 'osm'],
   ['roads', 'osm'],
   ['road map', 'osm'],
-  ['carto-positron', 'carto-positron'],
-  ['carto positron', 'carto-positron'],
-  ['positron', 'carto-positron'],
-  ['carto light', 'carto-positron'],
-  ['light map', 'carto-positron'],
-  ['carto-dark', 'carto-dark'],
-  ['carto dark', 'carto-dark'],
-  ['dark matter', 'carto-dark'],
-  ['openfreemap-dark', 'openfreemap-dark'],
-  ['openfreemap', 'openfreemap-dark'],
-  ['open free map', 'openfreemap-dark'],
-  ['dark map', 'openfreemap-dark'],
+  ...FORK_MAP_STACK_ALIASES,
 ]);
 
 /** Search order for track_entity across entity layer families. */
