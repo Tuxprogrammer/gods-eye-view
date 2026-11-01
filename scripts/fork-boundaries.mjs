@@ -2,13 +2,16 @@
 //
 //   node scripts/fork-boundaries.mjs           add any missing entries
 //   node scripts/fork-boundaries.mjs --check   exit 1 if any are missing
+//   node scripts/fork-boundaries.mjs --relocate  move fork entries to the top
 //
 // Upstream modules import the fork's through one-line hooks, so every package
 // that owns an upstream importer must also own the fork module it imports. A
 // package upstream adds later (say, one more that uses src/i18n/index.js)
 // fails `npm run check:boundaries` until the fork module is listed there too;
-// this script lists it. Each entry goes on the line after its importer, so the
-// edit is a one-line addition beside an upstream line that rarely changes.
+// this script lists it. Each entry goes first in its package's module list:
+// upstream appends to the end of those lists, so an entry there is a one-line
+// addition no upstream change sits next to. `--relocate` moves fork entries
+// written anywhere else (by hand, or by an older version of this script) there.
 import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -34,6 +37,8 @@ export const FORK_IMPORTERS = Object.freeze({
   'src/app/layers/fork.js': ['src/app/constructCatalog.js'],
   'src/standalone/forkLayerSources.js': ['src/standalone/layerSources.js'],
   'src/i18n/fork/catalogs.json': ['src/i18n/index.js'],
+  'src/ui/forkMobileShell.js': ['src/ui/applicationShell.js'],
+  'src/ui/mobileMode.js': ['src/ui/forkMobileShell.js'],
   // The manifest's only import.
   'src/i18n/marker.js': ['src/fork/manifest.js'],
 });
@@ -52,53 +57,108 @@ export function missingForkEntries(groups) {
   return missing;
 }
 
-/** Insert one module after its anchor inside the named package's block. */
-function insert(text, name, anchor, module) {
-  const lines = text.split('\n');
+/** Fork-owned modules and trees: the entries `--relocate` moves to the top. */
+const FORK_OWNED_PATHS = Object.freeze([
+  ...Object.keys(FORK_IMPORTERS).filter((m) => m !== 'src/i18n/marker.js'),
+  'src/layers/aprs/',
+  'src/layers/meshtastic/',
+  'src/layers/propagation/',
+  'src/app/layers/aprs.js',
+  'src/app/layers/meshtastic.js',
+  'src/app/layers/propagation.js',
+  'src/maps/openFreeMapRaster.js',
+  'server/providers/openai/base-url.js',
+]);
+const isForkOwned = (module) =>
+  FORK_OWNED_PATHS.some((owned) =>
+    owned.endsWith('/') ? module.startsWith(owned) : module === owned,
+  );
+
+/** The line range [modulesLine, closingLine] of a package's module list. */
+function moduleList(lines, name) {
   let current = null;
   for (let index = 0; index < lines.length; index++) {
-    const line = lines[index];
-    const block = /^ {2}"([^"]+)": \{$/.exec(line);
+    const block = /^ {2}"([^"]+)": \{$/.exec(lines[index]);
     if (block) current = block[1];
-    if (current !== name || line.trim().replace(/,$/, '') !== `"${anchor}"`)
-      continue;
-    const indent = line.slice(0, line.length - line.trimStart().length);
-    if (line.trimEnd().endsWith(',')) {
-      lines.splice(index + 1, 0, `${indent}"${module}",`);
-    } else {
-      lines[index] = `${line},`;
-      lines.splice(index + 1, 0, `${indent}"${module}"`);
-    }
-    return lines.join('\n');
+    if (current !== name || !/^\s*"modules": \[/.test(lines[index])) continue;
+    if (lines[index].trimEnd().endsWith('],')) return [index, index];
+    let end = index + 1;
+    while (!/^\s*\],?$/.test(lines[end])) end++;
+    return [index, end];
   }
-  throw new Error(`${name}: ${anchor} not found in ${FILE}`);
+  throw new Error(`${name}: no module list in ${FILE}`);
+}
+
+/**
+ * Rewrite one package's module list as Prettier prints it: on one line when
+ * that fits in 80 columns, otherwise one entry per line.
+ */
+function writeList(lines, name, modules) {
+  const [start, end] = moduleList(lines, name);
+  const indent = lines[start].slice(0, lines[start].search(/\S/));
+  const oneLine = `${indent}"modules": [${modules.map((m) => JSON.stringify(m)).join(', ')}],`;
+  const multiline = [
+    `${indent}"modules": [`,
+    ...modules.map(
+      (m, i) =>
+        `${indent}  ${JSON.stringify(m)}${i < modules.length - 1 ? ',' : ''}`,
+    ),
+    `${indent}],`,
+  ];
+  // Prettier keeps a list that was already expanded expanded only if it must.
+  lines.splice(
+    start,
+    end - start + 1,
+    ...(oneLine.length <= 80 ? [oneLine] : multiline),
+  );
 }
 
 function main(args) {
-  let text = readFileSync(FILE, 'utf8');
-  const added = [];
-  // Repeat: an added module's own imports may need owning in turn.
-  for (;;) {
-    const missing = missingForkEntries(JSON.parse(text));
-    if (!missing.length) break;
-    for (const [name, anchor, module] of missing) {
-      text = insert(text, name, anchor, module);
-      added.push(`${name}: ${module}`);
+  const lines = readFileSync(FILE, 'utf8').split('\n');
+  const groups = () => JSON.parse(lines.join('\n'));
+  const changed = [];
+  if (args.includes('--relocate')) {
+    for (const [name, group] of Object.entries(groups())) {
+      const modules = group.modules || [];
+      const fork = modules.filter(isForkOwned);
+      const rest = modules.filter((m) => !isForkOwned(m));
+      const next = [...fork, ...rest];
+      if (next.some((m, i) => m !== modules[i])) {
+        writeList(lines, name, next);
+        changed.push(`moved ${name}: ${fork.join(', ')}`);
+      }
     }
   }
-  if (!added.length) {
+  // Repeat: an added module's own imports may need owning in turn.
+  for (;;) {
+    const missing = missingForkEntries(groups());
+    if (!missing.length) break;
+    for (const [name, , module] of missing) {
+      const modules = groups()[name].modules;
+      const owned = modules.filter(isForkOwned).length;
+      // After the package's other fork entries, ahead of all upstream ones.
+      const at = isForkOwned(module) ? owned : modules.length;
+      writeList(lines, name, [
+        ...modules.slice(0, at),
+        module,
+        ...modules.slice(at),
+      ]);
+      changed.push(`added ${name}: ${module}`);
+    }
+  }
+  if (!changed.length) {
     console.log('Fork modules are listed in every package that imports them.');
     return 0;
   }
   if (args.includes('--check')) {
     console.log(
-      'Missing fork boundary entries (node scripts/fork-boundaries.mjs):',
+      'Fork boundary entries need fixing (node scripts/fork-boundaries.mjs):',
     );
-    for (const entry of added) console.log(`  ${entry}`);
+    for (const entry of changed) console.log(`  ${entry}`);
     return 1;
   }
-  writeFileSync(FILE, text);
-  for (const entry of added) console.log(`added ${entry}`);
+  writeFileSync(FILE, lines.join('\n'));
+  for (const entry of changed) console.log(entry);
   return 0;
 }
 

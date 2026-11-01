@@ -2,6 +2,7 @@ import { t } from '../i18n/index.js';
 import { syncChipGroup } from './chipGroup.js';
 import { syncRowList } from './rowList.js';
 import { formatScaleLabel, unitLabel } from './unitLabels.js';
+import { createSlider } from './slider.js';
 
 const set = (node, key, value) => {
   if (node[key] !== value) node[key] = value;
@@ -15,9 +16,10 @@ const order = (parent, nodes) =>
       parent.insertBefore(node, parent.children[i] || null);
   });
 
-// "960 — 1050+ гПа": the unit stays with the last number.
-const scaleText = (low, high, units) => {
-  const unit = unitLabel(units);
+// "960 — 1050+ гПа": the unit stays with the last number. Units a source
+// supplied as data are shown as given.
+const scaleText = (low, high, units, verbatim) => {
+  const unit = verbatim ? units || '' : unitLabel(units);
   const range = `${formatScaleLabel(low)} — ${formatScaleLabel(high)}`;
   return unit ? `${range}\u00a0${unit}` : range;
 };
@@ -90,12 +92,11 @@ export function createRailCardBlocks({ container, cardId, onParams }) {
               'rail-card-setting-range-label',
               block.rangeRow,
             );
-            block.rangeInput = make(
-              'input',
-              'rail-card-setting-range',
-              block.rangeRow,
-            );
-            block.rangeInput.type = 'range';
+            block.rangeInput = createSlider({
+              documentRef: document,
+              className: 'rail-card-setting-range',
+            });
+            block.rangeRow.appendChild(block.rangeInput);
             block.rangeValue = make(
               'span',
               'rail-card-setting-range-value',
@@ -309,7 +310,12 @@ export function createRailCardBlocks({ container, cardId, onParams }) {
             block.scale,
             'textContent',
             visible
-              ? scaleText(legend.labels[0], legend.labels.at(-1), legend.units)
+              ? scaleText(
+                  legend.labels[0],
+                  legend.labels.at(-1),
+                  legend.units,
+                  legend.unitsVerbatim === true,
+                )
               : '',
           );
         } else if (props.type === 'actions') {

@@ -1,4 +1,5 @@
 import { createDirectionsSource } from '../layers/directions/source.js';
+import { createForkLayerSources } from './forkLayerSources.js';
 import { createRecentImagerySource } from '../layers/recentImagery/source.js';
 import { createOpenFreeMapSource } from '../sources/openFreeMap.js';
 import {
@@ -19,7 +20,7 @@ import { createWeatherSource } from '../layers/weather/source.js';
 import { createCycloneSource } from '../layers/cyclones/source.js';
 import { createWindSource } from '../layers/wind/source.js';
 import { createFirmsSource } from '../layers/firms/source.js';
-import { createForkLayerSources } from './forkLayerSources.js';
+import { createGhostMapsSource } from '../layers/ghostMaps/source.js';
 import { createMapillarySource } from '../layers/streetLevel/providers/mapillary/source.js';
 import { createReferenceSources } from '../sources/reference.js';
 export { createReferenceSources as createStandaloneReferenceSources } from '../sources/reference.js';
@@ -51,6 +52,7 @@ export function createStandaloneLayerSources(overrides = {}) {
     launches: createLaunchSource(),
     alpr: createAlprTileSource(),
     firms: createFirmsSource(),
+    's2-ghostmaps': createGhostMapsSource(),
     ...createForkLayerSources(),
     wind: createWindSource(),
     weather: createWeatherSource(),

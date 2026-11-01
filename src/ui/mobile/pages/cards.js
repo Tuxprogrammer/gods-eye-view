@@ -116,8 +116,8 @@ function enhanceCard(card) {
       card.dispatchEvent(
         new CustomEvent('gev:card-step', { detail: { delta } }),
       );
-    const prev = button('m-card-nav', '‹', 'Previous station here');
-    const next = button('m-card-nav', '›', 'Next station here');
+    const prev = button('m-card-nav', '‹', t('Previous station here'));
+    const next = button('m-card-nav', '›', t('Next station here'));
     prev.addEventListener('click', () => step(-1));
     next.addEventListener('click', () => step(1));
     stack.before(prev);
@@ -216,7 +216,7 @@ function enhanceCallout(card) {
   const body = card.querySelector('.bhote-embedded-callout-body');
   if (!body) return;
   card.dataset.mCloseAdded = '1';
-  const close = button('m-callout-close', '✕', 'Close this embedded media');
+  const close = button('m-callout-close', '✕', t('Close this embedded media'));
   close.addEventListener('click', () => {
     // Stop playback (hidden iframes keep playing), then hide the card. The
     // layer only re-shows media when the story moves to a different source.
@@ -266,7 +266,7 @@ function confirmSheet({ message, confirmLabel, onConfirm }) {
   box.setAttribute('aria-label', message);
   const text = el('p', 'm-confirm__text', message);
   const row = el('div', 'm-confirm__row');
-  const cancel = button('m-btn', 'Cancel');
+  const cancel = button('m-btn', t('Cancel'));
   const ok = button('m-btn m-confirm__danger', confirmLabel);
   const done = () => box.remove();
   cancel.addEventListener('click', done);
@@ -324,7 +324,7 @@ function installServerUi(on) {
       form.dataset.mReady = '1';
       const bar = el('div', 'm-form-bar');
       bar.append(el('strong', 'm-form-bar__title', t('Add MQTT server')));
-      const close = button('m-btn', 'Close', 'Close the add-server form');
+      const close = button('m-btn', t('Close'), t('Close the add-server form'));
       close.addEventListener('click', () => {
         details.open = false;
       });
@@ -370,13 +370,13 @@ function installDrawToolbar(disposers, on) {
   label.placeholder = t('Label (optional)');
   label.setAttribute('aria-label', t('Label for the next shape'));
   label.setAttribute('autocomplete', 'off');
-  const colour = button('m-draw__colour', '●', 'Change the drawing colour');
+  const colour = button('m-draw__colour', '●', t('Change the drawing colour'));
   row.append(seg, label, colour);
   const actions = el('div', 'm-draw__actions');
-  const undo = button('m-btn', 'Undo');
-  const cancel = button('m-btn', 'Cancel');
-  const finish = button('m-btn m-draw__finish', 'Finish');
-  const exit = button('m-btn m-draw__exit', '✕', 'Exit drawing');
+  const undo = button('m-btn', t('Undo'));
+  const cancel = button('m-btn', t('Cancel'));
+  const finish = button('m-btn m-draw__finish', t('Finish'));
+  const exit = button('m-btn m-draw__exit', '✕', t('Exit drawing'));
   actions.append(undo, cancel, finish, exit);
   bar.append(hint, row, actions);
   document.body.append(bar);
@@ -465,7 +465,11 @@ function installDeselect(disposers, on) {
   const title = el('strong', 'm-select__title');
   const detail = el('div', 'm-select__detail m-meta');
   text.append(title, detail);
-  const clear = button('m-btn', 'Deselect', 'Deselect the selected target');
+  const clear = button(
+    'm-btn',
+    t('Deselect'),
+    t('Deselect the selected target'),
+  );
   box.append(text, clear);
   document.body.append(box);
   disposers.push(() => box.remove());

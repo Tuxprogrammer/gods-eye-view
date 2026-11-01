@@ -18,7 +18,12 @@ export function createStandaloneTools(options) {
       },
     },
     ...options,
-    voice: { toolCatalog: loadToolCatalog, ...options?.voice },
+    voice: {
+      supportedProviders: ['openai', 'gemini'],
+      panel: true,
+      toolCatalog: loadToolCatalog,
+      ...options?.voice,
+    },
   });
   // Last phase: every desktop node (dock, voice pill, rails) exists by now,
   // so mobile pages can move them. No-op on desktop.

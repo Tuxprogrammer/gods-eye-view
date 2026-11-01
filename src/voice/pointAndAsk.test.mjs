@@ -13,6 +13,7 @@ import {
 } from './voiceCardPresentation.js';
 import { realtimeInstructions } from '../../server/providers/openai/instructions.js';
 import { GEV_REALTIME_TOOLS } from '../../server/providers/openai/tools.js';
+import { withoutForkToolValues } from '../testSupport/fork.mjs';
 
 const aircraftSnapshot = buildPointerSnapshot({
   at: 'speech_start',
@@ -347,13 +348,17 @@ test('deixis prompt lint: one short rule, and every sentinel it names exists in 
   // characters. It was 56,308 after the area/imagery/OSM merge; stating each
   // policy once (WHERE precedence, AREAS routing, AFTER TOOLS speech) brought
   // it to 51,646. A new tool or rule has to fit under this ceiling.
-  const size = instructions.length + JSON.stringify(GEV_REALTIME_TOOLS).length;
+  // Measured without this fork's extra map stacks (src/fork/mapStacks.js).
+  const size =
+    instructions.length +
+    JSON.stringify(withoutForkToolValues(GEV_REALTIME_TOOLS)).length;
   assert.ok(size <= 52000, `prompt size ${size}`);
 });
 
-
 test('after-tool speech allows returned items to answer requested lists and rankings', () => {
-  const rule = realtimeInstructions().split('\n').find(line => line.startsWith('AFTER TOOLS:'));
+  const rule = realtimeInstructions()
+    .split('\n')
+    .find((line) => line.startsWith('AFTER TOOLS:'));
   assert.match(rule, /requested analyst list or ranking/);
   assert.match(rule, /returned items.*returned values/);
   assert.match(rule, /keep their order/);

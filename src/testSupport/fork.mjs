@@ -22,3 +22,15 @@ export const FORK_LAYER_STATE_TOKENS = Object.freeze({
 /** An enum with the fork's map stacks removed, so upstream's pin holds. */
 export const withoutForkMapStacks = (ids) =>
   ids.filter((id) => !FORK_MAP_STACK_IDS.includes(id));
+
+/**
+ * A copy of a Realtime tool payload with the fork's map stacks removed from
+ * `set_map_stack`, so a pinned payload hash stays upstream's.
+ */
+export function withoutForkToolValues(tools) {
+  const copy = structuredClone(tools);
+  const stack = copy.find((tool) => tool.name === 'set_map_stack')?.parameters
+    ?.properties?.stack;
+  if (stack) stack.enum = withoutForkMapStacks(stack.enum);
+  return copy;
+}

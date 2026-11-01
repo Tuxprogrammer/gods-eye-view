@@ -5,8 +5,10 @@ import { createBrowserViteConfig } from '../../build/vite.js';
 import { localProviderPlugins } from '../providers/local.js';
 import { localMcpPlugin } from '../mcp/plugin.js';
 import { apiNotFoundPlugin } from './api-not-found.js';
+import { googleTokenUnavailablePlugin } from './google-token-unavailable.js';
 import { maplibreWorkerPlugin } from './maplibre-worker.js';
 import { standaloneVoiceTools } from './voiceTools.js';
+import { unwatchedRuntimeDirsPlugin } from './unwatched-cache.js';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 
@@ -16,12 +18,15 @@ export default defineConfig(({ command, mode }) => {
   for (const [key, value] of Object.entries(loaded)) {
     if (process.env[key] === undefined) process.env[key] = value;
   }
+  const tools = standaloneVoiceTools();
   return createBrowserViteConfig({
     plugins: [
       maplibreWorkerPlugin(),
-      ...localProviderPlugins({ realtime: { tools: standaloneVoiceTools() } }),
+      ...localProviderPlugins({ realtime: { tools }, gemini: { tools } }),
       localMcpPlugin(),
+      googleTokenUnavailablePlugin(),
       apiNotFoundPlugin(),
+      unwatchedRuntimeDirsPlugin(),
     ],
     googleApiKey: process.env.GOOGLE_MAPS_API_KEY,
     cesiumToken: process.env.CESIUM_ION_TOKEN,

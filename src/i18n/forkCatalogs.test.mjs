@@ -3,7 +3,13 @@
 // its own entries so upstream merges never conflict on a catalog.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { getCatalog } from './index.js';
@@ -24,10 +30,13 @@ const upstreamCatalog = (locale) =>
   JSON.parse(readFileSync(catalogPath(locale), 'utf8'));
 
 test('the fork layer is not a shipped locale of its own', () => {
-  assert.deepEqual(shippedLocales().sort(), ['es', 'ru']);
+  const upstream = readdirSync(path.dirname(catalogPath('es')))
+    .filter((file) => file.endsWith('.json'))
+    .map((file) => file.replace(/\.json$/, ''));
+  assert.deepEqual(shippedLocales().sort(), upstream.sort());
 });
 
-for (const locale of ['es', 'ru']) {
+for (const locale of shippedLocales()) {
   test(`${locale}: the app sees both layers, upstream's file holds none of the fork's`, () => {
     const fork = readForkCatalog(locale);
     assert.ok(Object.keys(fork).length > 0, 'the fork has its own entries');
