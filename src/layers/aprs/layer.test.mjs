@@ -350,3 +350,36 @@ test('the stack pick keeps only stations of one layer, once each, in a fixed ord
   assert.equal(seen[0].x, 10);
   assert.ok(seen[0].limit > 1 && seen[0].w > 1, 'reaches past the top station');
 });
+
+test('an icon clamped visibly under the real surface is hidden until it re-clamps', async () => {
+  const Cesium = await import('cesium');
+  const { createHorizon, isClampedOutOfPlace } = await import('./rendering.js');
+  const at = (height) => Cesium.Cartesian3.fromDegrees(-86.7402, 34.7832, height);
+  // The default view: beside the Saturn V, 11.6 km from this node.
+  const near = Cesium.Cartesian3.fromDegrees(-86.6528, 34.7075, 355);
+  const orbit = Cesium.Cartesian3.fromDegrees(-87, 35, 1_500_000);
+  const billboard = { position: at(0), _clampedPosition: undefined, show: true };
+  assert.equal(isClampedOutOfPlace(billboard, near), false, 'not clamped yet');
+  billboard._clampedPosition = at(227);
+  assert.equal(isClampedOutOfPlace(billboard, near), false, 'Huntsville ground');
+  billboard._clampedPosition = at(-410);
+  assert.equal(isClampedOutOfPlace(billboard, near), false, 'Dead Sea depth');
+  // What a coarse photoreal tile answered at page load (measured).
+  billboard._clampedPosition = at(-4941);
+  assert.equal(isClampedOutOfPlace(billboard, near), true, 'coarse-tile clamp, close up');
+  assert.equal(isClampedOutOfPlace(billboard, orbit), false, 'the same error from 1,500 km is a pixel');
+
+  // The camera does not move: tiles alone re-clamp the icon.
+  const viewer = { camera: { positionWC: near } };
+  const horizon = createHorizon(viewer);
+  const record = { billboard, label: { show: true }, labelWanted: true, visible: true, filteredOut: false, horizonPoint: at(2000) };
+  assert.equal(horizon.update([record], true), true);
+  assert.equal(billboard.show, false);
+  assert.equal(record.label.show, false);
+  assert.equal(record.visible, false);
+  billboard._clampedPosition = at(227);
+  assert.equal(horizon.update([record], false), true);
+  assert.equal(billboard.show, true);
+  assert.equal(record.label.show, true);
+  assert.equal(horizon.update([record], false), false, 'no flip, no repaint');
+});

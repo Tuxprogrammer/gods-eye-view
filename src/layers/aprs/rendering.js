@@ -150,13 +150,58 @@ function iconFor(symbol, cell, color) {
 }
 
 /**
- * Hide anything on the far side of the planet.
+ * Lowest height (metres above the ellipsoid) any real surface reaches: the
+ * Dead Sea shore is about -410 m and the sea surface dips to about -106 m.
+ */
+const LOWEST_SURFACE_M = -500;
+
+/**
+ * A clamp error this fraction of the camera distance (about 25 px on a desktop
+ * screen) or less leaves the icon where it belongs, near enough.
+ */
+const CLAMP_ERROR_PER_DISTANCE = 0.02;
+
+/**
+ * Whether a ground-clamped billboard sits visibly out of place, clamped under
+ * any real surface.
+ *
+ * Cesium clamps to whatever photoreal tile is loaded there, and a coarse
+ * ancestor tile's flat facets can sit kilometres under the true ground
+ * (measured: -4,941 m at a node 11 km from Huntsville's rocket park, -73 km at
+ * others in a 150 km-high view). Off-screen ground never refines, so such a
+ * clamp can stand until the camera moves. With the depth test off, that node is
+ * drawn mid-screen over whatever is in the foreground, and the error is
+ * depth / distance, so the same 5 km is invisible from orbit. `_clampedPosition`
+ * is Cesium's private clamp result. Positions sit at height 0, so the clamp
+ * moved straight along the normal and its length is the depth.
+ */
+export function isClampedOutOfPlace(billboard, camera) {
+  const clamped = billboard._clampedPosition;
+  if (!clamped) return false;
+  const anchor = billboard.position;
+  if (
+    Cesium.Cartesian3.magnitudeSquared(clamped) >=
+    Cesium.Cartesian3.magnitudeSquared(anchor)
+  )
+    return false;
+  const depthSquared = Cesium.Cartesian3.distanceSquared(clamped, anchor);
+  return (
+    depthSquared > LOWEST_SURFACE_M ** 2 &&
+    depthSquared >
+      CLAMP_ERROR_PER_DISTANCE ** 2 *
+        Cesium.Cartesian3.distanceSquared(camera, anchor)
+  );
+}
+
+/**
+ * Hide anything on the far side of the planet, or clamped far under it.
  *
  * Icons are drawn with the depth test off so they stay legible over terrain
  * and buildings, which also means the globe no longer hides them: a station in
  * Australia would show through the Earth when looking at Europe. This is that
  * missing occlusion, done analytically against the ellipsoid, so it needs no
- * depth buffer. It runs from the camera position, only when it has moved.
+ * depth buffer. It runs from the camera position, only when it has moved. The
+ * clamp check runs every frame, since tiles re-clamp without the camera moving.
  */
 export function createHorizon(viewer) {
   const occluder = new Cesium.EllipsoidalOccluder(
@@ -170,13 +215,18 @@ export function createHorizon(viewer) {
       const camera = viewer.camera?.positionWC;
       if (!camera) return false;
       // Sub-kilometre movement cannot change what is over the horizon.
-      if (!force && Cesium.Cartesian3.equalsEpsilon(camera, last, 0, 500))
-        return false;
-      Cesium.Cartesian3.clone(camera, last);
-      occluder.cameraPosition = camera;
+      const moved =
+        force || !Cesium.Cartesian3.equalsEpsilon(camera, last, 0, 500);
+      if (moved) {
+        Cesium.Cartesian3.clone(camera, last);
+        occluder.cameraPosition = camera;
+      }
       let flipped = false;
       for (const record of records) {
-        const visible = occluder.isPointVisible(record.horizonPoint);
+        if (moved)
+          record.overHorizon = !occluder.isPointVisible(record.horizonPoint);
+        const visible =
+          !record.overHorizon && !isClampedOutOfPlace(record.billboard, camera);
         if (visible === record.visible) continue;
         record.visible = visible;
         flipped = true;
