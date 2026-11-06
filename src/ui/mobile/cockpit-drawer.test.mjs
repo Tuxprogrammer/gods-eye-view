@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import {
   COCKPIT_TABS,
   adjacentCockpitTab,
@@ -12,7 +12,14 @@ import {
 import { COCKPIT_MOVES } from './cockpit-drawer.js';
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
-const template = read('../templates/cockpit.html');
+// The cockpit markup is the Vue view and its panels (formerly
+// templates/cockpit.html).
+const template = [
+  read('../views/CockpitView.vue'),
+  ...readdirSync(new URL('../views/panels/', import.meta.url))
+    .filter((name) => /^Cockpit.*\.vue$/.test(name))
+    .map((name) => read(`../views/panels/${name}`)),
+].join('\n');
 const css = read('../styles/mobile-cockpit.css');
 const briefing = read('../cockpitBriefing.js');
 

@@ -125,7 +125,7 @@ html[data-ui='mobile'] #mobile-sheet .m-radio .radio-volume-row {
 }
 html[data-ui='mobile'] #mobile-sheet .m-radio .radio-volume-row .gev-slider-value {
   font-size: 13px;
-  text-align: right;
+  text-align: end;
 }
 
 html[data-ui='mobile'] #mobile-sheet .m-radio .radio-playback-state {
@@ -177,7 +177,7 @@ html[data-ui='mobile'] #mobile-sheet .m-radio__item {
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.04);
   color: var(--m-text);
-  text-align: left;
+  text-align: start;
 }
 html[data-ui='mobile'] #mobile-sheet .m-radio__item.is-current {
   border-color: var(--m-accent);

@@ -148,7 +148,7 @@ html[data-ui='mobile'] .mp-places .poi-pill {
   padding: 0 14px;
   border-radius: 12px;
   white-space: normal;
-  text-align: left;
+  text-align: start;
   transition: none;
 }
 html[data-ui='mobile'] .mp-places .poi-pill-key {
@@ -217,6 +217,6 @@ html[data-ui='mobile'] #orbit-indicator.active {
 }
 html[data-ui='mobile'] #orbit-indicator.active::after {
   content: '\2715';
-  margin-left: 6px;
+  margin-inline-start: 6px;
   color: var(--m-text-dim);
 }

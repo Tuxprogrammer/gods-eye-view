@@ -242,7 +242,7 @@ html[data-ui='mobile'] .mv-voice .mv-cost-value[data-level='cap'] {
 }
 html[data-ui='mobile'] .mv-voice .mv-help-list {
   margin: 0;
-  padding-left: 18px;
+  padding-inline-start: 18px;
   display: flex;
   flex-direction: column;
   gap: 6px;

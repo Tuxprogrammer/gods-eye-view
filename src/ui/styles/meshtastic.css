@@ -85,7 +85,7 @@
   display: inline-block;
   width: 6px;
   height: 6px;
-  margin-right: 5px;
+  margin-inline-end: 5px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.28);
 }

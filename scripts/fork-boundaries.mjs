@@ -21,7 +21,11 @@ const FILE = path.join(ROOT, 'scripts/package-boundaries.json');
 
 /** Fork module → the upstream (or fork) modules that import it. */
 export const FORK_IMPORTERS = Object.freeze({
-  'src/ui/forkRowControls.js': ['src/ui/layerPanel.js'],
+  'src/ui/forkRowControls.js': [
+    'src/ui/layerPanel.js',
+    'src/ui/layerPanel/ForkRowControls.vue',
+  ],
+  'src/ui/layerPanel/ForkRowControls.vue': ['src/ui/layerPanel/LayerRows.vue'],
   'src/fork/manifest.js': [
     'src/app/sourceComposition.js',
     'src/ui/layerNames.js',

@@ -148,7 +148,7 @@ html[data-ui='mobile'] #cesium-credits#cesium-credits#cesium-credits {
   padding: 1px 5px 1px calc(var(--m-safe-l) + 3px);
   font-size: 7px;
   line-height: 1.3;
-  text-align: left;
+  text-align: start;
   color: rgba(232, 234, 237, 0.78);
   background: rgba(6, 10, 14, 0.62);
   border-radius: 0 6px 0 0;
@@ -170,7 +170,7 @@ html[data-ui='mobile'] #cesium-credits .cesium-widget-credits {
   position: static;
   display: block;
   padding: 0;
-  text-align: left;
+  text-align: start;
 }
 
 /* The tactical HUD readouts (classification, timestamp, MGRS, lat/lon, GSD) are

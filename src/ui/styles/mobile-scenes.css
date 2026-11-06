@@ -274,7 +274,7 @@ html[data-ui='mobile'] #mobile-scene-bar #scene-runtime {
   background: none;
   font-size: 12px;
   letter-spacing: 0.6px;
-  text-align: left;
+  text-align: start;
   text-shadow: none;
   overflow: hidden;
   text-overflow: ellipsis;

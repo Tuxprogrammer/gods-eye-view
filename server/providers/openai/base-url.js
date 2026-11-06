@@ -3,9 +3,10 @@ const OPENAI_BASE_URL_DEFAULT = 'https://api.openai.com/v1';
 let warnedValue = null;
 
 /**
- * The OpenAI-compatible API root for text requests (the HUD summary), from
- * OPENAI_BASE_URL. Unset keeps OpenAI; a local gateway such as LiteLLM
- * (https://host/v1) serves the same Responses API without the cloud. A value
+ * The OpenAI-compatible API root for text requests (the HUD summary and
+ * typed chat), from OPENAI_BASE_URL. Unset keeps OpenAI; a local gateway such
+ * as LiteLLM (https://host/v1) serves the same Responses and Chat Completions
+ * APIs without the cloud. A value
  * that is not an http(s) URL falls back to OpenAI rather than sending the key
  * somewhere unintended, and is reported once.
  */

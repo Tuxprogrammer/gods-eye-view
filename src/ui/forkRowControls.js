@@ -35,7 +35,7 @@ export function bindForkRowControls({ bind, live, isEnabled }) {
   // Sliders (opacity and the like) report continuous input; the live
   // descriptor is re-read so a stale row can never drive a dead slider.
   bind('input', (event) => {
-    const input = event.target?.closest?.('.data-toggle-slider-input');
+    const input = event.target?.closest?.('.data-fork-slider-input');
     if (!input || !isEnabled()) return;
     const slider = live()?.sliders?.find(
       (entry) => entry.id === input.dataset.sliderId,
@@ -44,7 +44,7 @@ export function bindForkRowControls({ bind, live, isEnabled }) {
     const value = Number(input.value);
     if (!Number.isFinite(value)) return;
     const output = input.parentElement?.querySelector?.(
-      '.data-toggle-slider-value',
+      '.data-fork-slider-value',
     );
     if (output) output.textContent = `${value}${slider.suffix || ''}`;
     slider.onInput?.(value);
@@ -455,7 +455,7 @@ export function syncTexts(container, texts) {
 export function syncSliders(container, sliders) {
   const existing = new Map(
     [...container.children]
-      .filter((child) => hasClass(child, 'data-toggle-slider'))
+      .filter((child) => hasClass(child, 'data-fork-slider'))
       .map((child) => [child.dataset.sliderId, child]),
   );
   for (const slider of sliders) {
@@ -463,16 +463,16 @@ export function syncSliders(container, sliders) {
     existing.delete(slider.id);
     if (!label) {
       label = document.createElement('label');
-      label.className = 'data-toggle-slider';
+      label.className = 'data-fork-slider';
       label.dataset.sliderId = slider.id;
       const name = document.createElement('span');
-      name.className = 'data-toggle-slider-name';
+      name.className = 'data-fork-slider-name';
       const input = document.createElement('input');
       input.type = 'range';
-      input.className = 'data-toggle-slider-input';
+      input.className = 'data-fork-slider-input';
       input.dataset.sliderId = slider.id;
       const value = document.createElement('span');
-      value.className = 'data-toggle-slider-value';
+      value.className = 'data-fork-slider-value';
       label.append(name, input, value);
       container.appendChild(label);
     }

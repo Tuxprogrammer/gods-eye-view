@@ -33,7 +33,7 @@ html[data-ui='mobile'] .mobile-more__action {
   gap: 2px;
   padding-top: 8px;
   padding-bottom: 8px;
-  text-align: left;
+  text-align: start;
 }
 html[data-ui='mobile'] .mobile-more__toggle {
   justify-content: space-between;

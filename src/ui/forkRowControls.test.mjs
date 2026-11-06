@@ -61,7 +61,7 @@ const opacity = (value) => ({
   suffix: '%',
 });
 const sliderLabels = (container) =>
-  container.children.filter((node) => node.className === 'data-toggle-slider');
+  container.children.filter((node) => node.className === 'data-fork-slider');
 
 test('a slider is created once and reused across refreshes', () =>
   withDocument(() => {

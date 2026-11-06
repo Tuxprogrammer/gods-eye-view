@@ -167,7 +167,7 @@ html[data-ui='mobile'] .m-layers .data-toggle-btn {
   touch-action: manipulation;
 }
 html[data-ui='mobile'] .m-layers .data-toggle-meta {
-  padding-left: 32px;
+  padding-inline-start: 32px;
   font-size: var(--m-font-meta);
   letter-spacing: 0.2px;
   line-height: 1.35;
@@ -176,7 +176,7 @@ html[data-ui='mobile'] .m-layers .data-toggle-meta {
 
 /* Per-layer sub-controls */
 html[data-ui='mobile'] .m-layers .data-toggle-controls {
-  padding-left: 32px;
+  padding-inline-start: 32px;
   margin-top: 8px;
   gap: 8px;
 }
@@ -188,9 +188,10 @@ html[data-ui='mobile'] .m-layers .data-toggle-chip {
   letter-spacing: 0.8px;
 }
 html[data-ui='mobile'] .m-layers .data-toggle-chip.chip-break {
-  margin-left: 0;
+  margin-inline-start: 0;
 }
 html[data-ui='mobile'] .m-layers .data-toggle-slider,
+html[data-ui='mobile'] .m-layers .data-fork-slider,
 html[data-ui='mobile'] .m-layers .data-toggle-select,
 html[data-ui='mobile'] .m-layers .data-toggle-text {
   font-size: var(--m-font-meta);
@@ -200,10 +201,12 @@ html[data-ui='mobile'] .m-layers .data-toggle-text {
 html[data-ui='mobile'] .m-layers .data-toggle-select {
   flex: 1 0 100%;
 }
-html[data-ui='mobile'] .m-layers .data-toggle-slider-input {
+html[data-ui='mobile'] .m-layers .data-toggle-slider-input,
+html[data-ui='mobile'] .m-layers .data-fork-slider-input {
   height: var(--m-tap);
 }
-html[data-ui='mobile'] .m-layers .data-toggle-slider-value {
+html[data-ui='mobile'] .m-layers .data-toggle-slider-value,
+html[data-ui='mobile'] .m-layers .data-fork-slider-value {
   min-width: 3.6em;
   font-size: var(--m-font-meta);
 }

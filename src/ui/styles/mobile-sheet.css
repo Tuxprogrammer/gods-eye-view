@@ -154,7 +154,7 @@ html[data-ui='mobile'] .mobile-tile {
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.05);
   color: var(--m-text);
-  text-align: left;
+  text-align: start;
 }
 html[data-ui='mobile'] .mobile-tile:active {
   background: rgba(0, 212, 255, 0.14);

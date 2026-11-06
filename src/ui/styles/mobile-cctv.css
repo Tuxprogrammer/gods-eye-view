@@ -84,7 +84,7 @@ html[data-ui='mobile'] #mobile-sheet .m-cctv #cctv-frame {
 html[data-ui='mobile'] #mobile-sheet .m-cctv__cal-toggle {
   width: 100%;
   justify-content: flex-start;
-  text-align: left;
+  text-align: start;
 }
 html[data-ui='mobile'] #mobile-sheet .m-cctv__cal-toggle::after {
   content: '  ▾';
@@ -130,7 +130,7 @@ html[data-ui='mobile'] #mobile-sheet .m-cctv .cctv-cal-value {
   padding: 8px 10px;
   font-size: 14px;
   letter-spacing: 0.4px;
-  text-align: left;
+  text-align: start;
 }
 html[data-ui='mobile'] #mobile-sheet .m-cctv .cctv-cal-input {
   width: 100%;

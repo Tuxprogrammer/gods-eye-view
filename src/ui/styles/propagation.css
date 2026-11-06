@@ -38,7 +38,7 @@
   color: var(--text-dim);
 }
 
-.data-toggle-slider {
+.data-fork-slider {
   flex: 1 0 100%;
   display: flex;
   align-items: center;
@@ -49,7 +49,7 @@
   color: var(--text-dim);
 }
 
-.data-toggle-slider-input {
+.data-fork-slider-input {
   flex: 1;
   min-width: 0;
   height: 12px;
@@ -57,15 +57,15 @@
   cursor: pointer;
 }
 
-.data-toggle-slider-value {
+.data-fork-slider-value {
   min-width: 3.2em;
-  text-align: right;
+  text-align: end;
   color: var(--text-secondary);
 }
 
 /* A chip that opens a new group (independent toggles after an exclusive set). */
 .data-toggle-chip.chip-break {
-  margin-left: 10px;
+  margin-inline-start: 10px;
 }
 
 /* Station details: a small table that follows the cursor on hover and pins to
@@ -143,17 +143,17 @@
 .propagation-station-card-table td {
   padding: 1.5px 0;
   font-weight: 400;
-  text-align: left;
+  text-align: start;
   vertical-align: top;
 }
 
 .propagation-station-card-table th {
-  padding-right: 12px;
+  padding-inline-end: 12px;
   color: var(--text-dim, rgba(232, 234, 237, 0.55));
   white-space: nowrap;
 }
 
 .propagation-station-card-table td {
-  text-align: right;
+  text-align: end;
   color: var(--text-primary, #e8eaed);
 }

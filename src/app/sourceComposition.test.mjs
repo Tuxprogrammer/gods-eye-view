@@ -38,7 +38,7 @@ test('every acquisition source can be omitted without losing catalog membership'
 
 test('all acquisition sources may be absent, and enable fails before initializing or fetching', async (t) => {
   const actual = catalog({}, t);
-  assert.equal(actual.layers.length, 33 + FORK_LAYER_IDS.length);
+  assert.equal(actual.layers.length, 38 + FORK_LAYER_IDS.length);
   const manager = new LayerLifecycle(
     {},
     { getSourceAvailability: actual.getSourceAvailability },
