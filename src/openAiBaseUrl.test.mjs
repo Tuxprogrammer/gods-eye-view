@@ -97,15 +97,15 @@ test('the HUD summary goes to the configured gateway with the server key', async
   const calls = [];
   t.mock.method(globalThis, 'fetch', async (url, init) => {
     calls.push({ url, init });
-    // LiteLLM answers with output_text null and the words in output[].
+    // The gateway path is Chat Completions; a ```json fence is tolerated.
     return Response.json({
-      output_text: null,
-      output: [
+      choices: [
         {
-          type: 'message',
-          content: [
-            { type: 'output_text', text: 'Huntsville traffic cameras live' },
-          ],
+          message: {
+            role: 'assistant',
+            content:
+              '```json\n{"summary":"Huntsville traffic cameras live","feedState":"stale"}\n```',
+          },
         },
       ],
     });
@@ -122,7 +122,14 @@ test('the HUD summary goes to the configured gateway with the server key', async
     'Huntsville traffic cameras live',
   );
   assert.equal(calls.length, 1);
-  assert.equal(calls[0].url, 'https://lmg.example.net/v1/responses');
+  assert.equal(calls[0].url, 'https://lmg.example.net/v1/chat/completions');
+  // LiteLLM's Responses bridge drops text.format; response_format survives.
+  const sent = JSON.parse(calls[0].init.body);
+  assert.equal(sent.response_format.type, 'json_schema');
+  assert.equal(sent.response_format.json_schema.name, 'hud_summary');
+  assert.equal(sent.messages[0].role, 'system');
+  assert.equal(sent.text, undefined);
+  assert.equal(JSON.parse(reply.body).feedState, 'stale');
   assert.equal(
     calls[0].init.headers.Authorization,
     'Bearer fixture-gateway-key',

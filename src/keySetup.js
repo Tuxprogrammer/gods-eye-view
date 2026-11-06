@@ -251,9 +251,15 @@ export async function initKeySetup({
   fetchImpl,
   signal,
   store = useProviderSettingsStore(applicationPinia()),
+  production = Boolean(import.meta.env?.PROD),
 } = {}) {
   const root = documentRef?.getElementById?.('key-setup');
   if (!root || store.controls) return null;
+  // A production build never serves the endpoint, and probing it only puts a
+  // 404 in every visitor's console. Return before any state exists: destroy()
+  // reaches offLocale, keyboard and controls, which are declared further down,
+  // so calling it here threw a TDZ ReferenceError and rejected startup.
+  if (production && !fetchImpl) return null;
   const lifetime = new AbortController();
   const doFetch = fetchImpl || globalThis.fetch?.bind(globalThis);
   let disposed = false;
@@ -297,13 +303,6 @@ export async function initKeySetup({
     publish();
     if (store.controls === controls) store.connect(null);
   };
-
-  // A production build never serves the endpoint, and probing it only puts a
-  // 404 in every visitor's console.
-  if (import.meta.env?.PROD && !fetchImpl) {
-    destroy();
-    return null;
-  }
 
   let status = null;
   let busy = false;

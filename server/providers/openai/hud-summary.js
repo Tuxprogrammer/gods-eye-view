@@ -12,9 +12,12 @@ import {
 import { enforceRateLimit, openAiRateLimiter } from './rate-limit.js';
 import { readRequestBody } from '../common/request.js';
 import { OPENAI_HUD_SUMMARY_MODEL_DEFAULT } from './constants.js';
-import { resolveOpenAiBaseUrl } from './base-url.js';
+import { OPENAI_BASE_URL_DEFAULT, resolveOpenAiBaseUrl } from './base-url.js';
 
 function extractOpenAiResponseText(data) {
+  // Chat Completions (the gateway path below).
+  const message = data?.choices?.[0]?.message?.content;
+  if (typeof message === 'string') return message.trim();
   if (typeof data?.output_text === 'string' && data.output_text.trim()) {
     return data.output_text.trim();
   }
@@ -24,6 +27,50 @@ function extractOpenAiResponseText(data) {
     .map((part) => part?.text || part?.output_text || '')
     .join(' ')
     .trim();
+}
+
+/**
+ * The upstream request for one summary. OpenAI itself gets the Responses API
+ * with `text.format`. Fork: a gateway (OPENAI_BASE_URL, e.g. LiteLLM in front
+ * of gev-hud) gets Chat Completions with `response_format`, because LiteLLM's
+ * Responses bridge drops `text.format`; the model then answers in plain text
+ * with no feedState, and the HUD discards every reply on a non-nominal view.
+ */
+function hudSummaryRequest(baseUrl, model, context) {
+  const instructions = hudSummaryInstructions(context?.locale);
+  const input = hudSummaryInput(context);
+  if (baseUrl === OPENAI_BASE_URL_DEFAULT) {
+    return {
+      url: `${baseUrl}/responses`,
+      body: {
+        model,
+        instructions,
+        input,
+        text: { format: HUD_SUMMARY_RESPONSE_FORMAT },
+        reasoning: { effort: 'minimal' },
+        max_output_tokens: 200,
+      },
+    };
+  }
+  const { name, schema, strict } = HUD_SUMMARY_RESPONSE_FORMAT;
+  return {
+    url: `${baseUrl}/chat/completions`,
+    body: {
+      model,
+      messages: [
+        { role: 'system', content: instructions },
+        {
+          role: 'user',
+          content: typeof input === 'string' ? input : JSON.stringify(input),
+        },
+      ],
+      response_format: {
+        type: 'json_schema',
+        json_schema: { name, schema, strict },
+      },
+      max_tokens: 200,
+    },
+  };
 }
 
 /** Parse the summary and normalize the canonical feed state. */
@@ -36,8 +83,9 @@ function parseHudSummaryReply(text, locale) {
     ? reply.feedState
     : null;
   return {
-    // Fork: a plain-text reply keeps its words with no feedState, so the HUD
-    // shows it only on a nominal view (hudSummaryMatchesProvenance).
+    // Fork: a plain-text reply (a gateway model that ignored the schema)
+    // keeps its words with no feedState, so the HUD shows it only on a
+    // nominal view (hudSummaryMatchesProvenance).
     summary: toHudSummary(reply ? reply.summary : source, locale),
     feedState,
   };
@@ -138,22 +186,18 @@ async function handleHudSummary(req, res) {
   try {
     const body = await readRequestBody(req, 64 * 1024);
     const context = JSON.parse(body || '{}');
-    const response = await fetch(`${resolveOpenAiBaseUrl()}/responses`, {
+    const request = hudSummaryRequest(
+      resolveOpenAiBaseUrl(),
+      process.env.OPENAI_HUD_SUMMARY_MODEL || OPENAI_HUD_SUMMARY_MODEL_DEFAULT,
+      context,
+    );
+    const response = await fetch(request.url, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model:
-          process.env.OPENAI_HUD_SUMMARY_MODEL ||
-          OPENAI_HUD_SUMMARY_MODEL_DEFAULT,
-        instructions: hudSummaryInstructions(context?.locale),
-        input: hudSummaryInput(context),
-        text: { format: HUD_SUMMARY_RESPONSE_FORMAT },
-        reasoning: { effort: 'minimal' },
-        max_output_tokens: 200,
-      }),
+      body: JSON.stringify(request.body),
     });
     const data = await response.json().catch(() => ({}));
     const { summary, feedState } = parseHudSummaryReply(

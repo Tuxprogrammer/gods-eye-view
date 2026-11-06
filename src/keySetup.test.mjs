@@ -128,3 +128,15 @@ test('aborting pending setup removes its surface and ignores a late response', a
   assert.equal(await pending, null);
   assert.equal(store.view.available, false);
 });
+
+test('a production build without an injected fetch skips setup instead of rejecting', async () => {
+  const store = freshStore();
+  const result = await initKeySetup({
+    documentRef: { getElementById: (id) => (id === 'key-setup' ? { dataset: {} } : null) },
+    store,
+    production: true,
+  });
+  assert.equal(result, null);
+  assert.equal(store.controls, null, 'no owner is connected');
+  assert.equal(store.view, null, 'nothing is presented');
+});
