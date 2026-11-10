@@ -30,6 +30,12 @@ const LAYERS = [
     providers: ['meshtastic'],
     methods: ['getNodes'],
   },
+  {
+    id: 'crime',
+    name: msg('Crime Reports'),
+    providers: ['crime'],
+    methods: ['getIncidents'],
+  },
 ];
 
 /** Layer ids in catalog order. */
@@ -96,5 +102,13 @@ export const FORK_DATA_CREDITS = Object.freeze([
       '<a href="https://meshtastic.org/" target="_blank" rel="noopener">Meshtastic</a> ' +
       'nodes whose operators publish to MQTT (the project’s public broker and community brokers such as ' +
       '<a href="https://almesh.net/" target="_blank" rel="noopener">ALmesh</a>)',
+  },
+  {
+    key: 'madison-pd-incidents',
+    html:
+      'Crime reports: weekly incident reports of the ' +
+      '<a href="https://www.madisonal.gov/Archive.aspx?AMID=67" target="_blank" rel="noopener">Madison (AL) Police Department</a>, ' +
+      'placed with the Madison County E911 address locator of ' +
+      '<a href="https://maps.huntsvilleal.gov/" target="_blank" rel="noopener">City of Huntsville GIS</a>',
   },
 ]);

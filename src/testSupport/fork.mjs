@@ -17,6 +17,7 @@ export const FORK_LAYER_STATE_TOKENS = Object.freeze({
   aprs: 'zz',
   meshtastic: 'zy',
   propagation: 'zx',
+  crime: 'zw',
 });
 
 /** An enum with the fork's map stacks removed, so upstream's pin holds. */

@@ -3,11 +3,13 @@
 import { createPropagationSource } from '../layers/propagation/source.js';
 import { createAprsSource } from '../layers/aprs/source.js';
 import { createMeshtasticSource } from '../layers/meshtastic/source.js';
+import { createCrimeSource } from '../layers/crime/source.js';
 
 export function createForkLayerSources() {
   return {
     propagation: createPropagationSource(),
     aprs: createAprsSource(),
     meshtastic: createMeshtasticSource(),
+    crime: createCrimeSource(),
   };
 }

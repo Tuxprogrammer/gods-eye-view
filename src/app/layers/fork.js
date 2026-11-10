@@ -3,6 +3,7 @@
 import { createApplicationPropagation } from './propagation.js';
 import { createApplicationAprs } from './aprs.js';
 import { createApplicationMeshtastic } from './meshtastic.js';
+import { createApplicationCrime } from './crime.js';
 
 /** @param {Record<string, object>} sources The catalog's acquisition sources. */
 export function createForkApplicationLayers(sources) {
@@ -10,5 +11,6 @@ export function createForkApplicationLayers(sources) {
     createApplicationPropagation({ source: sources.propagation }),
     createApplicationAprs({ source: sources.aprs }),
     createApplicationMeshtastic({ source: sources.meshtastic }),
+    createApplicationCrime({ source: sources.crime }),
   ];
 }

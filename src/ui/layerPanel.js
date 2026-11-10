@@ -111,6 +111,10 @@ const PANEL_GROUPS = [
     label: msg('Radio Networks'),
     ids: ['propagation', 'aprs', 'meshtastic'],
   },
+  {
+    label: msg('Public Safety'),
+    ids: ['crime'],
+  },
 ];
 const PANEL_ORDER = PANEL_GROUPS.flatMap(({ label, ids, containerId }) =>
   ids.map((id) => ({ id, label, containerId })),
