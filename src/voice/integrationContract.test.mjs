@@ -715,14 +715,15 @@ test('without an operator Overpass the prompt never offers place search', () => 
 });
 
 test('the Realtime prompt stays within its size budget', () => {
-  // Instructions plus tool schemas, in characters, under the same 55,500
+  // Instructions plus tool schemas, in characters, under the same 56,500
   // ceiling as the deixis prompt lint. Voice geometry adds resolve_area,
   // find_imagery and the analyst area scopes (osm_query only with an
-  // operator Overpass). The fork's map stacks are measured out, as in
-  // pointAndAsk.test.mjs: they are this fork's, not upstream's budget.
+  // operator Overpass); show_street_level adds its tool and routing rule.
+  // The fork's map stacks are measured out, as in pointAndAsk.test.mjs: they
+  // are this fork's, not upstream's budget.
   const size = (overpass) =>
     realtimeInstructions(undefined, { overpass }).length +
     JSON.stringify(withoutForkToolValues(realtimeTools({ overpass }))).length;
-  assert.ok(size(false) <= 55_500, `default prompt ${size(false)} chars`);
-  assert.ok(size(true) <= 55_500, `with Overpass ${size(true)} chars`);
+  assert.ok(size(false) <= 56_500, `default prompt ${size(false)} chars`);
+  assert.ok(size(true) <= 56_500, `with Overpass ${size(true)} chars`);
 });

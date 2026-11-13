@@ -143,5 +143,30 @@
     "2500 km",
     "5000 km"
   ],
-  "ar": ["APRS", "Meshtastic"]
+  "ar": ["APRS", "Meshtastic"],
+  "he": ["{count} {category}", "APRS", "Meshtastic"],
+  "sv": [
+    "Digi/Gate",
+    "25 km",
+    "50 km",
+    "100 km",
+    "250 km",
+    "500 km",
+    "1000 km",
+    "2500 km",
+    "5000 km",
+    "10 min",
+    "30 min",
+    "15 min",
+    "{count} {category}",
+    "MADISON PD · {location}",
+    "Sensor",
+    "Live · {rate}/min",
+    "{label} · {unit} · {min}–{max} (log)",
+    "Status",
+    "Standard",
+    "Mini",
+    "APRS",
+    "Meshtastic"
+  ]
 }

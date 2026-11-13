@@ -3,7 +3,10 @@ import assert from 'node:assert/strict';
 import http from 'node:http';
 import { once } from 'node:events';
 import { createGeminiChatHandler } from '../server/providers/gemini/chat.js';
-import { createOpenAiChatHandler } from '../server/providers/openai/chat.js';
+import {
+  chatSchema,
+  createOpenAiChatHandler,
+} from '../server/providers/openai/chat.js';
 import { GEV_REALTIME_TOOLS } from '../server/providers/openai/tools.js';
 import {
   realtimeDirectives,
@@ -534,6 +537,11 @@ for (const [name, provider] of Object.entries(providers)) {
       assert.equal(offered.includes('osm_query'), overpass);
       assert.equal(prompt.includes('osm_query'), overpass);
       assert.ok(offered.includes('resolve_area'));
+      // Chat Completions answers 400 invalid_function_parameters for a
+      // pattern with Unicode property classes, as resolve_area's area ids
+      // use; OpenAI chat leaves those patterns out.
+      if (name === 'openai')
+        assert.doesNotMatch(JSON.stringify(body.tools), /\\\\[pP]\{/);
     }
   });
   test(`${name} throttled replies say they are rate limited`, async (t) => {
@@ -708,4 +716,26 @@ test('openai typed chat goes to the configured gateway', async (t) => {
   await f.send();
   assert.equal(f.calls[0].url, 'https://lmg.example.net/v1/chat/completions');
   assert.equal(f.calls[0].body.model, 'gev-hud');
+});
+
+test('OpenAI chat schemas drop only the patterns Chat Completions refuses', () => {
+  assert.match(JSON.stringify(GEV_REALTIME_TOOLS), /\\\\[pP]\{/);
+  assert.deepEqual(
+    chatSchema({
+      type: 'object',
+      properties: {
+        id: { type: 'string', pattern: '^ne:[\\p{L}]+$', maxLength: 80 },
+        code: { type: 'string', pattern: '^[A-Z]{2}$' },
+        list: { type: 'array', items: [{ pattern: '\\P{N}' }] },
+      },
+    }),
+    {
+      type: 'object',
+      properties: {
+        id: { type: 'string', maxLength: 80 },
+        code: { type: 'string', pattern: '^[A-Z]{2}$' },
+        list: { type: 'array', items: [{}] },
+      },
+    },
+  );
 });
