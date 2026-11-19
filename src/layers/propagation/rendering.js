@@ -14,6 +14,7 @@ import {
 } from './model.js';
 import { fromDegrees } from '../../geo/ellipsoid.js';
 import { drawOf, findCamera, findFrame } from '../../render/rendererOf.js';
+import { followShellLift } from '../weather/shellRendering.js';
 import { createHorizonCuller } from './horizon.js';
 
 /** Decode a base64 PNG to RGBA without colour management or premultiplication. */
@@ -111,7 +112,8 @@ const WHOLE_GLOBE = Object.freeze({
  * does not tint reliably (untinted patches and dark holes from about
  * 2,400 km). The contract cannot ask for finer tiles, so up there the map is
  * a raster shell over the whole globe instead (`rasterShell`), which needs no
- * surface to drape on and fades through its own alpha. A renderer without
+ * surface to drape on, rises with the camera over the coarse tiles
+ * (`followShellLift`) and fades through its own alpha. A renderer without
  * fields keeps the draped tiles at every height.
  * @param {{viewer: object, classificationType?: 'tiles'|'terrain'|'both',
  *   makeCanvas?: (width: number, height: number) => object|null}} options
@@ -128,6 +130,7 @@ export function createHeatmapSurface({
   /** @type {import('../../render/contract/draw').FieldHandle|null} */
   let shell = null;
   let shellFrom = null;
+  let stopLift = () => {};
   let visible = true;
   // Whether the camera is high enough for the shell (decided with hysteresis).
   let high = false;
@@ -199,7 +202,7 @@ export function createHeatmapSurface({
     if (shell && shellFrom === source) return shell;
     const image = { canvas: source, key: `${id}:shell:${version}` };
     if (shell) shell.update({ image });
-    else
+    else {
       shell = draw.field({
         kind: 'rasterShell',
         id: `${id}:shell`,
@@ -208,6 +211,11 @@ export function createHeatmapSurface({
         heightM: HEATMAP_SHELL_HEIGHT_M,
         alpha,
       });
+      // From far away the coarse 3D tiles rise tens of kilometres above the
+      // ground; the shell rises with the camera to stay over them, as the
+      // weather and wind shells do.
+      stopLift = followShellLift(viewer, (liftM) => shell?.update({ liftM }));
+    }
     shellFrom = source;
     return shell;
   }
@@ -289,6 +297,7 @@ export function createHeatmapSurface({
     },
     destroy() {
       offCamera();
+      stopLift();
       shell?.dispose();
       shell = null;
       shapes.dispose();

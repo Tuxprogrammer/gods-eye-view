@@ -280,8 +280,16 @@ test('from high up the heatmap is a raster shell, draped again closer in', () =>
         return () => moves.delete(fn);
       },
     },
-    frame: { on: () => () => {}, requestRender() {} },
+    frame: {
+      on(phase, fn) {
+        assert.equal(phase, 'preRender');
+        lifts.add(fn);
+        return () => lifts.delete(fn);
+      },
+      requestRender() {},
+    },
   });
+  const lifts = new Set();
   const fields = [];
   draw.field = (spec) => {
     const field = {
@@ -324,6 +332,12 @@ test('from high up the heatmap is a raster shell, draped again closer in', () =>
   assert.equal(shell.spec.alpha, 0.6);
   assert.equal(shell.show, true);
   assert.equal(shapes.show, false, 'the draped tiles wait underneath');
+  // It rises with the camera, over the coarse tiles (4 m a kilometre).
+  assert.equal(shell.spec.liftM, 24_000);
+  moveTo(8_000_000);
+  for (const fn of [...lifts]) fn();
+  assert.equal(shell.spec.liftM, 32_000);
+  moveTo(6_000_000);
 
   // The shell fades through its own alpha.
   surface.setOpacity(0.3);
@@ -354,4 +368,5 @@ test('from high up the heatmap is a raster shell, draped again closer in', () =>
   surface.destroy();
   assert.equal(shell.disposed, true);
   assert.equal(moves.size, 0, 'the camera listener goes with it');
+  assert.equal(lifts.size, 0, 'and the lift');
 });
