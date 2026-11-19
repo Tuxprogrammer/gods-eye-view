@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { bindRenderer } from '../../render/rendererOf.js';
 import { createStationInteraction } from './stationInteraction.js';
 
 /** The smallest element the interaction touches. */
@@ -86,25 +87,24 @@ const STATIONS = {
   },
 };
 
-function harness() {
+function harness({ ports = {}, own = true } = {}) {
   const canvas = new FakeElement('canvas');
   const container = new FakeElement('div');
   const doc = new FakeElement('document');
   doc.createElement = (tag) => new FakeElement(tag);
   const postRender = new Set();
-  const viewer = {
-    container,
-    clock: { currentTime: 0 },
-    scene: {
-      canvas,
-      postRender: {
-        addEventListener(fn) {
-          postRender.add(fn);
-          return () => postRender.delete(fn);
-        },
+  const viewer = { container };
+  bindRenderer(viewer, {
+    canvas,
+    frame: {
+      on(phase, fn) {
+        assert.equal(phase, 'postRender');
+        postRender.add(fn);
+        return () => postRender.delete(fn);
       },
     },
-  };
+    ...ports,
+  });
   const state = {
     hits: new Map(), // "x,y" -> station code
     visible: new Set(['DB049', 'AT138']),
@@ -115,20 +115,29 @@ function harness() {
     detailsFor(code) {
       const base = STATIONS[code];
       if (!base || state.gone?.has(code)) return null;
-      return { ...base, entity: { code }, visible: state.visible.has(code) };
+      return {
+        ...base,
+        position: { x: 1, y: 2, z: 3 },
+        visible: state.visible.has(code),
+      };
     },
   };
   const timers = [];
+  const doubles = own
+    ? {
+        pick: (x, y) => {
+          state.picks++;
+          const code = state.hits.get(`${x},${y}`);
+          return code ? `propagation-station:${code}` : null;
+        },
+        project: () => state.projected,
+      }
+    : {};
   const interaction = createStationInteraction({
     viewer,
     surface,
     documentRef: doc,
-    pick: (x, y) => {
-      state.picks++;
-      const code = state.hits.get(`${x},${y}`);
-      return code ? `propagation-station:${code}` : null;
-    },
-    project: () => state.projected,
+    ...doubles,
     setTimer: (fn) => {
       timers.push(fn);
       return timers.length;
@@ -138,12 +147,29 @@ function harness() {
   const card = container.children[0];
   const flush = () => timers.splice(0).forEach((fn) => fn());
   const move = (x, y, extra = {}) =>
-    canvas.dispatch('pointermove', { clientX: x, clientY: y, buttons: 0, ...extra });
+    canvas.dispatch('pointermove', {
+      clientX: x,
+      clientY: y,
+      buttons: 0,
+      ...extra,
+    });
   const click = (x, y) => {
     canvas.dispatch('pointerdown', { clientX: x, clientY: y });
     canvas.dispatch('click', { clientX: x, clientY: y });
   };
-  return { canvas, container, doc, viewer, state, card, interaction, postRender, flush, move, click };
+  return {
+    canvas,
+    container,
+    doc,
+    viewer,
+    state,
+    card,
+    interaction,
+    postRender,
+    flush,
+    move,
+    click,
+  };
 }
 
 const cell = (card, row, col) =>
@@ -231,7 +257,11 @@ test('a pinned card ignores hover over other stations', () => {
   h.move(600, 400);
   h.flush();
   assert.equal(h.card.children[0].children[0].textContent, 'Dourbes, Belgium');
-  assert.equal(h.canvas.style.cursor, 'pointer', 'but the cursor still says clickable');
+  assert.equal(
+    h.canvas.style.cursor,
+    'pointer',
+    'but the cursor still says clickable',
+  );
 });
 
 test('a pinned card closes by clicking it again, elsewhere, Esc, or its button', () => {
@@ -249,7 +279,11 @@ test('a pinned card closes by clicking it again, elsewhere, Esc, or its button',
     close(h);
     assert.equal(h.interaction.pinned, null);
     assert.equal(h.card.hidden, true);
-    assert.equal(h.card.classList.contains('pinned'), false, 'no stale pin styling');
+    assert.equal(
+      h.card.classList.contains('pinned'),
+      false,
+      'no stale pin styling',
+    );
     assert.equal(h.postRender.size, 0, 'no follower is left running');
   }
 });
@@ -339,6 +373,65 @@ test('station text is set as text, never as markup', () => {
   h.move(300, 200);
   h.flush();
   assert.equal(cell(h.card, 1, 1), '<img src=x onerror=alert(1)>');
-  assert.equal(h.card.children[1].children[0].children[1].children[1].children.length, 0);
+  assert.equal(
+    h.card.children[1].children[0].children[1].children[1].children.length,
+    0,
+  );
   STATIONS.DB049.rows[2][1] = '20 MHz';
+});
+
+test('without doubles it picks and projects through the query port', () => {
+  const picks = [];
+  const projected = [];
+  const h = harness({
+    own: false,
+    ports: {
+      query: {
+        pick(x, y, window) {
+          picks.push({ x, y, window });
+          return x === 300 && y === 200
+            ? { set: 'propagation:stations:1', id: 'propagation-station:DB049' }
+            : null;
+        },
+        project(position) {
+          projected.push(position);
+          return { x: 290, y: 190 };
+        },
+      },
+    },
+  });
+  h.click(300, 200);
+  assert.equal(h.interaction.pinned, 'DB049');
+  assert.deepEqual(picks.at(-1), { x: 300, y: 200, window: undefined });
+  assert.deepEqual(
+    projected.at(-1),
+    { x: 1, y: 2, z: 3 },
+    "the bubble's own place",
+  );
+  h.click(50, 50);
+  assert.equal(h.interaction.pinned, null, 'a miss closes the card');
+});
+
+test('in the mobile UI a tap is picked with a fingertip-sized window', () => {
+  const previous = globalThis.document;
+  globalThis.document = { documentElement: { dataset: { ui: 'mobile' } } };
+  try {
+    let window = null;
+    const h = harness({
+      own: false,
+      ports: {
+        query: {
+          pick(_x, _y, given) {
+            window = given;
+            return null;
+          },
+          project: () => null,
+        },
+      },
+    });
+    h.click(10, 10);
+    assert.deepEqual(window, { width: 28, height: 28 });
+  } finally {
+    globalThis.document = previous;
+  }
 });

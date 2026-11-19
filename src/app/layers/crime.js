@@ -14,7 +14,7 @@ export function createApplicationCrime(options) {
       hitTest: overlays.hitTestWorldOverlay,
     },
     subscribeClick: (viewer, onClick) =>
-      inputFor(viewer).onClick((event) => onClick({ pick: event.pick })),
+      inputFor(viewer).onClick((event) => onClick({ hit: event.hit })),
     picking,
     pointer: { isPointerFree },
     ...options,

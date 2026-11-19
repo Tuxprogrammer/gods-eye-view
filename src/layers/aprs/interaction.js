@@ -1,4 +1,5 @@
 import { msg, t } from '../../i18n/index.js';
+import { canvasOf, findCamera, findFrame } from '../../render/rendererOf.js';
 import { cardModel, chartSeries, sparklinePath } from './model.js';
 
 /** Hover picks are throttled: a GPU pick per mouse-move event is wasteful. */
@@ -38,7 +39,7 @@ export function placeCard(anchor, size, bounds, { gap = 14, margin = 8 } = {}) {
  * is built only with `textContent`; no packet text is ever parsed as HTML.
  *
  * @param {object} options
- * @param {Cesium.Viewer} options.viewer
+ * @param {object} options.viewer The scene object.
  * @param {object} options.surface The APRS surface.
  * @param {() => string} options.units
  * @param {(id: string, signal: AbortSignal) => Promise<object>} options.loadDetail
@@ -83,7 +84,7 @@ export function createStationInteraction({
   setTimer = (fn, ms) => globalThis.setTimeout(fn, ms),
   clearTimer = (id) => globalThis.clearTimeout(id),
 }) {
-  const canvas = viewer.scene.canvas;
+  const canvas = canvasOf(viewer);
   const container = viewer.container ?? canvas.parentElement;
   const el = (tag, className, text) => {
     const node = documentRef.createElement(tag);
@@ -358,7 +359,7 @@ export function createStationInteraction({
       : { dx: 0, dy: 0 };
     place(point);
     if (!followRemover)
-      followRemover = viewer.scene.postRender?.addEventListener(follow) ?? null;
+      followRemover = findFrame(viewer)?.on('postRender', follow) ?? null;
     void fetchDetail(id);
   }
 
@@ -505,7 +506,7 @@ export function createStationInteraction({
   card.addEventListener('click', onCardTap);
   card.addEventListener('gev:card-step', onStep);
   const cameraRemover =
-    viewer.camera?.moveStart?.addEventListener?.(hidePreview) ?? null;
+    findCamera(viewer)?.on('moveStart', hidePreview) ?? null;
   canvas.addEventListener('pointermove', onMove);
   canvas.addEventListener('pointerleave', onLeave);
   canvas.addEventListener('pointerdown', onDown);

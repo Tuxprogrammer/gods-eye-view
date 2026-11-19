@@ -4,13 +4,6 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { parsers } from 'prettier/plugins/babel.mjs';
 
-// This fork's layers predate the rule; migrate them to the world-overlay host
-// and remove them here.
-const forkLegacyFiles = new Set([
-  'src/layers/aprs/rendering.js',
-  'src/layers/meshtastic/rendering.js',
-  'src/layers/propagation/rendering.js',
-]);
 const root = fileURLToPath(new URL('../', import.meta.url));
 const propertyName = (node) => node?.name ?? node?.value;
 const memberName = (node) =>
@@ -112,7 +105,6 @@ function cesiumLabels(source) {
 
 test('runtime world text uses the world-overlay host, never new Cesium labels', () => {
   const violations = [];
-  const forkSeen = new Set();
   function scan(directory) {
     for (const entry of readdirSync(root + directory, {
       withFileTypes: true,
@@ -125,8 +117,7 @@ test('runtime world text uses the world-overlay host, never new Cesium labels', 
         !/\.(?:test|spec)\.js$/.test(entry.name)
       ) {
         const hits = cesiumLabels(readFileSync(root + file, 'utf8'));
-        if (hits.length && forkLegacyFiles.has(file)) forkSeen.add(file);
-        else violations.push(...hits.map((hit) => `${file}:${hit}`));
+        violations.push(...hits.map((hit) => `${file}:${hit}`));
       }
     }
   }
@@ -135,11 +126,6 @@ test('runtime world text uses the world-overlay host, never new Cesium labels', 
     violations,
     [],
     `Cesium text labels are forbidden; use the world-overlay host.\n${violations.join('\n')}`,
-  );
-  assert.deepEqual(
-    forkSeen,
-    forkLegacyFiles,
-    'Remove stale or false-positive Cesium-label exceptions',
   );
 });
 

@@ -33,6 +33,7 @@ import { writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import puppeteer from 'puppeteer';
+import { FORK_LAYER_IDS } from '../src/fork/manifest.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -52,6 +53,8 @@ export const STUB_BOOT_LAYERS = Object.freeze([
   'wildlife-sightings',
   'shipwrecks',
   'news',
+  // This fork's layers draw through the contract too.
+  ...FORK_LAYER_IDS,
 ]);
 
 /** A request that is Cesium: the package, its pre-bundle, or its assets. */

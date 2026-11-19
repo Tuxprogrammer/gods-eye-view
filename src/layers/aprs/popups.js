@@ -1,3 +1,4 @@
+import { canvasOf, findFrame } from '../../render/rendererOf.js';
 import {
   MAX_MESSAGE_POPUPS,
   MESSAGE_FADE_MS,
@@ -15,7 +16,7 @@ import {
  * only, and never intercept the pointer.
  *
  * @param {object} options
- * @param {Cesium.Viewer} options.viewer
+ * @param {object} options.viewer The scene object.
  * @param {{screenPosition: Function}} options.surface
  */
 export function createMessagePopups({
@@ -28,7 +29,7 @@ export function createMessagePopups({
   setTimer = (fn, ms) => globalThis.setTimeout(fn, ms),
   clearTimer = (id) => globalThis.clearTimeout(id),
 }) {
-  const container = viewer.container ?? viewer.scene.canvas.parentElement;
+  const container = viewer.container ?? canvasOf(viewer).parentElement;
   const layer = documentRef.createElement('div');
   layer.className = 'aprs-popups';
   layer.setAttribute('aria-live', 'polite');
@@ -62,7 +63,7 @@ export function createMessagePopups({
 
   function ensureLoop() {
     if (remover || !popups.length) return;
-    remover = viewer.scene.postRender?.addEventListener(reposition) ?? null;
+    remover = findFrame(viewer)?.on('postRender', reposition) ?? null;
   }
 
   function drop(popup) {
@@ -102,7 +103,7 @@ export function createMessagePopups({
       );
       ensureLoop();
       reposition();
-      viewer.scene.requestRender?.();
+      findFrame(viewer)?.requestRender('aprs-popups');
       return popup;
     },
     clear() {

@@ -36,7 +36,6 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parsers } from 'prettier/plugins/babel.mjs';
 import { parse as parseSfc } from 'vue/compiler-sfc';
-import { FORK_CESIUM_FILES } from './fork.mjs';
 
 export const ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -232,11 +231,9 @@ export function fileHits(file, root = ROOT) {
  * adapter, not tests.
  */
 export function countedFiles(root = ROOT) {
-  const cesiumList = new Set([
-    ...JSON.parse(readFileSync(path.join(root, CESIUM_LIST), 'utf8')),
-    // Fork: its own files still on Cesium (src/testSupport/fork.mjs).
-    ...FORK_CESIUM_FILES,
-  ]);
+  const cesiumList = new Set(
+    JSON.parse(readFileSync(path.join(root, CESIUM_LIST), 'utf8')),
+  );
   return execFileSync(
     'git',
     [

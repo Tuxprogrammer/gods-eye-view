@@ -1,5 +1,14 @@
-import * as Cesium from 'cesium';
-import { createHorizon, idsUnder, touchUi } from '../aprs/rendering.js';
+import { fromDegrees } from '../../geo/ellipsoid.js';
+import { hexColor } from '../../render/color.js';
+import { drawOf, findFrame, findQuery } from '../../render/rendererOf.js';
+import {
+  createHorizon,
+  documentCanvas,
+  idAt,
+  idsUnder,
+  labelIdAt,
+  stationLabelEntry,
+} from '../aprs/scene.js';
 import { hardwareImageUrl } from './hardware.js';
 import {
   CATEGORY_COLORS,
@@ -8,32 +17,27 @@ import {
   nodeCategory,
   nodeGlyph,
   nodeLabel,
-  spreadLabels,
 } from './model.js';
 
 export const NODE_ID_PREFIX = 'mesh-node:';
+export const MESHTASTIC_LABEL_SOURCE_ID = 'meshtastic-labels';
 /** Labels drop out beyond this camera distance (metres). */
 const LABEL_RANGE_M = 400_000;
 /** Icons shrink a little with distance so a continent stays readable. */
-const ICON_SCALE_BY_DISTANCE = new Cesium.NearFarScalar(2e5, 1, 1.2e7, 0.45);
+const ICON_SCALE_BY_DISTANCE = Object.freeze({
+  near: 2e5,
+  nearValue: 1,
+  far: 1.2e7,
+  farValue: 0.45,
+});
 const HORIZON_ELEVATION_M = 2000;
 const ICON_SIZE = 40;
 const TRACK_WIDTH = 3;
-const SELECTED_TRACK_COLOR = Cesium.Color.fromCssColorString('#ffe45c');
-const LABEL_FONT = 'bold 12px Inter, sans-serif';
-/** Stacked labels are re-fanned this long after the camera stops changing. */
-const LABEL_LAYOUT_MS = 120;
-const LABEL_HORIZONTAL = {
-  left: Cesium.HorizontalOrigin.LEFT,
-  center: Cesium.HorizontalOrigin.CENTER,
-  right: Cesium.HorizontalOrigin.RIGHT,
-};
-const LABEL_VERTICAL = {
-  top: Cesium.VerticalOrigin.TOP,
-  center: Cesium.VerticalOrigin.CENTER,
-  bottom: Cesium.VerticalOrigin.BOTTOM,
-};
-const LABEL_HOME_OFFSET = new Cesium.Cartesian2(0, -ICON_SIZE * 0.62);
+const SELECTED_TRACK_COLOR = hexColor('#ffe45c');
+const LABEL_SOURCE_OPTIONS = Object.freeze({
+  cohortLimit: LABEL_NODE_LIMIT,
+  moving: false,
+});
 
 const iconCache = new Map();
 /** Device picture URL -> {image, ready, waiters}; loaded once, on first use. */
@@ -48,6 +52,7 @@ const DEVICE_IMAGE_SIZE = 24;
 function deviceImage(url, onReady) {
   let held = deviceImages.get(url);
   if (!held) {
+    if (typeof Image === 'undefined') return null;
     const image = new Image();
     held = { image, ready: false, waiters: new Set() };
     deviceImages.set(url, held);
@@ -68,7 +73,7 @@ function deviceImage(url, onReady) {
  * marks a position the node's channel has blurred, so a reader can tell a
  * pinpoint from a neighbourhood at a glance. Cached by look.
  */
-function iconFor(node, onImageReady) {
+function iconFor(node, onImageReady, createCanvas) {
   const category = nodeCategory(node);
   const approximate = node.precisionKm >= 0.5;
   const url = hardwareImageUrl(node.hwModel);
@@ -76,10 +81,9 @@ function iconFor(node, onImageReady) {
   const key = `${category}|${approximate ? 'approx' : 'exact'}|${picture ? url : ''}`;
   let canvas = iconCache.get(key);
   if (canvas) return { key, canvas };
-  canvas = document.createElement('canvas');
-  canvas.width = ICON_SIZE;
-  canvas.height = ICON_SIZE;
-  const ctx = canvas.getContext('2d');
+  canvas = createCanvas(ICON_SIZE, ICON_SIZE);
+  const ctx = canvas?.getContext?.('2d');
+  if (!ctx) return null;
   const c = ICON_SIZE / 2;
   ctx.beginPath();
   ctx.arc(c, c, c - 3, 0, Math.PI * 2);
@@ -109,151 +113,101 @@ function iconFor(node, onImageReady) {
 }
 
 /**
- * The nodes, their tracks, and the selected node's 24 h track.
- *
- * Nodes are primitive billboards and labels rather than entities: a
- * whole-Earth view can hold thousands, and a collection updates in place. The
- * records are shaped like the APRS surface's so the shared hover card and
- * message pop-ups work on it unchanged (`record.station` is the node).
+ * The nodes, their tracks, and the selected node's 24 h track, drawn through
+ * the renderer's draw port; node labels go to the world-overlay host
+ * (`overlayHost`), when there is one, which places stacked nodes' labels
+ * clear of each other. The records are shaped like the APRS surface's so the
+ * shared hover card and message pop-ups work on it unchanged
+ * (`record.station` is the node).
  */
-export function createMeshtasticSurface({ viewer, classificationType }) {
-  const scene = viewer.scene;
-  const billboards = scene.primitives.add(
-    new Cesium.BillboardCollection({ scene }),
-  );
-  const labels = scene.primitives.add(new Cesium.LabelCollection({ scene }));
-  const trackSource = new Cesium.CustomDataSource('meshtastic-tracks');
-  viewer.dataSources.add(trackSource);
+export function createMeshtasticSurface({
+  viewer,
+  classificationType = 'both',
+  overlayHost = null,
+  createCanvas = documentCanvas,
+}) {
+  const draw = drawOf(viewer);
+  const icons = draw.icons({ id: 'meshtastic:nodes', show: true });
+  const tracks = draw.lines({
+    id: 'meshtastic:tracks',
+    pickable: false,
+    show: true,
+  });
+  const rings = draw.shapes({
+    id: 'meshtastic:accuracy',
+    pickable: false,
+    show: true,
+  });
   const horizon = createHorizon(viewer);
   /** @type {Map<string, object>} node id -> render record */
   let records = new Map();
-  /** @type {Map<string, {signature: string, entity: Cesium.Entity}>} */
-  let trackEntities = new Map();
-  let selectedTrack = null;
-  let ring = null;
+  /** @type {Map<string, string>} node id -> drawn track signature */
+  let trackSignatures = new Map();
+  /** @type {Map<string, object>} line id -> line item, for re-clamping */
+  let trackItems = new Map();
+  let selectedTrack = false;
+  let ring = false;
   let emphasised = null;
   let type = classificationType;
   let showLabels = true;
+  let clamp = true;
   let remover = null;
   let destroyed = false;
-  let layoutTimer = null;
-  let cameraRemover = null;
-  let moveEndRemover = null;
-  const layoutScratch = new Cesium.Cartesian2();
-  const render = () => scene.requestRender?.();
+  const render = () => findFrame(viewer)?.requestRender('meshtastic');
 
-  const heightReference = (clamp) =>
-    clamp
-      ? Cesium.HeightReference.CLAMP_TO_GROUND
-      : Cesium.HeightReference.NONE;
+  function styleRecord(record) {
+    record.icon = iconFor(record.station, restyleAll, createCanvas);
+    record.category = nodeCategory(record.station);
+  }
 
-  function styleRecord(record, node, clamp) {
-    const { key, canvas } = iconFor(node, restyleAll);
-    if (record.iconKey !== key) {
-      record.billboard.setImage(key, canvas);
-      record.iconKey = key;
-    }
-    record.billboard.heightReference = heightReference(clamp);
-    record.category = nodeCategory(node);
+  function iconItem(record) {
+    const node = record.station;
+    return {
+      id: `${NODE_ID_PREFIX}${node.id}`,
+      pos: record.position,
+      image: record.icon
+        ? { canvas: record.icon.canvas, key: record.icon.key }
+        : '',
+      size: [ICON_SIZE, ICON_SIZE],
+      anchor: 'center',
+      height: clamp ? 'clampGround' : 'absolute',
+      disableDepthTest: Number.POSITIVE_INFINITY,
+      scaleByDistance: ICON_SCALE_BY_DISTANCE,
+      scale: node.id === emphasised ? 1.3 : 1,
+      show: record.visible && Boolean(record.icon),
+    };
+  }
+
+  /** Node labels, one overlay entry each, while few enough are drawn. */
+  function publishLabels() {
+    if (!overlayHost) return;
     const wanted = showLabels && records.size <= LABEL_NODE_LIMIT;
-    record.labelWanted = wanted;
-    if (wanted) {
-      if (!record.label) {
-        record.label = labels.add({
-          // On touch a label is a tap target too (mobile only).
-          id: touchUi() ? `${NODE_ID_PREFIX}${node.id}` : undefined,
-          text: nodeLabel(node),
-          font: LABEL_FONT,
-          fillColor: Cesium.Color.WHITE,
-          outlineColor: Cesium.Color.BLACK.withAlpha(0.95),
-          outlineWidth: 4,
-          style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-          pixelOffset: LABEL_HOME_OFFSET,
-          verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-          disableDepthTestDistance: Number.POSITIVE_INFINITY,
-          distanceDisplayCondition: new Cesium.DistanceDisplayCondition(
-            0,
-            LABEL_RANGE_M,
-          ),
-          position: record.billboard.position,
-        });
-        record.labelSlot = null;
-      } else if (record.label.text !== nodeLabel(node)) {
-        record.label.text = nodeLabel(node);
-      }
-      record.label.heightReference = heightReference(clamp);
-      record.label.show = record.visible && wanted;
-    } else if (record.label) {
-      labels.remove(record.label);
-      record.label = null;
-    }
-  }
-
-  /**
-   * Fan the labels of overlapping icons out around their dots so stacked nodes
-   * stay readable. Screen positions change with the camera, so this runs again
-   * once it settles; a node on its own keeps its label above the dot.
-   */
-  function layoutLabels() {
-    layoutTimer = null;
-    if (destroyed) return;
-    const points = [];
-    for (const [id, record] of records) {
-      if (!record.label || !record.label.show) continue;
-      const at = scene.cartesianToCanvasCoordinates(
-        record.billboard.position,
-        layoutScratch,
-      );
-      if (at) points.push({ id, x: at.x, y: at.y });
-    }
-    const slots = spreadLabels(points);
-    let changed = false;
-    for (const [id, record] of records) {
-      if (!record.label) continue;
-      const slot = slots.get(id) ?? null;
-      const key = slot ? `${slot.dx},${slot.dy},${slot.h},${slot.v}` : '';
-      if (record.labelSlot === key) continue;
-      record.labelSlot = key;
-      record.label.pixelOffset = slot
-        ? new Cesium.Cartesian2(slot.dx, slot.dy)
-        : LABEL_HOME_OFFSET;
-      record.label.horizontalOrigin = slot
-        ? LABEL_HORIZONTAL[slot.h]
-        : Cesium.HorizontalOrigin.CENTER;
-      record.label.verticalOrigin = slot
-        ? LABEL_VERTICAL[slot.v]
-        : Cesium.VerticalOrigin.BOTTOM;
-      changed = true;
-    }
-    if (changed) render();
-  }
-
-  function scheduleLabelLayout() {
-    if (layoutTimer !== null || destroyed) return;
-    layoutTimer = setTimeout(layoutLabels, LABEL_LAYOUT_MS);
-  }
-
-  function ensureLabelLayoutListener() {
-    if (cameraRemover || !records.size) return;
-    cameraRemover =
-      viewer.camera?.changed?.addEventListener(scheduleLabelLayout);
-    moveEndRemover =
-      viewer.camera?.moveEnd?.addEventListener(scheduleLabelLayout);
+    const entries = wanted
+      ? [...records.values()].map((record) =>
+          stationLabelEntry({
+            id: record.station.id,
+            position: record.position,
+            title: nodeLabel(record.station),
+            accent: CATEGORY_COLORS[record.category] ?? CATEGORY_COLORS.client,
+            emphasised: record.station.id === emphasised,
+            iconPx: ICON_SIZE,
+            maxDistance: LABEL_RANGE_M,
+          }),
+        )
+      : [];
+    overlayHost.setEntries(
+      MESHTASTIC_LABEL_SOURCE_ID,
+      entries,
+      LABEL_SOURCE_OPTIONS,
+    );
   }
 
   /** A device picture finished loading: redraw the icons that wait for it. */
   function restyleAll() {
     if (destroyed) return;
-    const clamp = records.size <= CLAMP_NODE_LIMIT;
-    for (const record of records.values())
-      styleRecord(record, record.station, clamp);
+    for (const record of records.values()) styleRecord(record);
+    icons.upsert([...records.values()].map(iconItem));
     render();
-  }
-
-  function applyEmphasis() {
-    for (const [id, record] of records)
-      record.billboard.scale = id === emphasised ? 1.3 : 1;
-    applyAccuracyRing();
   }
 
   /**
@@ -265,17 +219,14 @@ export function createMeshtasticSurface({ viewer, classificationType }) {
    */
   function applyAccuracyRing() {
     if (ring) {
-      trackSource.entities.remove(ring.fill);
-      trackSource.entities.remove(ring.line);
-      ring = null;
+      rings.clear();
+      dropTracks(['accuracy-ring']);
+      ring = false;
     }
     const node = emphasised ? records.get(emphasised)?.station : null;
     if (!node || !(node.precisionKm > 0)) return;
     const radiusM = (node.precisionKm * 1000) / 2;
-    const color = Cesium.Color.fromCssColorString(
-      CATEGORY_COLORS[nodeCategory(node)] ?? CATEGORY_COLORS.client,
-    );
-    const centre = Cesium.Cartesian3.fromDegrees(node.lon, node.lat);
+    const css = CATEGORY_COLORS[nodeCategory(node)] ?? CATEGORY_COLORS.client;
     const dLat = radiusM / 111_195;
     const dLon =
       radiusM /
@@ -283,185 +234,166 @@ export function createMeshtasticSurface({ viewer, classificationType }) {
     const points = [];
     for (let i = 0; i <= 96; i += 1) {
       const angle = (i / 96) * Math.PI * 2;
-      points.push(
-        node.lon + dLon * Math.cos(angle),
-        node.lat + dLat * Math.sin(angle),
-      );
+      points.push({
+        lon: node.lon + dLon * Math.cos(angle),
+        lat: node.lat + dLat * Math.sin(angle),
+      });
     }
-    ring = {
-      fill: trackSource.entities.add({
-        position: centre,
-        ellipse: {
-          semiMajorAxis: radiusM,
-          semiMinorAxis: radiusM,
-          material: color.withAlpha(0.14),
-          classificationType: type,
+    rings.set([
+      {
+        id: 'accuracy-fill',
+        geometry: {
+          kind: 'ellipse',
+          center: { lon: node.lon, lat: node.lat, height: 0 },
+          semiMajor: radiusM,
+          semiMinor: radiusM,
         },
-      }),
-      line: trackSource.entities.add({
-        polyline: {
-          positions: Cesium.Cartesian3.fromDegreesArray(points),
-          width: 2,
-          material: new Cesium.PolylineDashMaterialProperty({
-            color: color.withAlpha(0.95),
-            dashLength: 12,
-          }),
-          clampToGround: true,
-          classificationType: type,
-        },
-      }),
+        fill: hexColor(css, 0.14),
+        height: 'clampGround',
+        clampTo: type,
+      },
+    ]);
+    putTracks([
+      {
+        id: 'accuracy-ring',
+        positions: points.map((p) => fromDegrees(p.lon, p.lat)),
+        widthPx: 2,
+        mode: 'draped',
+        clampTo: type,
+        style: { kind: 'dash', color: hexColor(css, 0.95), length: 12 },
+      },
+    ]);
+    ring = true;
+  }
+
+  const trackColor = (category) =>
+    hexColor(CATEGORY_COLORS[category] ?? CATEGORY_COLORS.client, 0.85);
+
+  function trackLine(id, points, color, widthPx) {
+    return {
+      id,
+      positions: points.map((p) => fromDegrees(p.lon, p.lat)),
+      widthPx,
+      mode: 'draped',
+      clampTo: type,
+      style: { kind: 'solid', color },
     };
   }
 
-  const trackSignature = (points) =>
-    `${points.length}:${points[points.length - 1].ts}`;
+  function putTracks(items) {
+    for (const item of items) trackItems.set(item.id, item);
+    if (items.length) tracks.upsert(items);
+  }
 
-  const trackColor = (category) =>
-    Cesium.Color.fromCssColorString(
-      CATEGORY_COLORS[category] ?? CATEGORY_COLORS.client,
-    ).withAlpha(0.85);
+  function dropTracks(ids) {
+    for (const id of ids) trackItems.delete(id);
+    if (ids.length) tracks.remove(ids);
+  }
 
   function ensureHorizonListener() {
     if (remover || !records.size) return;
-    remover = scene.preRender?.addEventListener(() => {
-      if (horizon.update(records.values(), false)) render();
-    });
+    remover =
+      findFrame(viewer)?.on('preRender', () => {
+        const flipped = horizon.update(records.values(), false);
+        if (!flipped.length) return;
+        icons.upsert(flipped.map(iconItem));
+        render();
+      }) ?? null;
   }
 
   return {
     /** Reconcile the drawn nodes with `nodes` (already filtered by the server). */
-    show(nodes, tracks) {
-      const clamp = nodes.length <= CLAMP_NODE_LIMIT;
+    show(nodes, nodeTracks) {
+      clamp = nodes.length <= CLAMP_NODE_LIMIT;
       const next = new Map();
       for (const node of nodes) {
         let record = records.get(node.id);
-        const position = Cesium.Cartesian3.fromDegrees(node.lon, node.lat);
-        if (!record) {
-          record = {
-            station: node,
-            billboard: billboards.add({
-              id: `${NODE_ID_PREFIX}${node.id}`,
-              position,
-              verticalOrigin: Cesium.VerticalOrigin.CENTER,
-              disableDepthTestDistance: Number.POSITIVE_INFINITY,
-              scaleByDistance: ICON_SCALE_BY_DISTANCE,
-            }),
-            label: null,
-            iconKey: null,
-            visible: true,
-            filteredOut: false,
-            labelWanted: false,
-            horizonPoint: Cesium.Cartesian3.fromDegrees(
-              node.lon,
-              node.lat,
-              HORIZON_ELEVATION_M,
-            ),
-            category: 'client',
-          };
-        } else if (
+        if (
+          !record ||
           record.station.lat !== node.lat ||
           record.station.lon !== node.lon
         ) {
-          record.billboard.position = position;
-          if (record.label) record.label.position = position;
-          record.horizonPoint = Cesium.Cartesian3.fromDegrees(
-            node.lon,
-            node.lat,
-            HORIZON_ELEVATION_M,
-          );
+          record = {
+            ...record,
+            position: fromDegrees(node.lon, node.lat),
+            horizonPoint: fromDegrees(node.lon, node.lat, HORIZON_ELEVATION_M),
+            visible: record?.visible ?? true,
+          };
         }
         record.station = node;
+        styleRecord(record);
         next.set(node.id, record);
       }
-      for (const [id, record] of records) {
-        if (next.has(id)) continue;
-        billboards.remove(record.billboard);
-        if (record.label) labels.remove(record.label);
-      }
       records = next;
-      for (const record of records.values())
-        styleRecord(record, record.station, clamp);
-      applyEmphasis();
       horizon.invalidate();
       horizon.update(records.values(), true);
+      icons.set([...records.values()].map(iconItem));
+      applyAccuracyRing();
+      publishLabels();
       ensureHorizonListener();
-      ensureLabelLayoutListener();
-      scheduleLabelLayout();
-      this.showTracks(tracks);
+      this.showTracks(nodeTracks);
       render();
     },
 
     /** Draw each node's recent track, replacing only tracks that changed. */
-    showTracks(tracks) {
+    showTracks(nodeTracks) {
       const wanted = new Map(
-        [...(tracks ?? new Map())].filter(([id]) => records.has(id)),
+        [...(nodeTracks ?? new Map())].filter(([id]) => records.has(id)),
       );
-      for (const [id, held] of trackEntities) {
+      const gone = [];
+      for (const id of trackSignatures.keys()) {
         if (wanted.has(id)) continue;
-        trackSource.entities.remove(held.entity);
-        trackEntities.delete(id);
+        trackSignatures.delete(id);
+        gone.push(`track:${id}`);
       }
+      dropTracks(gone);
+      const changed = [];
       for (const [id, points] of wanted) {
-        const signature = trackSignature(points);
-        const held = trackEntities.get(id);
-        if (held?.signature === signature) continue;
-        if (held) trackSource.entities.remove(held.entity);
-        const entity = trackSource.entities.add({
-          polyline: {
-            positions: Cesium.Cartesian3.fromDegreesArray(
-              points.flatMap((p) => [p.lon, p.lat]),
-            ),
-            width: TRACK_WIDTH,
-            material: trackColor(records.get(id)?.category),
-            clampToGround: true,
-            classificationType: type,
-          },
-        });
-        trackEntities.set(id, { signature, entity });
+        const signature = `${points.length}:${points[points.length - 1].ts}`;
+        if (trackSignatures.get(id) === signature) continue;
+        trackSignatures.set(id, signature);
+        changed.push(
+          trackLine(
+            `track:${id}`,
+            points,
+            trackColor(records.get(id)?.category),
+            TRACK_WIDTH,
+          ),
+        );
       }
+      putTracks(changed);
     },
 
     /** One node's full 24 h track, highlighted, until cleared. */
     showSelectedTrack(points) {
       this.clearSelectedTrack();
       if (!points || points.length < 2) return;
-      selectedTrack = trackSource.entities.add({
-        polyline: {
-          positions: Cesium.Cartesian3.fromDegreesArray(
-            points.flatMap((p) => [p.lon, p.lat]),
-          ),
-          width: TRACK_WIDTH + 2,
-          material: SELECTED_TRACK_COLOR,
-          clampToGround: true,
-          classificationType: type,
-        },
-      });
+      putTracks([
+        trackLine('selected', points, SELECTED_TRACK_COLOR, TRACK_WIDTH + 2),
+      ]);
+      selectedTrack = true;
       render();
     },
     clearSelectedTrack() {
       if (!selectedTrack) return;
-      trackSource.entities.remove(selectedTrack);
-      selectedTrack = null;
+      dropTracks(['selected']);
+      selectedTrack = false;
       render();
     },
 
     setLabels(on) {
       showLabels = Boolean(on);
-      const clamp = records.size <= CLAMP_NODE_LIMIT;
-      for (const record of records.values())
-        styleRecord(record, record.station, clamp);
-      horizon.invalidate();
-      horizon.update(records.values(), true);
-      scheduleLabelLayout();
+      publishLabels();
       render();
     },
 
+    /** What the tracks and ring drape on: `'terrain'`, `'tiles'` or `'both'`. */
     setClassification(next) {
       if (next === undefined || next === type) return;
       type = next;
-      for (const held of trackEntities.values())
-        held.entity.polyline.classificationType = next;
-      if (selectedTrack) selectedTrack.polyline.classificationType = next;
+      putTracks(
+        [...trackItems.values()].map((item) => ({ ...item, clampTo: next })),
+      );
       applyAccuracyRing();
       render();
     },
@@ -469,34 +401,38 @@ export function createMeshtasticSurface({ viewer, classificationType }) {
     /** Grow the hovered/pinned node's icon. */
     setEmphasis(id) {
       if (emphasised === id) return;
+      const changed = [emphasised, id]
+        .map((key) => (key === null ? null : records.get(key)))
+        .filter(Boolean);
       emphasised = id;
-      applyEmphasis();
+      if (changed.length) icons.upsert(changed.map(iconItem));
+      applyAccuracyRing();
+      publishLabels();
       render();
     },
 
     /** Node id under a canvas point, or null. */
     idAt(x, y) {
-      const picked = scene.pick(new Cesium.Cartesian2(x, y));
-      const id = picked?.id;
-      const text = typeof id === 'string' ? id : (id?.id ?? null);
-      return typeof text === 'string' && text.startsWith(NODE_ID_PREFIX)
-        ? text.slice(NODE_ID_PREFIX.length)
-        : null;
+      return (
+        labelIdAt(overlayHost, MESHTASTIC_LABEL_SOURCE_ID, x, y) ??
+        idAt(findQuery(viewer), x, y, NODE_ID_PREFIX)
+      );
     },
 
     /** Every node under a canvas point, in a fixed order, for cycling a stack. */
     idsAt(x, y) {
-      return idsUnder(scene, x, y, NODE_ID_PREFIX);
+      const ids = idsUnder(findQuery(viewer), x, y, NODE_ID_PREFIX);
+      const label = labelIdAt(overlayHost, MESHTASTIC_LABEL_SOURCE_ID, x, y);
+      return label === null || ids.includes(label)
+        ? ids
+        : [...ids, label].sort();
     },
 
     /** The record for a drawn node: its data and whether it is on screen. */
     recordFor(id) {
       const record = records.get(id);
       if (!record) return null;
-      return {
-        station: record.station,
-        visible: record.visible && record.billboard.show !== false,
-      };
+      return { station: record.station, visible: record.visible };
     },
 
     /**
@@ -506,41 +442,28 @@ export function createMeshtasticSurface({ viewer, classificationType }) {
     screenPosition(id, lon, lat) {
       const record = id ? records.get(id) : null;
       if (record && !record.visible) return undefined;
-      if (!record) {
-        const point = Cesium.Cartesian3.fromDegrees(
-          lon,
-          lat,
-          HORIZON_ELEVATION_M,
-        );
-        if (!horizon.isPointVisible(point)) return undefined;
-      }
-      const position = record
-        ? record.billboard.computeScreenSpacePosition?.(scene)
-        : scene.cartesianToCanvasCoordinates(
-            Cesium.Cartesian3.fromDegrees(lon, lat),
-          );
-      return position ?? undefined;
+      if (
+        !record &&
+        !horizon.isPointVisible(fromDegrees(lon, lat, HORIZON_ELEVATION_M))
+      )
+        return undefined;
+      const position = record ? record.position : fromDegrees(lon, lat);
+      return findQuery(viewer)?.project(position) ?? undefined;
     },
 
     clear() {
-      for (const record of records.values()) {
-        billboards.remove(record.billboard);
-        if (record.label) labels.remove(record.label);
-      }
       records = new Map();
-      trackSource.entities.removeAll();
-      trackEntities = new Map();
-      selectedTrack = null;
-      ring = null;
+      icons.clear();
+      tracks.clear();
+      rings.clear();
+      trackSignatures = new Map();
+      trackItems = new Map();
+      selectedTrack = false;
+      ring = false;
       emphasised = null;
+      overlayHost?.clearSource?.(MESHTASTIC_LABEL_SOURCE_ID);
       remover?.();
       remover = null;
-      cameraRemover?.();
-      cameraRemover = null;
-      moveEndRemover?.();
-      moveEndRemover = null;
-      if (layoutTimer !== null) clearTimeout(layoutTimer);
-      layoutTimer = null;
       render();
     },
 
@@ -555,16 +478,16 @@ export function createMeshtasticSurface({ viewer, classificationType }) {
       return records.size;
     },
     get trackCount() {
-      return trackEntities.size;
+      return trackSignatures.size;
     },
 
     destroy() {
       destroyed = true;
       for (const held of deviceImages.values()) held.waiters.delete(restyleAll);
       this.clear();
-      scene.primitives.remove(billboards);
-      scene.primitives.remove(labels);
-      viewer.dataSources.remove(trackSource, true);
+      icons.dispose();
+      tracks.dispose();
+      rings.dispose();
     },
   };
 }

@@ -314,14 +314,3 @@ export function materialTexture(material, uniform) {
 export function customShaderTexture(shader, uniform) {
   return shader?._textureManager?.getTexture?.(uniform);
 }
-
-/**
- * Fork: where Cesium clamped a ground-clamped billboard, or undefined before
- * it has (src/layers/aprs/rendering.js finds icons clamped far under the
- * real surface).
- * @param {object} billboard Cesium Billboard.
- * @returns {object|undefined} Cartesian3.
- */
-export function billboardClampedPosition(billboard) {
-  return billboard._clampedPosition;
-}

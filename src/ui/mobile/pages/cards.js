@@ -12,11 +12,12 @@
  *    button (the keyboard-only Escape gets a button).
  *  - Meshtastic server list: delete gets a confirm sheet; add-server form
  *    becomes a full-sheet one-column form with a Close button.
- *  - Touch hit slop for every Cesium pick (cards-slop.js).
+ *  - Touch hit slop: the fork's layers read cards-slop.js themselves; the
+ *    rest take upstream's coarse-pointer contact search.
  * Scene action panels / pack credit cards are styled by CSS only.
  */
 import { t } from '../../../i18n/index.js';
-import { UI_MODE_EVENT, isMobileUi } from '../../mobileMode.js';
+import { isMobileUi } from '../../mobileMode.js';
 import { closeSheet, isSheetOpen } from '../sheet.js';
 import { getActiveTrackedReadoutId } from '../../../data/trackedReadout.js';
 import {
@@ -24,7 +25,6 @@ import {
   isSwipeDismiss,
   parseVesselReadout,
 } from '../cards-helpers.js';
-import { installPickSlop } from '../cards-slop.js';
 
 const CARD_SELECTOR = '.aprs-card, .propagation-station-card';
 const MEDIA_ROOT_ID = 'bhote-koshi-embedded-media-root';
@@ -59,44 +59,11 @@ export function install() {
     disposers.push(() => target.removeEventListener(type, handler, options));
   };
 
-  installSlop(disposers, on);
   installCardEnhancer(disposers);
   installBhote(disposers);
   installServerUi(on);
   installDrawToolbar(disposers, on);
   installDeselect(disposers, on);
-}
-
-// ---------------------------------------------------------------- pick slop
-function installSlop(disposers, on) {
-  let undo = null;
-  let cancelled = false;
-  const apply = async () => {
-    if (undo || !isMobileUi()) return;
-    try {
-      // Never bind the result to `Cesium`: vite-plugin-cesium rewrites this
-      // import to the global `Cesium`, which a local `const Cesium` would
-      // shadow (a TDZ ReferenceError in production builds only).
-      const { Scene } = await import('cesium');
-      if (cancelled || undo || !isMobileUi()) return;
-      undo = installPickSlop(Scene);
-    } catch (error) {
-      console.warn('[mobile] pick slop unavailable', error);
-    }
-  };
-  const drop = () => {
-    undo?.();
-    undo = null;
-  };
-  on(window, UI_MODE_EVENT, (event) => {
-    if (event?.detail?.mode === 'mobile') void apply();
-    else drop();
-  });
-  disposers.push(() => {
-    cancelled = true;
-    drop();
-  });
-  void apply();
 }
 
 // -------------------------------------------- entity cards (APRS / propagation)

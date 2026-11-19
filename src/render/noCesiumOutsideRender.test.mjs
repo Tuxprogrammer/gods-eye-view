@@ -27,7 +27,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
-import { FORK_CESIUM_FILES } from '../testSupport/fork.mjs';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -40,8 +39,6 @@ const root = path.resolve(
 );
 const LIST = 'src/render/cesiumAllowList.json';
 const allowList = JSON.parse(readFileSync(path.join(root, LIST), 'utf8'));
-// Fork: its own files still on Cesium (src/testSupport/fork.mjs).
-const forkAllowList = FORK_CESIUM_FILES;
 
 const SCOPES = ['src', 'server', 'dev'];
 /** Not runtime code, though not named `.test`: imported by tests only. */
@@ -254,7 +251,7 @@ function reachesCesiumFile(file) {
 }
 
 test('only allow-listed files outside the Cesium adapter reach Cesium', () => {
-  const allowed = new Set([...allowList, ...forkAllowList]);
+  const allowed = new Set(allowList);
   const offenders = runtimeFiles.filter(
     (file) => !allowed.has(file) && reachesCesiumFile(file),
   );
@@ -305,20 +302,6 @@ test('every allow-listed file still reaches Cesium', () => {
     (file) => !present.has(file) || !reachesCesiumFile(file),
   );
   assert.deepEqual(stale, [], `Remove these from ${LIST}.`);
-});
-
-test('every fork file listed as on Cesium still reaches it', () => {
-  const present = new Set(runtimeFiles);
-  const stale = forkAllowList.filter(
-    (file) => !present.has(file) || !reachesCesiumFile(file),
-  );
-  assert.deepEqual(stale, [], 'Remove these from src/testSupport/fork.mjs.');
-  assert.deepEqual(forkAllowList, [...new Set(forkAllowList)].sort());
-  assert.deepEqual(
-    forkAllowList.filter((file) => allowList.includes(file)),
-    [],
-    `on ${LIST} too`,
-  );
 });
 
 test('the files that name the adapter by design import exactly what they are allowed', () => {

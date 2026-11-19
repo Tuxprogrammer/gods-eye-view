@@ -1,5 +1,4 @@
 import { t } from '../../i18n/index.js';
-import * as Cesium from 'cesium';
 import {
   APRS_LAYER_ID,
   APRS_REFRESH_MS,
@@ -16,6 +15,12 @@ import { aprsRowControls } from './controls.js';
 import { createAprsSurface } from './rendering.js';
 import { createStationInteraction as defaultInteraction } from './interaction.js';
 import { createMessagePopups as defaultPopups } from './popups.js';
+import { findCamera } from '../../render/rendererOf.js';
+import {
+  flyToStation,
+  kmBetween,
+  viewCenter as sceneViewCenter,
+} from './scene.js';
 import { heatmapClassificationType } from '../propagation/surface.js';
 export * from './model.js';
 export { createAprsSource } from './source.js';
@@ -29,10 +34,6 @@ const MOVE_DEBOUNCE_MS = 700;
 const SETTINGS_DEBOUNCE_MS = 250;
 /** A burst of messages shows only the newest few, not a wall of bubbles. */
 const MAX_POPUPS_PER_POLL = 3;
-const FLY_RANGE_NEAR_M = 1500;
-const FLY_RANGE_FAR_M = 30_000;
-
-const toDegrees = (radians) => Cesium.Math.toDegrees(radians);
 
 /**
  * APRS-IS on the globe: every station heard in the last day (the server keeps
@@ -47,6 +48,8 @@ export function createAprsLayer({
   mapStackEventTarget = null,
   visibilityTarget = typeof document !== 'undefined' ? document : null,
   now = Date.now,
+  // The world-overlay host station labels go to; none in tests.
+  overlayHost = null,
   createSurface = createAprsSurface,
   createInteraction = defaultInteraction,
   createPopups = defaultPopups,
@@ -84,30 +87,7 @@ export function createAprsLayer({
   const hidden = () => Boolean(visibilityTarget?.hidden);
 
   /** The point on the ground under the middle of the screen (or under the camera). */
-  function viewCenter() {
-    const camera = _viewer?.camera;
-    const canvas = _viewer?.scene?.canvas;
-    if (!camera) return { lat: 0, lon: 0 };
-    let cartographic = null;
-    if (canvas) {
-      const hit = camera.pickEllipsoid(
-        new Cesium.Cartesian2(canvas.clientWidth / 2, canvas.clientHeight / 2),
-        _viewer.scene.globe?.ellipsoid ?? Cesium.Ellipsoid.WGS84,
-      );
-      if (hit) cartographic = Cesium.Cartographic.fromCartesian(hit);
-    }
-    cartographic ??= camera.positionCartographic;
-    return {
-      lat: toDegrees(cartographic.latitude),
-      lon: toDegrees(cartographic.longitude),
-    };
-  }
-
-  function kmBetween(a, b) {
-    const p = Cesium.Cartographic.fromDegrees(a.lon, a.lat);
-    const q = Cesium.Cartographic.fromDegrees(b.lon, b.lat);
-    return new Cesium.EllipsoidGeodesic(p, q).surfaceDistance / 1000;
-  }
+  const viewCenter = () => sceneViewCenter(_viewer);
 
   async function refresh() {
     if (!_enabled) return false;
@@ -282,18 +262,7 @@ export function createAprsLayer({
   function flyTo(id, near) {
     const record = _surface?.recordFor(id);
     if (!record || !_viewer) return;
-    const { lon, lat } = record.station;
-    _viewer.camera.flyToBoundingSphere(
-      new Cesium.BoundingSphere(Cesium.Cartesian3.fromDegrees(lon, lat), 1),
-      {
-        duration: 1.6,
-        offset: new Cesium.HeadingPitchRange(
-          0,
-          Cesium.Math.toRadians(near ? -35 : -70),
-          near ? FLY_RANGE_NEAR_M : FLY_RANGE_FAR_M,
-        ),
-      },
-    );
+    flyToStation(_viewer, record.station.lon, record.station.lat, near);
   }
 
   // -- Lifecycle ------------------------------------------------------------
@@ -344,7 +313,8 @@ export function createAprsLayer({
       _viewer = viewer;
       _surface = createSurface({
         viewer,
-        classificationType: heatmapClassificationType(viewer.scene),
+        classificationType: heatmapClassificationType(viewer),
+        overlayHost,
       });
       _interaction = createInteraction({
         viewer,
@@ -363,14 +333,14 @@ export function createAprsLayer({
       _enabled = true;
       _lastError = null;
       _surface?.setLabels(_settings.labels);
-      if (_viewer?.camera?.moveEnd?.addEventListener)
-        _cameraRemovers.push(
-          _viewer.camera.moveEnd.addEventListener(onCameraSettled),
-        );
+      const off = _viewer
+        ? findCamera(_viewer)?.on('moveEnd', onCameraSettled)
+        : null;
+      if (off) _cameraRemovers.push(off);
       if (mapStackEventTarget && !_stackListener) {
         _stackListener = (event) =>
           _surface?.setClassification(
-            heatmapClassificationType(_viewer?.scene, event?.detail?.activeId),
+            heatmapClassificationType(_viewer, event?.detail?.activeId),
           );
         mapStackEventTarget.addEventListener(
           'gev:map-stack-changed',

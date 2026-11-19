@@ -1,5 +1,6 @@
-import * as Cesium from 'cesium';
 import { formatDate, formatNumber, msg, t } from '../../i18n/index.js';
+import { fromDegrees } from '../../geo/ellipsoid.js';
+import { drawOf, findFrame } from '../../render/rendererOf.js';
 import { CRIME_CATEGORIES, crimeCategory } from './categories.js';
 import {
   CRIME_WINDOW_DAYS,
@@ -20,6 +21,7 @@ export * from './categories.js';
 
 const LAYER_ID = 'crime';
 const PICK_PREFIX = 'crime:';
+const SET_ID = 'crime:markers';
 const CARD_HOST_OPTIONS = Object.freeze({
   cohortLimit: 1,
   collisionCapacity: 1,
@@ -28,6 +30,19 @@ const CARD_HOST_OPTIONS = Object.freeze({
 // Markers stay above terrain and buildings when close, but the globe hides
 // them once they are around the far side.
 const DEPTH_TEST_DISTANCE_M = 50_000;
+const SCALE_BY_DISTANCE = Object.freeze({
+  near: 2_000,
+  nearValue: 1.2,
+  far: 200_000,
+  farValue: 0.6,
+});
+const OUTLINE_COLOR = 'rgba(0, 0, 0, 0.7)';
+
+/** A CSS hex colour (`#rrggbb`) at `alpha`, as the draw port reads colours. */
+function withAlpha(hex, alpha) {
+  const value = Number.parseInt(String(hex).slice(1), 16);
+  return [(value >> 16) & 255, (value >> 8) & 255, value & 255, alpha * 255];
+}
 const WINDOW_LABELS = Object.freeze({
   7: msg('7 days'),
   30: msg('30 days'),
@@ -43,7 +58,8 @@ export function createCrimeLayer({
   source,
   overlayHost = null,
   // `(viewer, onClick) => unsubscribe`: ambient clicks over the globe, each
-  // with `pick`, the renderer's own pick of it (src/input/dispatcher.js).
+  // with `hit`, the contract hit under it (on a coarse pointer, the nearest
+  // registered contact; src/input/dispatcher.js).
   subscribeClick = null,
   picking = null,
   pointer = null,
@@ -52,7 +68,7 @@ export function createCrimeLayer({
   if (typeof source?.getIncidents !== 'function')
     throw new TypeError('The crime layer requires an incident source');
   let viewer = null;
-  let dataSource = null;
+  let markers = null;
   let request = null;
   // While the server is still reading older weeks, look again soon rather
   // than at the next 15-minute poll.
@@ -85,41 +101,38 @@ export function createCrimeLayer({
       [
         {
           ...buildCrimeCard(group),
-          position: Cesium.Cartesian3.fromDegrees(group.lon, group.lat),
+          position: fromDegrees(group.lon, group.lat),
         },
       ],
       CARD_HOST_OPTIONS,
     );
   }
 
+  const requestRender = () => {
+    if (viewer) findFrame(viewer)?.requestRender(LAYER_ID);
+  };
+
   function render() {
-    if (!dataSource) return;
+    if (!markers) return;
     const next = groupCrimeLocations(snapshot?.incidents || [], categories);
     groups = new Map(next.map((group) => [group.key, group]));
-    dataSource.entities.suspendEvents();
-    dataSource.entities.removeAll();
     // Smaller blocks last, so a busy block never hides a quiet neighbour.
-    for (const group of next.sort(
-      (a, b) => b.incidents.length - a.incidents.length,
-    )) {
-      const color = Cesium.Color.fromCssColorString(
-        crimeCategory(group.category).color,
-      );
-      dataSource.entities.add({
-        id: `${PICK_PREFIX}${group.key}`,
-        position: Cesium.Cartesian3.fromDegrees(group.lon, group.lat),
-        point: {
-          heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-          disableDepthTestDistance: DEPTH_TEST_DISTANCE_M,
+    markers.set(
+      next
+        .sort((a, b) => b.incidents.length - a.incidents.length)
+        .map((group) => ({
+          id: `${PICK_PREFIX}${group.key}`,
+          pos: fromDegrees(group.lon, group.lat),
+          height: 'clampGround',
+          disableDepthTest: DEPTH_TEST_DISTANCE_M,
           pixelSize: crimeMarkerPixels(group.incidents.length),
-          color: color.withAlpha(0.85),
-          outlineColor: Cesium.Color.BLACK.withAlpha(0.7),
+          color: withAlpha(crimeCategory(group.category).color, 0.85),
+          outlineColor: OUTLINE_COLOR,
           outlineWidth: 1.5,
-          scaleByDistance: new Cesium.NearFarScalar(2_000, 1.2, 200_000, 0.6),
-        },
-      });
-    }
-    dataSource.entities.resumeEvents();
+          scaleByDistance: SCALE_BY_DISTANCE,
+        })),
+    );
+    requestRender();
     if (selectedKey) publishCard();
   }
 
@@ -138,7 +151,7 @@ export function createCrimeLayer({
     );
     unsubscribeClick = subscribeClick(viewer, (click) => {
       if (pointer && !pointer.isPointerFree()) return;
-      const picked = click.pick;
+      const picked = click.hit;
       const key = picked ? pickedKey(picked) : null;
       if (key) {
         selectedKey = key;
@@ -195,14 +208,13 @@ export function createCrimeLayer({
     init(nextViewer) {
       if (viewer) throw new Error('The crime layer is already initialized');
       viewer = nextViewer;
-      dataSource = new Cesium.CustomDataSource(LAYER_ID);
-      dataSource.show = false;
-      viewer.dataSources.add(dataSource);
+      markers = drawOf(viewer).points({ id: SET_ID, show: false });
     },
 
     enable() {
       enabled = true;
-      if (dataSource) dataSource.show = true;
+      if (markers) markers.show = true;
+      requestRender();
       overlayHost?.setVisible?.(CRIME_OVERLAY_SOURCE_ID, true);
       installClickHandler();
     },
@@ -213,13 +225,14 @@ export function createCrimeLayer({
       request?.abort();
       request = null;
       enabled = false;
-      if (dataSource) dataSource.show = false;
+      if (markers) markers.show = false;
+      requestRender();
       removeClickHandler();
       clearSelection();
     },
 
     async update() {
-      if (!enabled || !dataSource) return false;
+      if (!enabled || !markers) return false;
       request?.abort();
       const controller = new AbortController();
       request = controller;
@@ -257,15 +270,15 @@ export function createCrimeLayer({
       }
     },
 
-    destroy(target = viewer) {
+    destroy() {
       clearTimeout(followUp);
       followUp = null;
       request?.abort();
       request = null;
       removeClickHandler();
       clearSelection();
-      if (dataSource && target) target.dataSources.remove(dataSource, true);
-      dataSource = null;
+      markers?.dispose();
+      markers = null;
       viewer = null;
       enabled = false;
       snapshot = null;

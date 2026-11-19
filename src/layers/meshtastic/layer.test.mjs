@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { bindRenderer } from '../../render/rendererOf.js';
 import { createMeshtasticLayer } from './index.js';
 import { createMeshtasticSource } from './source.js';
 import { meshtasticRowControls } from './controls.js';
@@ -13,7 +14,6 @@ import {
   normalizeMessagesPayload,
   normalizeNodesPayload,
   normalizeServer,
-  spreadLabels,
 } from './model.js';
 import {
   serverSummary,
@@ -178,15 +178,28 @@ test('the server’s reason reaches the caller', async () => {
 
 // -- Layer ------------------------------------------------------------------------
 
+/**
+ * A scene object with the ports the layer reads bound to it: a camera that
+ * stands over (34.377°, -85.944°) and says when it settles, and a query that
+ * finds no ground under the screen's middle, so the view centre is the
+ * camera's own point.
+ */
 function fakeViewer() {
-  return {
+  const listeners = [];
+  const viewer = { listeners };
+  bindRenderer(viewer, {
+    canvas: { clientWidth: 100, clientHeight: 100 },
     camera: {
-      pickEllipsoid: () => undefined,
-      positionCartographic: { latitude: 0.6, longitude: -1.5 },
-      moveEnd: { addEventListener: () => () => {} },
+      pose: () => ({ lat: 34.377, lon: -85.944, height: 1e6 }),
+      on(event, fn) {
+        if (event !== 'moveEnd') return () => {};
+        listeners.push(fn);
+        return () => listeners.splice(listeners.indexOf(fn), 1);
+      },
     },
-    scene: { canvas: { clientWidth: 100, clientHeight: 100 } },
-  };
+    query: { pickEllipsoid: () => null },
+  });
+  return viewer;
 }
 
 function harness({ getNodes, servers = [server('almesh'), server('global', { enabled: false, status: 'off' })] } = {}) {
@@ -480,42 +493,6 @@ test('a model shared by several listed devices is named for the first, and pictu
   }
 });
 
-test('stacked nodes get their labels fanned round the dots; a lone node keeps the usual spot', () => {
-  const alone = spreadLabels([{ id: '!a', x: 500, y: 500 }]);
-  assert.equal(alone.size, 0);
-
-  const far = spreadLabels([
-    { id: '!a', x: 100, y: 100 },
-    { id: '!b', x: 400, y: 100 },
-  ]);
-  assert.equal(far.size, 0, 'apart on screen, so not a stack');
-
-  const four = spreadLabels(
-    ['!d', '!b', '!a', '!c'].map((id) => ({ id, x: 300, y: 300 })),
-  );
-  assert.equal(four.size, 4);
-  // Sorted by id, first at the top, then clockwise: right, bottom, left.
-  assert.deepEqual([...four.keys()].sort(), ['!a', '!b', '!c', '!d']);
-  assert.deepEqual(four.get('!a'), { dx: 0, dy: -32, h: 'center', v: 'bottom' });
-  assert.deepEqual(four.get('!b'), { dx: 32, dy: 0, h: 'left', v: 'center' });
-  assert.deepEqual(four.get('!c'), { dx: 0, dy: 32, h: 'center', v: 'top' });
-  assert.deepEqual(four.get('!d'), { dx: -32, dy: 0, h: 'right', v: 'center' });
-
-  const spots = new Set(
-    [...spreadLabels(Array.from({ length: 12 }, (_, i) => ({ id: `!n${String(i).padStart(2, '0')}`, x: 50, y: 50 }))).values()].map(
-      (s) => `${s.dx},${s.dy}`,
-    ),
-  );
-  assert.equal(spots.size, 12, 'twelve labels, twelve different places');
-
-  // Icons just across a grid line are still one stack.
-  const edge = spreadLabels([
-    { id: '!a', x: 27, y: 10 },
-    { id: '!b', x: 29, y: 10 },
-  ]);
-  assert.equal(edge.size, 2);
-});
-
 test('a topic that can never match a Meshtastic packet is called out in the server row', () => {
   assert.equal(topicWarning('msh/US/#'), null);
   assert.equal(topicWarning('msh/US/AL/#'), null);
@@ -527,4 +504,82 @@ test('a topic that can never match a Meshtastic packet is called out in the serv
   assert.match(serverSummary(row, 1000), /matches nothing/);
   assert.equal(serverSummary({ ...row, enabled: false, status: 'off' }, 1000), 'Off');
   assert.match(serverSummary({ ...row, topic: 'msh/US/#' }, 1000), /no traffic lately/);
+});
+
+test('the surface draws nodes, rings a blurred node, and labels through the world overlay', async () => {
+  const { createMeshtasticSurface } = await import('./rendering.js');
+  const { bindFakeDraw } = await import('../../testSupport/fakeDrawPort.mjs');
+  const { fromDegrees } = await import('../../geo/ellipsoid.js');
+  const viewer = {};
+  const eye = fromDegrees(-86.6, 34.7, 1_000_000);
+  const { draw } = bindFakeDraw(viewer, {
+    camera: { pose: () => ({ position: eye, lat: 34.7, lon: -86.6 }) },
+    frame: { on: () => () => {}, requestRender() {} },
+    query: { project: () => ({ x: 1, y: 2 }) },
+  });
+  const labels = [];
+  const surface = createMeshtasticSurface({
+    viewer,
+    classificationType: 'terrain',
+    overlayHost: {
+      setEntries: (source, entries) => labels.push({ source, entries }),
+      clearSource: (source) => labels.push({ source, entries: [] }),
+    },
+    createCanvas: (width, height) => ({
+      width,
+      height,
+      getContext: () => new Proxy({}, { get: () => () => {} }),
+    }),
+  });
+  const blurred = {
+    id: '!blur',
+    lat: 34.7,
+    lon: -86.6,
+    role: 'CLIENT',
+    precisionKm: 2,
+  };
+  const exact = {
+    id: '!fix',
+    lat: 34.71,
+    lon: -86.61,
+    role: 'ROUTER',
+    precisionKm: 0,
+  };
+  surface.show([blurred, exact], new Map());
+  const nodes = draw.set('meshtastic:nodes');
+  assert.deepEqual(
+    [...nodes.items.keys()],
+    ['mesh-node:!blur', 'mesh-node:!fix'],
+  );
+  assert.equal(nodes.items.get('mesh-node:!fix').show, true);
+  assert.equal(labels.at(-1).source, 'meshtastic-labels');
+  assert.equal(labels.at(-1).entries.length, 2);
+
+  surface.setEmphasis('!blur');
+  const ring = draw.set('meshtastic:accuracy').items.get('accuracy-fill');
+  assert.equal(ring.geometry.semiMajor, 1000, 'the box width as diameter');
+  assert.equal(ring.clampTo, 'terrain');
+  const edge = draw.set('meshtastic:tracks').items.get('accuracy-ring');
+  assert.equal(edge.style.kind, 'dash');
+  assert.equal(edge.mode, 'draped');
+  surface.setClassification('tiles');
+  assert.equal(
+    draw.set('meshtastic:accuracy').items.get('accuracy-fill').clampTo,
+    'tiles',
+  );
+  assert.equal(
+    draw.set('meshtastic:tracks').items.get('accuracy-ring').clampTo,
+    'tiles',
+  );
+
+  surface.setEmphasis('!fix');
+  assert.equal(
+    draw.set('meshtastic:accuracy').items.size,
+    0,
+    'a precise fix gets no ring',
+  );
+  assert.equal(draw.set('meshtastic:tracks').items.has('accuracy-ring'), false);
+  surface.destroy();
+  assert.equal(draw.set('meshtastic:nodes'), undefined);
+  assert.deepEqual(labels.at(-1), { source: 'meshtastic-labels', entries: [] });
 });

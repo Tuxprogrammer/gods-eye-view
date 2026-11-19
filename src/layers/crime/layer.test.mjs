@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { bindFakeDraw } from '../../testSupport/fakeDrawPort.mjs';
 import { createCrimeLayer } from './index.js';
 import { createCrimeSource } from './source.js';
 import { buildCrimeCard } from './cards.js';
@@ -112,14 +113,9 @@ test('a block card lists the newest cases and the kind mix', () => {
 });
 
 function harness(getIncidents, options = {}) {
-  const sources = [];
   const events = [];
-  const viewer = {
-    dataSources: {
-      add: (value) => sources.push(value),
-      remove: (value) => sources.splice(sources.indexOf(value), 1),
-    },
-  };
+  const viewer = {};
+  const { draw } = bindFakeDraw(viewer);
   const calls = [];
   const layer = createCrimeLayer({
     source: {
@@ -137,7 +133,8 @@ function harness(getIncidents, options = {}) {
   });
   layer.init(viewer);
   layer.enable(viewer);
-  return { layer, viewer, sources, events, calls };
+  const markers = () => draw.sets.get('crime:markers');
+  return { layer, viewer, markers, events, calls };
 }
 
 test('draws one marker per block and filters by kind', async () => {
@@ -152,7 +149,11 @@ test('draws one marker per block and filters by kind', async () => {
   );
   assert.equal(await h.layer.update(), true);
   assert.equal(h.calls[0].days, 30);
-  assert.equal(h.sources[0].entities.values.length, 2);
+  assert.equal(h.markers().items.size, 2);
+  assert.equal(h.markers().show, true);
+  const [marker] = h.markers().items.values();
+  assert.equal(marker.height, 'clampGround');
+  assert.equal(marker.disableDepthTest, 50_000);
   assert.equal(h.layer.getStats().count, 3);
 
   let notified = 0;
@@ -165,7 +166,7 @@ test('draws one marker per block and filters by kind', async () => {
   assert.match(controls.info, /2 withheld for privacy · 1 not mapped/);
   controls.chips.find(({ id }) => id === 'category-traffic').onClick();
   assert.equal(notified, 1);
-  assert.equal(h.sources[0].entities.values.length, 1);
+  assert.equal(h.markers().items.size, 1);
   assert.equal(h.layer.getStats().count, 2);
   assert.equal(h.layer.getAnalystRecords().length, 2);
   assert.equal(
@@ -173,7 +174,7 @@ test('draws one marker per block and filters by kind', async () => {
     '100 Block of Hughes Rd',
   );
   h.layer.destroy();
-  assert.equal(h.sources.length, 0);
+  assert.equal(h.markers().disposed, true);
 });
 
 test('the window control refetches with the chosen number of days', async () => {
@@ -262,5 +263,37 @@ test('an incomplete snapshot is fetched again soon, a complete one is not', asyn
   h.layer.disable();
   await new Promise((resolve) => setTimeout(resolve, 30));
   assert.equal(h.calls.length, 3);
+  h.layer.destroy();
+});
+
+test('a click on a marker opens its block card; a click elsewhere closes it', async () => {
+  const clicks = [];
+  const picking = {
+    resolvePickId: (hit) => hit?.id ?? null,
+    registerPickOwner() {},
+    unregisterPickOwner() {},
+    isOwnedByOtherLayer: () => false,
+  };
+  const h = harness(
+    async () => normalizeCrimePayload(payload([incident('A')])),
+    {
+      picking,
+      subscribeClick: (_viewer, onClick) => {
+        clicks.push(onClick);
+        return () => clicks.splice(clicks.indexOf(onClick), 1);
+      },
+    },
+  );
+  await h.layer.update();
+  const [marker] = h.markers().items.values();
+  clicks[0]({ hit: { set: 'crime:markers', id: marker.id, surface: false } });
+  const opened = h.events.at(-1);
+  assert.equal(opened[1].length, 1);
+  assert.match(opened[1][0].title, /HUGHES RD/);
+  assert.ok(Number.isFinite(opened[1][0].position.x));
+  clicks[0]({ hit: null });
+  assert.equal(h.events.at(-1)[1].length, 0);
+  h.layer.disable();
+  assert.equal(clicks.length, 0);
   h.layer.destroy();
 });

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createPropagationLayer } from './index.js';
 import { createPropagationSource } from './source.js';
+import { bindRenderer } from '../../render/rendererOf.js';
 
 function map(field, generatedAt = 1_000_000) {
   return {
@@ -39,7 +40,7 @@ function overlaySurface() {
   };
 }
 
-function harness({ hidden = false } = {}) {
+function harness({ hidden = false, globeVisible } = {}) {
   const calls = [];
   const contourCalls = [];
   const stationCalls = [];
@@ -161,6 +162,8 @@ function harness({ hidden = false } = {}) {
       if (stackListeners.get(type) === fn) stackListeners.delete(type);
     },
   };
+  const overlayHost = { setEntries() {}, setVisible() {}, clearSource() {} };
+  const made = {};
   // Shortly after the map was generated, so it reads as current.
   const clock = { t: 1_060_000 };
   const layer = createPropagationLayer({
@@ -176,12 +179,25 @@ function harness({ hidden = false } = {}) {
         [255, 255, 255],
       ],
     }),
-    createSurface: () => surface,
-    createContourSurface: () => contourSurface,
-    createStationSurface: () => stationSurface,
+    overlayHost,
+    createSurface: (options) => {
+      made.surface = options;
+      return surface;
+    },
+    createContourSurface: (options) => {
+      made.contours = options;
+      return contourSurface;
+    },
+    createStationSurface: (options) => {
+      made.stations = options;
+      return stationSurface;
+    },
     createStationInteraction: () => interaction,
   });
-  const viewer = { scene: { globe: { show: false } } };
+  const viewer = {};
+  // The globe port, as the renderer answers `globeVisibility`.
+  if (globeVisible !== undefined)
+    bindRenderer(viewer, { globe: { isGlobeVisible: () => globeVisible } });
   return {
     layer,
     surface,
@@ -197,6 +213,8 @@ function harness({ hidden = false } = {}) {
     listeners,
     stackListeners,
     viewer,
+    overlayHost,
+    made,
   };
 }
 
@@ -252,7 +270,8 @@ test('returning to a visible page does not refetch a fresh map', async () => {
 });
 
 test('disabling stops requests, releases the map and detaches listeners', async () => {
-  const { layer, calls, surface, listeners, stackListeners, viewer } = harness();
+  const { layer, calls, surface, listeners, stackListeners, viewer } =
+    harness();
   layer.init(viewer);
   layer.enable(viewer);
   await layer.update(viewer);
@@ -288,7 +307,10 @@ test('selecting the other map is exclusive and fetches it', async () => {
   layer.enable(viewer);
   await layer.update(viewer);
   const before = surface.clears;
-  layer.getRowControls().chips.find((chip) => chip.id === 'field-fof2').onClick();
+  layer
+    .getRowControls()
+    .chips.find((chip) => chip.id === 'field-fof2')
+    .onClick();
   assert.equal(surface.clears, before + 1, 'old map is removed at once');
   await new Promise((resolve) => setImmediate(resolve));
   assert.deepEqual(calls, ['muf', 'fof2']);
@@ -405,6 +427,38 @@ test('the classification follows the map-stack regime', () => {
   assert.notEqual(surface.classification[0], undefined);
 });
 
+test('the surfaces drape onto what the globe port says is drawn', () => {
+  const cases = [
+    [true, 'terrain'],
+    [false, 'tiles'],
+    [undefined, 'both'],
+  ];
+  for (const [globeVisible, expected] of cases) {
+    const h = harness({ globeVisible });
+    h.layer.init(h.viewer);
+    assert.equal(h.made.surface.classificationType, expected);
+    assert.equal(h.made.contours.classificationType, expected);
+  }
+});
+
+test('a map-stack change names the surface it drapes onto', () => {
+  const h = harness({ globeVisible: true });
+  h.layer.init(h.viewer);
+  h.layer.enable(h.viewer);
+  const listener = h.stackListeners.get('gev:map-stack-changed');
+  listener({ detail: { activeId: 'photoreal' } });
+  listener({ detail: { activeId: 'esri-imagery' } });
+  assert.deepEqual(h.surface.classification, ['tiles', 'terrain']);
+  assert.deepEqual(h.contourSurface.classification, ['tiles', 'terrain']);
+});
+
+test('the printed levels and readings go to the overlay host', () => {
+  const h = harness();
+  h.layer.init(h.viewer);
+  assert.equal(h.made.contours.overlayHost, h.overlayHost);
+  assert.equal(h.made.stations.overlayHost, h.overlayHost);
+});
+
 test('destroy releases the surface', () => {
   const { layer, surface, viewer } = harness();
   layer.init(viewer);
@@ -431,7 +485,10 @@ test('the source asks only the same-origin endpoint and validates the answer', a
   const result = await source.getMap('muf', {});
   assert.deepEqual(urls, ['/api/propagation/muf']);
   assert.equal(result.field, 'muf');
-  await assert.rejects(() => source.getMap('nope', {}), /Unknown propagation map/);
+  await assert.rejects(
+    () => source.getMap('nope', {}),
+    /Unknown propagation map/,
+  );
   const failing = createPropagationSource({
     fetchImpl: async () => new Response('{}', { status: 502 }),
   });
@@ -454,10 +511,7 @@ test('rings and stations are fetched with the map, once each, and drawn', async 
   assert.equal(h.contourSurface.shows.length, 1);
   assert.equal(h.contourSurface.shows[0][0].lines.length, 2);
   const [stations, scale] = h.stationSurface.shows[0];
-  assert.deepEqual(
-    stations.map((s) => s.code).sort(),
-    ['AU930', 'MUFONLY'],
-  );
+  assert.deepEqual(stations.map((s) => s.code).sort(), ['AU930', 'MUFONLY']);
   assert.equal(scale.field, 'muf');
   assert.equal(scale.unit, 'MHz');
   assert.deepEqual(scale.range, { min: 4, max: 35 });
@@ -536,7 +590,11 @@ test('a station outage after a good load keeps the bubbles on screen', async () 
   await h.layer.update(h.viewer);
   assert.equal(chipById(h.layer, 'toggle-stations').state, 'active');
   assert.equal(h.stationSurface.clears, clearsBefore, 'nothing is removed');
-  assert.equal(h.stationSurface.shows.length, showsBefore, 'nothing is redrawn');
+  assert.equal(
+    h.stationSurface.shows.length,
+    showsBefore,
+    'nothing is redrawn',
+  );
 });
 
 test('switching maps refetches rings and recolours the bubbles for that quantity', async () => {
@@ -628,12 +686,27 @@ test('the source asks the same-origin overlay endpoints and validates them', asy
     '/api/propagation/muf/contours': {
       field: 'muf',
       generatedAt: '2026-09-20T02:55:53.000Z',
-      lines: [{ value: 10.1, label: '10.1', color: '#005767', positions: [0, 0, 1, 1] }],
+      lines: [
+        {
+          value: 10.1,
+          label: '10.1',
+          color: '#005767',
+          positions: [0, 0, 1, 1],
+        },
+      ],
     },
     '/api/propagation/stations': {
       generatedAt: '2026-09-20T02:55:53.000Z',
       stations: [
-        { code: 'AU930', name: 'Austin', lat: 30.4, lon: -97.7, time: 1, fof2: 8, mufd: 28 },
+        {
+          code: 'AU930',
+          name: 'Austin',
+          lat: 30.4,
+          lon: -97.7,
+          time: 1,
+          fof2: 8,
+          mufd: 28,
+        },
         { junk: true },
       ],
     },
@@ -641,7 +714,9 @@ test('the source asks the same-origin overlay endpoints and validates them', asy
   const source = createPropagationSource({
     fetchImpl: async (url) => {
       urls.push(url);
-      return new Response(JSON.stringify(responses[url] ?? {}), { status: 200 });
+      return new Response(JSON.stringify(responses[url] ?? {}), {
+        status: 200,
+      });
     },
   });
   const contours = await source.getContours('muf', {});
@@ -652,9 +727,13 @@ test('the source asks the same-origin overlay endpoints and validates them', asy
     '/api/propagation/muf/contours',
     '/api/propagation/stations',
   ]);
-  await assert.rejects(() => source.getContours('nope', {}), /Unknown propagation map/);
+  await assert.rejects(
+    () => source.getContours('nope', {}),
+    /Unknown propagation map/,
+  );
   const bad = createPropagationSource({
-    fetchImpl: async () => new Response(JSON.stringify({ field: 'fof2' }), { status: 200 }),
+    fetchImpl: async () =>
+      new Response(JSON.stringify({ field: 'fof2' }), { status: 200 }),
   });
   await assert.rejects(() => bad.getContours('muf', {}), /Malformed/);
   await assert.rejects(() => bad.getStations({}), /Malformed/);
@@ -672,7 +751,10 @@ test('the details card is refreshed whenever the bubbles change', async () => {
   chipById(h.layer, 'field-fof2').onClick();
   await tick();
   await tick();
-  assert.ok(h.interaction.refreshes > afterFirst, 'a map switch changes the bubbles');
+  assert.ok(
+    h.interaction.refreshes > afterFirst,
+    'a map switch changes the bubbles',
+  );
 });
 
 test('turning the layer off closes any open details card', async () => {

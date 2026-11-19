@@ -1,4 +1,3 @@
-import * as Cesium from 'cesium';
 import {
   clampOpacity,
   colorAtPosition,
@@ -13,6 +12,8 @@ import {
   stationValue,
   valuePosition,
 } from './model.js';
+import { fromDegrees } from '../../geo/ellipsoid.js';
+import { drawOf, findFrame } from '../../render/rendererOf.js';
 import { createHorizonCuller } from './horizon.js';
 
 /** Decode a base64 PNG to RGBA without colour management or premultiplication. */
@@ -66,208 +67,334 @@ export async function prepareHeatmap(payload) {
   return { canvas, gradient: gradientCss(stops), stops };
 }
 
-/**
- * The globe as textured rectangles classified onto the surface beneath them:
- * Google 3D tiles in the photoreal stack, terrain otherwise. An imagery layer
- * cannot do this, because the photoreal stack hides the globe entirely.
- */
-export function createHeatmapSurface({ viewer, classificationType }) {
-  const dataSource = new Cesium.CustomDataSource('propagation');
-  dataSource.show = false;
-  viewer.dataSources.add(dataSource);
-  let materials = [];
-  let type = classificationType;
+const render = (viewer) => findFrame(viewer)?.requestRender('propagation');
 
-  const render = () => viewer.scene?.requestRender?.();
+/** A canvas, or null where there is no DOM (tests). */
+function newCanvas(width, height) {
+  if (typeof document === 'undefined') return null;
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, width);
+  canvas.height = Math.max(1, height);
+  return canvas;
+}
+
+let heatmapSurfaces = 0;
+
+/**
+ * The globe as textured rectangles draped onto the surface beneath them:
+ * Google 3D tiles in the photoreal stack, terrain otherwise (`clampTo`). An
+ * imagery layer cannot do this, because the photoreal stack hides the globe
+ * entirely.
+ *
+ * An image fill has no colour of its own to fade it, so the opacity is baked
+ * into each tile's texture: a change redraws the tiles from the prepared
+ * canvas and hands them over under a new key.
+ * @param {{viewer: object, classificationType?: 'tiles'|'terrain'|'both',
+ *   makeCanvas?: (width: number, height: number) => object|null}} options
+ */
+export function createHeatmapSurface({
+  viewer,
+  classificationType,
+  makeCanvas = newCanvas,
+}) {
+  const id = `propagation:heatmap:${(heatmapSurfaces += 1)}`;
+  const shapes = drawOf(viewer).shapes({ id, show: false, pickable: false });
+  /** @type {Array<{tile: object, texture: object}>} */
+  let tiles = [];
+  let source = null;
+  let alpha = 1;
+  let type = classificationType;
+  // Every redraw of the textures is new content, so a new key.
+  let version = 0;
+
+  function paint() {
+    version += 1;
+    for (const { tile, texture } of tiles) {
+      const context = texture.getContext('2d');
+      context.clearRect(0, 0, texture.width, texture.height);
+      context.globalAlpha = alpha;
+      context.drawImage(
+        source,
+        tile.x,
+        tile.y,
+        tile.width,
+        tile.height,
+        0,
+        0,
+        texture.width,
+        texture.height,
+      );
+    }
+  }
+
+  function write() {
+    shapes.set(
+      tiles.map(({ tile, texture }, index) => ({
+        id: `propagation-heatmap:${index}`,
+        geometry: {
+          kind: 'rectangle',
+          rect: {
+            west: tile.west,
+            south: tile.south,
+            east: tile.east,
+            north: tile.north,
+          },
+        },
+        fill: {
+          image: { canvas: texture, key: `${id}:${version}:${index}` },
+        },
+        height: 'clampGround',
+        ...(type ? { clampTo: type } : {}),
+        pickable: false,
+      })),
+    );
+  }
 
   return {
     /** Replace the drawn map. Cheap: crops one prepared canvas into tiles. */
     show(prepared, opacity) {
-      dataSource.entities.removeAll();
-      materials = [];
       const { canvas } = prepared;
-      const color = Cesium.Color.WHITE.withAlpha(clampOpacity(opacity));
+      source = canvas;
+      alpha = clampOpacity(opacity);
+      tiles = [];
       for (const tile of heatmapTiles(canvas.width, canvas.height)) {
-        const texture = document.createElement('canvas');
-        texture.width = Math.max(1, tile.width);
-        texture.height = Math.max(1, tile.height);
-        texture
-          .getContext('2d')
-          .drawImage(
-            canvas,
-            tile.x,
-            tile.y,
-            tile.width,
-            tile.height,
-            0,
-            0,
-            texture.width,
-            texture.height,
-          );
-        const material = new Cesium.ImageMaterialProperty({
-          image: texture,
-          transparent: true,
-          color,
-        });
-        materials.push(material);
-        dataSource.entities.add({
-          rectangle: {
-            coordinates: Cesium.Rectangle.fromDegrees(
-              tile.west,
-              tile.south,
-              tile.east,
-              tile.north,
-            ),
-            material,
-            classificationType: type,
-          },
-        });
+        const texture = makeCanvas(tile.width, tile.height);
+        if (texture) tiles.push({ tile, texture });
       }
-      dataSource.show = true;
-      render();
+      paint();
+      write();
+      shapes.show = tiles.length > 0;
+      render(viewer);
     },
     setOpacity(opacity) {
-      const color = Cesium.Color.WHITE.withAlpha(clampOpacity(opacity));
-      for (const material of materials) material.color = color;
-      render();
+      const next = clampOpacity(opacity);
+      if (next === alpha && version > 0) return;
+      alpha = next;
+      if (!tiles.length) return;
+      paint();
+      write();
+      render(viewer);
     },
     setClassification(next) {
       if (next === undefined || next === type) return;
       type = next;
-      for (const entity of dataSource.entities.values)
-        if (entity.rectangle) entity.rectangle.classificationType = next;
-      render();
+      if (tiles.length) write();
+      render(viewer);
     },
     setVisible(visible) {
-      dataSource.show = Boolean(visible) && materials.length > 0;
-      render();
+      shapes.show = Boolean(visible) && tiles.length > 0;
+      render(viewer);
     },
     clear() {
-      dataSource.entities.removeAll();
-      materials = [];
-      dataSource.show = false;
-      render();
+      shapes.clear();
+      tiles = [];
+      source = null;
+      shapes.show = false;
+      render(viewer);
     },
     get tileCount() {
-      return materials.length;
+      return tiles.length;
     },
     destroy() {
-      viewer.dataSources.remove(dataSource, true);
-      materials = [];
+      shapes.dispose();
+      tiles = [];
+      source = null;
     },
   };
 }
 
 /** Contour lines are drawn thin and light so they read on any heat colour. */
-const CONTOUR_COLOR = Cesium.Color.WHITE.withAlpha(0.85);
+const CONTOUR_COLOR = 'rgba(255, 255, 255, 0.85)';
 const CONTOUR_WIDTH = 2;
 /** Labels and bubble captions drop out beyond these camera distances (metres). */
 const CONTOUR_LABEL_RANGE_M = 30_000_000;
 const STATION_LABEL_RANGE_M = 7_000_000;
-/** Bold sans reads far better on busy imagery than the panel's mono weight. */
-const LABEL_FONT = 'bold 13px Inter, sans-serif';
-
-const labelBase = () => ({
-  font: LABEL_FONT,
-  fillColor: Cesium.Color.WHITE,
-  outlineColor: Cesium.Color.BLACK.withAlpha(0.95),
-  outlineWidth: 4,
-  style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-  heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-  // A value printed on the ground must stay legible past nearby geometry. The
-  // horizon culler supplies the occlusion the depth test no longer does.
-  disableDepthTestDistance: Number.POSITIVE_INFINITY,
-});
+/** The world-overlay sources the printed levels and readings publish to. */
+export const PROPAGATION_CONTOUR_LABEL_SOURCE_ID = 'propagation-contour-labels';
+export const PROPAGATION_STATION_LABEL_SOURCE_ID = 'propagation-station-labels';
+/** Every printed level along every ring (`CONTOUR_LABEL_MAX`) may be kept. */
+const CONTOUR_LABEL_OPTIONS = Object.freeze({ cohortLimit: 420 });
+const STATION_LABEL_OPTIONS = Object.freeze({ cohortLimit: 256 });
+/** A reading wins the label budget over a printed level. */
+const STATION_LABEL_PRIORITY = 1_000_000;
 
 /**
- * Isolines of the active map, clamped onto the surface (3D tiles in the
- * photoreal stack, terrain otherwise), with the level printed repeatedly along
- * each ring.
+ * A printed value on the ground, as a world-overlay ambient label: the host
+ * places, collides and paints it, and hides it past the horizon; terrain does
+ * not hide it, so it stays legible past nearby geometry.
  */
-export function createContourSurface({ viewer, classificationType }) {
-  const dataSource = new Cesium.CustomDataSource('propagation-contours');
-  dataSource.show = false;
-  viewer.dataSources.add(dataSource);
-  const culler = createHorizonCuller({ viewer });
+function groundLabel({
+  id,
+  lon,
+  lat,
+  text,
+  accent,
+  priority,
+  maxDistance,
+  gapPx,
+}) {
+  return {
+    id,
+    position: fromDegrees(lon, lat),
+    variant: 'label',
+    title: text,
+    accent,
+    priority,
+    collisionGroup: 'ambient-label',
+    paintLane: 'ambient-label',
+    interactive: false,
+    edgeFade: 'keyhole',
+    horizonCull: true,
+    terrainOcclusion: false,
+    maxDistance,
+    gapPx,
+    verticalOnly: true,
+    placement: 'above',
+  };
+}
+
+/** Publish `entries` to an overlay source, or clear it; no host, no labels. */
+function publish(overlayHost, sourceId, entries, options) {
+  if (!overlayHost) return;
+  if (entries.length) {
+    overlayHost.setEntries(sourceId, entries, options);
+    overlayHost.setVisible?.(sourceId, true);
+  } else {
+    overlayHost.clearSource?.(sourceId);
+    overlayHost.setVisible?.(sourceId, false);
+  }
+}
+
+/** ECEF positions of a flat `[lon, lat, lon, lat, ...]` list. */
+function ecefPath(flat) {
+  const out = [];
+  for (let i = 0; i + 1 < flat.length; i += 2)
+    out.push(fromDegrees(flat[i], flat[i + 1]));
+  return out;
+}
+
+let contourSurfaces = 0;
+
+/**
+ * Isolines of the active map, draped onto the surface (3D tiles in the
+ * photoreal stack, terrain otherwise), with the level printed repeatedly along
+ * each ring through the world overlay.
+ * @param {{viewer: object, classificationType?: 'tiles'|'terrain'|'both',
+ *   overlayHost?: object|null}} options
+ */
+export function createContourSurface({
+  viewer,
+  classificationType,
+  overlayHost = null,
+}) {
+  const lines = drawOf(viewer).lines({
+    id: `propagation:contours:${(contourSurfaces += 1)}`,
+    show: false,
+    pickable: false,
+  });
   let type = classificationType;
-  const render = () => viewer.scene?.requestRender?.();
+  /** @type {Array<{id: string, positions: object[]}>} */
+  let paths = [];
+  let labelCount = 0;
+
+  function writeLines() {
+    lines.set(
+      paths.map(({ id, positions }) => ({
+        id,
+        positions,
+        widthPx: CONTOUR_WIDTH,
+        mode: 'draped',
+        ...(type ? { clampTo: type } : {}),
+        style: { kind: 'solid', color: CONTOUR_COLOR },
+        pickable: false,
+      })),
+    );
+  }
+
+  function clearLabels() {
+    labelCount = 0;
+    publish(overlayHost, PROPAGATION_CONTOUR_LABEL_SOURCE_ID, []);
+  }
+
   return {
     show(contours) {
-      dataSource.entities.removeAll();
-      for (const line of contours.lines) {
-        dataSource.entities.add({
-          polyline: {
-            positions: Cesium.Cartesian3.fromDegreesArray(line.positions),
-            width: CONTOUR_WIDTH,
-            material: CONTOUR_COLOR,
-            clampToGround: true,
-            classificationType: type,
-          },
-        });
-      }
-      const tracked = [];
-      for (const point of contourLabelPoints(contours.lines)) {
-        const entity = dataSource.entities.add({
-          position: Cesium.Cartesian3.fromDegrees(point.lon, point.lat),
-          label: {
-            ...labelBase(),
-            text: point.text,
-            distanceDisplayCondition: new Cesium.DistanceDisplayCondition(
-              0,
-              CONTOUR_LABEL_RANGE_M,
-            ),
-          },
-        });
-        tracked.push({ lon: point.lon, lat: point.lat, entities: [entity] });
-      }
-      culler.set(tracked);
-      dataSource.show = true;
-      render();
+      paths = contours.lines.map((line, index) => ({
+        id: `propagation-contour:${index}`,
+        positions: ecefPath(line.positions),
+      }));
+      writeLines();
+      const entries = contourLabelPoints(contours.lines).map((point, index) =>
+        groundLabel({
+          id: `contour:${index}`,
+          lon: point.lon,
+          lat: point.lat,
+          text: point.text,
+          accent: '#ffffff',
+          priority: 0,
+          maxDistance: CONTOUR_LABEL_RANGE_M,
+          gapPx: 2,
+        }),
+      );
+      labelCount = entries.length;
+      publish(
+        overlayHost,
+        PROPAGATION_CONTOUR_LABEL_SOURCE_ID,
+        entries,
+        CONTOUR_LABEL_OPTIONS,
+      );
+      lines.show = true;
+      render(viewer);
     },
     setClassification(next) {
       if (next === undefined || next === type) return;
       type = next;
-      for (const entity of dataSource.entities.values)
-        if (entity.polyline) entity.polyline.classificationType = next;
-      render();
+      if (paths.length) writeLines();
+      render(viewer);
     },
     clear() {
-      culler.clear();
-      dataSource.entities.removeAll();
-      dataSource.show = false;
-      render();
+      lines.clear();
+      paths = [];
+      clearLabels();
+      lines.show = false;
+      render(viewer);
     },
     get lineCount() {
-      return dataSource.entities.values.filter((entity) => entity.polyline)
-        .length;
+      return paths.length;
     },
     get labelCount() {
-      return dataSource.entities.values.filter((entity) => entity.label).length;
+      return labelCount;
     },
     destroy() {
-      culler.destroy();
-      viewer.dataSources.remove(dataSource, true);
+      clearLabels();
+      lines.dispose();
     },
   };
 }
 
 export const STATION_ID_PREFIX = 'propagation-station:';
 
+let stationSurfaces = 0;
+
 /**
  * Reporting ionosondes as bubbles coloured on the map's own scale, so a bubble
- * that matches the heat beneath it shows the model agrees with a measurement.
- * Stations over the horizon are hidden; the rest can be hovered and clicked
- * through {@link createStationInteraction}.
+ * that matches the heat beneath it shows the model agrees with a measurement,
+ * each with its reading printed above it through the world overlay. Bubbles
+ * over the horizon are hidden; the rest can be hovered and clicked through
+ * {@link createStationInteraction}.
+ * @param {{viewer: object, overlayHost?: object|null}} options
  */
-export function createStationSurface({ viewer }) {
-  const dataSource = new Cesium.CustomDataSource('propagation-stations');
-  dataSource.show = false;
-  viewer.dataSources.add(dataSource);
-  const culler = createHorizonCuller({ viewer });
-  /** @type {Map<string, {station: object, entity: Cesium.Entity}>} */
+export function createStationSurface({ viewer, overlayHost = null }) {
+  const points = drawOf(viewer).points({
+    id: `propagation:stations:${(stationSurfaces += 1)}`,
+    show: false,
+  });
+  const culler = createHorizonCuller({
+    viewer,
+    onChange: (flipped) => points.upsert(flipped),
+  });
+  /** @type {Map<string, {station: object, point: object, position: object}>} */
   let records = new Map();
   let scale = null;
-  const render = () => viewer.scene?.requestRender?.();
   return {
     /**
      * @param {Array<object>} stations Already filtered to the active map.
@@ -277,72 +404,88 @@ export function createStationSurface({ viewer }) {
     show(stations, next) {
       const { field, stops, range } = next;
       scale = next;
-      dataSource.entities.removeAll();
       records = new Map();
+      const bubbles = [];
+      const captions = [];
       const tracked = [];
       for (const station of stations) {
         const value = stationValue(station, field);
         if (value === null) continue;
         const [r, g, b] = colorAtPosition(stops, valuePosition(value, range));
-        const entity = dataSource.entities.add({
+        const color = `rgb(${r}, ${g}, ${b})`;
+        // Bubbles skip the depth test so terrain does not swallow them; the
+        // horizon culler hides the far side of the planet instead.
+        const point = {
           id: `${STATION_ID_PREFIX}${station.code}`,
-          name: `${station.name} (${station.code})`,
-          position: Cesium.Cartesian3.fromDegrees(station.lon, station.lat),
-          point: {
-            pixelSize: 13,
-            color: Cesium.Color.fromBytes(r, g, b, 255),
-            outlineColor: Cesium.Color.WHITE,
-            outlineWidth: 2.5,
-            heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-            disableDepthTestDistance: Number.POSITIVE_INFINITY,
-          },
-          label: {
-            ...labelBase(),
+          pos: { lon: station.lon, lat: station.lat },
+          height: 'clampGround',
+          pixelSize: 13,
+          color,
+          outlineColor: '#ffffff',
+          outlineWidth: 2.5,
+          disableDepthTest: Number.POSITIVE_INFINITY,
+          meta: { name: `${station.name} (${station.code})` },
+          show: true,
+        };
+        bubbles.push(point);
+        captions.push(
+          groundLabel({
+            id: `station:${station.code}`,
+            lon: station.lon,
+            lat: station.lat,
             text: formatStationValue(value),
-            pixelOffset: new Cesium.Cartesian2(0, -21),
-            distanceDisplayCondition: new Cesium.DistanceDisplayCondition(
-              0,
-              STATION_LABEL_RANGE_M,
-            ),
-          },
+            accent: color,
+            priority: STATION_LABEL_PRIORITY,
+            maxDistance: STATION_LABEL_RANGE_M,
+            gapPx: 9,
+          }),
+        );
+        records.set(station.code, {
+          station,
+          point,
+          position: fromDegrees(station.lon, station.lat),
         });
-        records.set(station.code, { station, entity });
-        tracked.push({
-          lon: station.lon,
-          lat: station.lat,
-          entities: [entity],
-        });
+        tracked.push({ lon: station.lon, lat: station.lat, targets: [point] });
       }
       culler.set(tracked);
-      dataSource.show = true;
-      render();
+      points.set(bubbles);
+      publish(
+        overlayHost,
+        PROPAGATION_STATION_LABEL_SOURCE_ID,
+        captions,
+        STATION_LABEL_OPTIONS,
+      );
+      points.show = true;
+      render(viewer);
     },
     /** Details for the hover/click card, or null if the station is gone. */
     detailsFor(code, now = Date.now()) {
       const record = records.get(code);
       if (!record || !scale) return null;
-      const { station, entity } = record;
+      const { station, point, position } = record;
       return {
         code,
         name: station.name,
         rows: stationRows(station, scale.field, scale.unit, now),
-        entity,
-        visible: entity.show !== false,
+        position,
+        visible: point.show !== false,
       };
     },
     clear() {
       culler.clear();
-      dataSource.entities.removeAll();
+      points.clear();
       records = new Map();
-      dataSource.show = false;
-      render();
+      publish(overlayHost, PROPAGATION_STATION_LABEL_SOURCE_ID, []);
+      points.show = false;
+      render(viewer);
     },
     get count() {
       return records.size;
     },
     destroy() {
       culler.destroy();
-      viewer.dataSources.remove(dataSource, true);
+      publish(overlayHost, PROPAGATION_STATION_LABEL_SOURCE_ID, []);
+      points.dispose();
     },
   };
 }

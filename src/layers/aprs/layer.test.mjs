@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { bindRenderer } from '../../render/rendererOf.js';
+import { bindFakeDraw } from '../../testSupport/fakeDrawPort.mjs';
 import { createAprsLayer } from './index.js';
 import { clickTarget } from './interaction.js';
 import { createAprsSource } from './source.js';
@@ -25,23 +27,28 @@ function payload(stations = [station('AA1AAA')], extra = {}) {
   };
 }
 
-/** A viewer just real enough for the layer's own camera reads. */
+/**
+ * A scene object with the ports the layer reads bound to it: a camera that
+ * stands over (34.377°, -85.944°) and says when it settles, and a query that
+ * finds no ground under the screen's middle, so the view centre is the
+ * camera's own point.
+ */
 function fakeViewer() {
   const listeners = [];
-  return {
-    listeners,
+  const viewer = { listeners };
+  bindRenderer(viewer, {
+    canvas: { clientWidth: 100, clientHeight: 100 },
     camera: {
-      pickEllipsoid: () => undefined,
-      positionCartographic: { latitude: 0.6, longitude: -1.5 },
-      moveEnd: {
-        addEventListener(fn) {
-          listeners.push(fn);
-          return () => listeners.splice(listeners.indexOf(fn), 1);
-        },
+      pose: () => ({ lat: 34.377, lon: -85.944, height: 1e6 }),
+      on(event, fn) {
+        if (event !== 'moveEnd') return () => {};
+        listeners.push(fn);
+        return () => listeners.splice(listeners.indexOf(fn), 1);
       },
     },
-    scene: { canvas: { clientWidth: 100, clientHeight: 100 } },
-  };
+    query: { pickEllipsoid: () => null },
+  });
+  return viewer;
 }
 
 function harness({ getStations, getMessages } = {}) {
@@ -275,13 +282,10 @@ test('message pop-ups fade, expire, follow the sender, cap their number and neve
   const documentRef = { createElement: (tag) => new Node(tag) };
   const timers = [];
   let projected = { x: 100, y: 200 };
-  const viewer = {
-    container: new Node('div'),
-    scene: {
-      postRender: { addEventListener: () => () => {} },
-      requestRender() {},
-    },
-  };
+  const viewer = { container: new Node('div') };
+  bindRenderer(viewer, {
+    frame: { on: () => () => {}, requestRender() {} },
+  });
   const popups = createMessagePopups({
     viewer,
     surface: { screenPosition: () => projected },
@@ -331,55 +335,171 @@ test('clicking a stack of stations walks through it and wraps; a lone station to
 });
 
 test('the stack pick keeps only stations of one layer, once each, in a fixed order', async () => {
-  const { idsUnder } = await import('./rendering.js');
+  const { idsUnder } = await import('./scene.js');
   const seen = [];
-  const scene = {
-    drillPick: (at, limit, w, h) => {
-      seen.push({ x: at.x, y: at.y, limit, w, h });
+  const query = {
+    drillPick: (x, y, options) => {
+      seen.push({ x, y, ...options });
       return [
-        { id: 'aprs-station:W2' },
-        { id: { id: 'aprs-station:W1' } },
-        { id: 'aprs-station:W2' },
-        { id: 'mesh-node:!abc' },
-        {},
+        { set: 'aprs:stations', id: 'aprs-station:W2', surface: false },
+        { set: 'aprs:stations', id: 'aprs-station:W1', surface: false },
+        { set: 'aprs:stations', id: 'aprs-station:W2', surface: false },
+        { set: 'meshtastic:nodes', id: 'mesh-node:!abc', surface: false },
+        { set: '', id: null, surface: false },
       ];
     },
   };
-  assert.deepEqual(idsUnder(scene, 10, 20, 'aprs-station:'), ['W1', 'W2']);
-  assert.deepEqual(idsUnder(scene, 10, 20, 'mesh-node:'), ['!abc']);
+  assert.deepEqual(idsUnder(query, 10, 20, 'aprs-station:'), ['W1', 'W2']);
+  assert.deepEqual(idsUnder(query, 10, 20, 'mesh-node:'), ['!abc']);
   assert.equal(seen[0].x, 10);
-  assert.ok(seen[0].limit > 1 && seen[0].w > 1, 'reaches past the top station');
+  assert.ok(
+    seen[0].limit > 1 && seen[0].width > 1,
+    'reaches past the top station',
+  );
 });
 
-test('an icon clamped visibly under the real surface is hidden until it re-clamps', async () => {
-  const Cesium = await import('cesium');
-  const { createHorizon, isClampedOutOfPlace } = await import('./rendering.js');
-  const at = (height) => Cesium.Cartesian3.fromDegrees(-86.7402, 34.7832, height);
-  // The default view: beside the Saturn V, 11.6 km from this node.
-  const near = Cesium.Cartesian3.fromDegrees(-86.6528, 34.7075, 355);
-  const orbit = Cesium.Cartesian3.fromDegrees(-87, 35, 1_500_000);
-  const billboard = { position: at(0), _clampedPosition: undefined, show: true };
-  assert.equal(isClampedOutOfPlace(billboard, near), false, 'not clamped yet');
-  billboard._clampedPosition = at(227);
-  assert.equal(isClampedOutOfPlace(billboard, near), false, 'Huntsville ground');
-  billboard._clampedPosition = at(-410);
-  assert.equal(isClampedOutOfPlace(billboard, near), false, 'Dead Sea depth');
-  // What a coarse photoreal tile answered at page load (measured).
-  billboard._clampedPosition = at(-4941);
-  assert.equal(isClampedOutOfPlace(billboard, near), true, 'coarse-tile clamp, close up');
-  assert.equal(isClampedOutOfPlace(billboard, orbit), false, 'the same error from 1,500 km is a pixel');
+/** A surface over fake ports: draw sets, a camera at `eye`, a projecting query. */
+async function surfaceHarness({ eye, overlay = true } = {}) {
+  const { createAprsSurface } = await import('./rendering.js');
+  const { fromDegrees } = await import('../../geo/ellipsoid.js');
+  const viewer = {};
+  const preRender = new Set();
+  const projected = [];
+  const camera = eye ?? fromDegrees(-86.6, 34.7, 1_000_000);
+  const { draw } = bindFakeDraw(viewer, {
+    camera: { pose: () => ({ position: camera, lat: 34.7, lon: -86.6 }) },
+    frame: {
+      on(phase, fn) {
+        if (phase !== 'preRender') return () => {};
+        preRender.add(fn);
+        return () => preRender.delete(fn);
+      },
+      requestRender() {},
+    },
+    query: {
+      project(position) {
+        projected.push(position);
+        return { x: 12, y: 34 };
+      },
+    },
+  });
+  const labels = [];
+  const overlayHost = overlay
+    ? {
+        setEntries: (source, entries) => labels.push({ source, entries }),
+        clearSource: (source) => labels.push({ source, entries: [] }),
+        hitTest: () => null,
+      }
+    : null;
+  const surface = createAprsSurface({
+    viewer,
+    classificationType: 'terrain',
+    overlayHost,
+    // A canvas whose 2D context draws nothing.
+    createCanvas: (width, height) => ({
+      width,
+      height,
+      getContext: () => new Proxy({}, { get: () => () => {} }),
+    }),
+  });
+  return { surface, draw, labels, preRender, projected, fromDegrees };
+}
 
-  // The camera does not move: tiles alone re-clamp the icon.
-  const viewer = { camera: { positionWC: near } };
-  const horizon = createHorizon(viewer);
-  const record = { billboard, label: { show: true }, labelWanted: true, visible: true, filteredOut: false, horizonPoint: at(2000) };
-  assert.equal(horizon.update([record], true), true);
-  assert.equal(billboard.show, false);
-  assert.equal(record.label.show, false);
-  assert.equal(record.visible, false);
-  billboard._clampedPosition = at(227);
-  assert.equal(horizon.update([record], false), true);
-  assert.equal(billboard.show, true);
-  assert.equal(record.label.show, true);
-  assert.equal(horizon.update([record], false), false, 'no flip, no repaint');
+test('stations are drawn as clamped icons, tracks drape on the chosen surface', async () => {
+  const { surface, draw } = await surfaceHarness();
+  const track = [
+    { lat: 34.6, lon: -86.5, ts: 1 },
+    { lat: 34.7, lon: -86.6, ts: 2 },
+  ];
+  surface.show(
+    [station('AA1AAA'), station('BB2BBB', { lat: 34.8 })],
+    new Map([['AA1AAA', track]]),
+  );
+  const icons = draw.set('aprs:stations');
+  assert.deepEqual(
+    [...icons.items.keys()],
+    ['aprs-station:AA1AAA', 'aprs-station:BB2BBB'],
+  );
+  const icon = icons.items.get('aprs-station:AA1AAA');
+  assert.equal(icon.height, 'clampGround');
+  assert.equal(icon.disableDepthTest, Number.POSITIVE_INFINITY);
+  const tracks = draw.set('aprs:tracks');
+  assert.equal(tracks.items.get('track:AA1AAA').mode, 'draped');
+  assert.equal(tracks.items.get('track:AA1AAA').clampTo, 'terrain');
+  surface.showSelectedTrack(track);
+  surface.setClassification('tiles');
+  assert.deepEqual(
+    [...tracks.items.values()].map((item) => item.clampTo),
+    ['tiles', 'tiles'],
+    'every track, the selected one too, moves to the tiles',
+  );
+  surface.clearSelectedTrack();
+  assert.equal(tracks.items.has('selected'), false);
+  assert.equal(surface.count, 2);
+  assert.equal(surface.trackCount, 1);
+});
+
+test('labels go to the world overlay; the emphasised station wins, and none past the limit', async () => {
+  const { surface, labels } = await surfaceHarness();
+  surface.show([station('AA1AAA'), station('BB2BBB')], new Map());
+  const last = () => labels.at(-1);
+  assert.equal(last().source, 'aprs-labels');
+  assert.deepEqual(
+    last().entries.map((entry) => entry.id),
+    ['AA1AAA', 'BB2BBB'],
+  );
+  const entry = last().entries[0];
+  assert.equal(entry.variant, 'label');
+  assert.equal(entry.collisionGroup, 'ambient-label');
+  assert.equal(entry.horizonCull, true);
+  assert.equal(entry.maxDistance, 400_000);
+  surface.setEmphasis('BB2BBB');
+  const top = last().entries.find((e) => e.id === 'BB2BBB');
+  assert.ok(
+    top.priority > last().entries.find((e) => e.id === 'AA1AAA').priority,
+  );
+  surface.setLabels(false);
+  assert.deepEqual(last().entries, []);
+  surface.setLabels(true);
+  const many = Array.from({ length: 1501 }, (_, i) => station(`S${i}`));
+  surface.show(many, new Map());
+  assert.deepEqual(last().entries, [], 'too many to label');
+  surface.clear();
+  assert.deepEqual(last(), { source: 'aprs-labels', entries: [] });
+});
+
+test('a station on the far side of the planet is hidden, and has no screen position', async () => {
+  const { surface, draw, preRender } = await surfaceHarness();
+  surface.show(
+    [station('NEAR'), station('FAR', { lat: -34.7, lon: 93.4 })],
+    new Map(),
+  );
+  const icons = draw.set('aprs:stations');
+  assert.equal(icons.items.get('aprs-station:NEAR').show, true);
+  assert.equal(icons.items.get('aprs-station:FAR').show, false);
+  assert.equal(surface.recordFor('FAR').visible, false);
+  assert.equal(surface.screenPosition('FAR', 93.4, -34.7), undefined);
+  assert.deepEqual(surface.screenPosition('NEAR', -86.6, 34.7), {
+    x: 12,
+    y: 34,
+  });
+  assert.equal(
+    preRender.size,
+    1,
+    'the horizon is re-tested as the camera moves',
+  );
+  surface.clear();
+  assert.equal(preRender.size, 0);
+});
+
+test('a surface without an overlay host still draws, with no labels', async () => {
+  const { surface, draw } = await surfaceHarness({ overlay: false });
+  surface.show([station('AA1AAA')], new Map());
+  surface.setEmphasis('AA1AAA');
+  assert.equal(
+    draw.set('aprs:stations').items.get('aprs-station:AA1AAA').scale,
+    1.3,
+  );
+  surface.destroy();
+  assert.equal(draw.set('aprs:stations'), undefined);
 });

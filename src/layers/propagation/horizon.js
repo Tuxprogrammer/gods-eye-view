@@ -1,7 +1,13 @@
-import * as Cesium from 'cesium';
+import { fromDegrees } from '../../geo/ellipsoid.js';
+import { horizonFrom } from '../../geo/horizon.js';
+import { distanceSquared } from '../../geo/vector.js';
+import { findCamera, findFrame } from '../../render/rendererOf.js';
+
+/** Sub-kilometre movement cannot change what is over the horizon. */
+const MOVE_EPSILON_M = 500;
 
 /**
- * Hide overlay entities that are on the far side of the Earth.
+ * Hide overlay items that are on the far side of the Earth.
  *
  * Bubbles and labels are drawn with the depth test off so they stay legible
  * over terrain and buildings, which also means the globe no longer hides them:
@@ -9,42 +15,51 @@ import * as Cesium from 'cesium';
  * is the missing occlusion, done analytically (horizon test against the
  * ellipsoid), so it needs no depth buffer and costs a few dot products a frame.
  *
- * The test runs from the camera's position and only when it has moved, and it
- * asks for a repaint only when something actually flipped.
+ * The test runs from the camera's position (the camera port's pose) before
+ * each frame, only when the camera has moved, and it hands `onChange` the
+ * targets whose `show` it flipped (then asks for a repaint) only when
+ * something actually flipped.
  *
- * @param {{viewer: Cesium.Viewer, elevation?: number}} options `elevation` raises
- *   each test point (metres) so a station standing on the visible horizon does
- *   not flicker on and off with the terrain beneath it.
+ * @param {{viewer: object, elevation?: number,
+ *   onChange?: (flipped: object[]) => void}} options `elevation` raises each
+ *   test point (metres) so a station standing on the visible horizon does not
+ *   flicker on and off with the terrain beneath it.
  */
-export function createHorizonCuller({ viewer, elevation = 5000 }) {
-  const occluder = new Cesium.EllipsoidalOccluder(
-    Cesium.Ellipsoid.WGS84,
-    new Cesium.Cartesian3(),
-  );
-  const lastCamera = new Cesium.Cartesian3(NaN, NaN, NaN);
-  /** @type {Array<{point: Cesium.Cartesian3, entities: Cesium.Entity[]}>} */
+export function createHorizonCuller({ viewer, elevation = 5000, onChange }) {
+  let last = null;
+  /** @type {Array<{point: {x: number, y: number, z: number}, targets: object[]}>} */
   let items = [];
   let remover = null;
 
+  function eye() {
+    const position = findCamera(viewer)?.pose?.()?.position;
+    return position && Number.isFinite(position.x) ? position : null;
+  }
+
   function update(force = false) {
-    const camera = viewer.camera?.positionWC;
+    const camera = eye();
     if (!camera) return;
-    // Sub-kilometre movement cannot change what is over the horizon.
-    if (!force && Cesium.Cartesian3.equalsEpsilon(camera, lastCamera, 0, 500))
+    if (
+      !force &&
+      last &&
+      distanceSquared(camera, last) <= MOVE_EPSILON_M * MOVE_EPSILON_M
+    )
       return;
-    Cesium.Cartesian3.clone(camera, lastCamera);
-    occluder.cameraPosition = camera;
-    let flipped = false;
+    last = { x: camera.x, y: camera.y, z: camera.z };
+    const horizon = horizonFrom(camera);
+    const flipped = [];
     for (const item of items) {
-      const visible = occluder.isPointVisible(item.point);
-      for (const entity of item.entities) {
-        if (entity.show !== visible) {
-          entity.show = visible;
-          flipped = true;
+      const visible = horizon.isPointVisible(item.point);
+      for (const target of item.targets) {
+        if (target.show !== visible) {
+          target.show = visible;
+          flipped.push(target);
         }
       }
     }
-    if (flipped) viewer.scene?.requestRender?.();
+    if (!flipped.length) return;
+    onChange?.(flipped);
+    findFrame(viewer)?.requestRender('propagation-horizon');
   }
 
   function detach() {
@@ -53,16 +68,16 @@ export function createHorizonCuller({ viewer, elevation = 5000 }) {
   }
 
   return {
-    /** Replace the tracked set; each item is a surface point and its entities. */
+    /** Replace the tracked set; each item is a surface point and its targets. */
     set(next) {
-      items = next.map(({ lon, lat, entities }) => ({
-        point: Cesium.Cartesian3.fromDegrees(lon, lat, elevation),
-        entities,
+      items = next.map(({ lon, lat, targets }) => ({
+        point: fromDegrees(lon, lat, elevation),
+        targets,
       }));
-      Cesium.Cartesian3.clone(new Cesium.Cartesian3(NaN, NaN, NaN), lastCamera);
+      last = null;
       update(true);
       if (items.length && !remover)
-        remover = viewer.scene?.preRender?.addEventListener(() => update());
+        remover = findFrame(viewer)?.on('preRender', () => update()) ?? null;
       if (!items.length) detach();
     },
     clear() {

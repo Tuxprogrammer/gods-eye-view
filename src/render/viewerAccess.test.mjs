@@ -21,14 +21,8 @@ import {
   UPDATE_COMMAND,
   viewerAccessHits,
 } from '../testSupport/viewerAccess.mjs';
-import { FORK_VIEWER_ACCESS } from '../testSupport/fork.mjs';
 
-// Fork: its own record merged in, still sorted (src/testSupport/fork.mjs).
-const baseline = Object.fromEntries(
-  Object.entries({ ...readBaseline(), ...FORK_VIEWER_ACCESS }).sort(
-    ([a], [b]) => (a < b ? -1 : a > b ? 1 : 0),
-  ),
-);
+const baseline = readBaseline();
 const hits = currentHits();
 
 const describe = (file) =>

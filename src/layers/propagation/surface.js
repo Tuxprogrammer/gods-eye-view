@@ -1,25 +1,24 @@
-import * as Cesium from 'cesium';
+import { findGlobe } from '../../render/rendererOf.js';
 
 /**
- * Which surface the heatmap must be classified onto. The photoreal stack draws
- * Google 3D tiles with the Cesium globe HIDDEN, so only the 3D-tile pass
- * applies there; every other stack shows the globe, so only terrain does.
- * The boot-time stack change is silent, so the initial answer reads the scene.
- * @param {Cesium.Scene|null|undefined} scene
+ * What the heatmap and its rings are draped onto (a draw item's `clampTo`).
+ * The photoreal stack draws Google 3D tiles with the globe HIDDEN, so only the
+ * tiles apply there; every other stack shows the globe, so only terrain does.
+ * The boot-time stack change is silent, so the initial answer asks the globe
+ * port whether the globe is shown (`globeVisibility`); a renderer that cannot
+ * say gets both.
+ * @param {object|null|undefined} viewer The scene object.
  * @param {string|null|undefined} activeId MapStackController stack id, if known.
+ * @returns {'tiles'|'terrain'|'both'}
  */
-export function heatmapClassificationType(scene, activeId) {
-  if (activeId === 'photoreal') return Cesium.ClassificationType.CESIUM_3D_TILE;
-  if (!scene?.globe) return Cesium.ClassificationType.BOTH;
-  return scene.globe.show === false
-    ? Cesium.ClassificationType.CESIUM_3D_TILE
-    : Cesium.ClassificationType.TERRAIN;
+export function heatmapClassificationType(viewer, activeId) {
+  if (activeId === 'photoreal') return 'tiles';
+  const visible = viewer ? findGlobe(viewer)?.isGlobeVisible?.() : undefined;
+  if (typeof visible !== 'boolean') return 'both';
+  return visible ? 'terrain' : 'tiles';
 }
 
-/** Whether this classification lands on 3D tiles (so tile detail matters). */
+/** Whether this target lands on 3D tiles. */
 export function classificationUsesTiles(type) {
-  return (
-    type === Cesium.ClassificationType.CESIUM_3D_TILE ||
-    type === Cesium.ClassificationType.BOTH
-  );
+  return type === 'tiles' || type === 'both';
 }

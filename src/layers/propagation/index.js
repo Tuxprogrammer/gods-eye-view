@@ -19,21 +19,15 @@ import {
   prepareHeatmap,
 } from './rendering.js';
 import { createStationInteraction as defaultStationInteraction } from './stationInteraction.js';
-import {
-  classificationUsesTiles,
-  heatmapClassificationType,
-} from './surface.js';
-import {
-  HEATMAP_TILESET_ENGAGE_HEIGHT_M,
-  HEATMAP_TILESET_RELEASE_HEIGHT_M,
-  createTilesetQualityGuard,
-} from './tilesetQuality.js';
+import { heatmapClassificationType } from './surface.js';
 export * from './model.js';
 export { createPropagationSource } from './source.js';
 
 /**
  * One HF propagation heatmap draped on the surface, selectable between maps,
  * with optional contour rings and measured-station bubbles for the active map.
+ * The rings' levels and the bubbles' readings are printed through the world
+ * overlay (`overlayHost`); without one they are drawn unlabelled.
  *
  * Demand-driven: nothing is requested while the layer is off, and a periodic
  * refresh is skipped while the page is hidden (one catch-up fetch runs when it
@@ -42,6 +36,7 @@ export { createPropagationSource } from './source.js';
  */
 export function createPropagationLayer({
   source,
+  overlayHost = null,
   mapStackEventTarget = null,
   visibilityTarget = typeof document !== 'undefined' ? document : null,
   now = Date.now,
@@ -50,7 +45,6 @@ export function createPropagationLayer({
   createContourSurface = defaultContourSurface,
   createStationSurface = defaultStationSurface,
   createStationInteraction = defaultStationInteraction,
-  createQualityGuard = createTilesetQualityGuard,
 } = {}) {
   if (typeof source?.getMap !== 'function')
     throw new TypeError('Propagation requires a map source');
@@ -60,9 +54,6 @@ export function createPropagationLayer({
   let _contourSurface = null;
   let _stationSurface = null;
   let _stationInteraction = null;
-  let _quality = null;
-  let _classification = null;
-  let _cameraRemovers = [];
   let _enabled = false;
   let _activeField = DEFAULT_PROPAGATION_FIELD;
   const _opacity = new Map();
@@ -316,26 +307,7 @@ export function createPropagationLayer({
     notify();
   }
 
-  /**
-   * Photoreal classification needs fine tiles, but only from high up; globe
-   * stacks never do. Called on enable, stack change and camera movement.
-   */
-  function syncTileQuality() {
-    if (!_quality) return;
-    const height = _viewer?.camera?.positionCartographic?.height;
-    const limit = _quality.active
-      ? HEATMAP_TILESET_RELEASE_HEIGHT_M
-      : HEATMAP_TILESET_ENGAGE_HEIGHT_M;
-    const tighten =
-      _enabled &&
-      classificationUsesTiles(_classification) &&
-      (Number.isFinite(height) ? height >= limit : true);
-    if (tighten) _quality.apply();
-    else _quality.restore();
-  }
-
   function releaseListeners() {
-    for (const remove of _cameraRemovers.splice(0)) remove();
     if (_stackListener) {
       mapStackEventTarget?.removeEventListener?.(
         'gev:map-stack-changed',
@@ -385,21 +357,19 @@ export function createPropagationLayer({
     init(viewer) {
       if (_viewer) throw new Error('Propagation layer is already initialized');
       _viewer = viewer;
-      _surface = createSurface({
-        viewer,
-        classificationType: heatmapClassificationType(viewer.scene),
-      });
+      const classificationType = heatmapClassificationType(viewer);
+      _surface = createSurface({ viewer, classificationType });
       _contourSurface = createContourSurface({
         viewer,
-        classificationType: heatmapClassificationType(viewer.scene),
+        classificationType,
+        overlayHost,
       });
-      _stationSurface = createStationSurface({ viewer });
+      _stationSurface = createStationSurface({ viewer, overlayHost });
       _stationInteraction = createStationInteraction({
         viewer,
         surface: _stationSurface,
         now,
       });
-      _quality = createQualityGuard({ scene: viewer.scene });
       _enabled = false;
       console.log('[Data:Propagation] Initialized');
     },
@@ -407,23 +377,14 @@ export function createPropagationLayer({
     enable() {
       _enabled = true;
       _lastError = null;
-      _classification = heatmapClassificationType(_viewer?.scene);
-      if (_viewer?.camera && !_cameraRemovers.length) {
-        for (const event of [_viewer.camera.changed, _viewer.camera.moveEnd])
-          if (event?.addEventListener)
-            _cameraRemovers.push(event.addEventListener(syncTileQuality));
-      }
-      syncTileQuality();
       if (mapStackEventTarget && !_stackListener) {
         _stackListener = (event) => {
-          const type = heatmapClassificationType(
-            _viewer?.scene,
+          const next = heatmapClassificationType(
+            _viewer,
             event?.detail?.activeId,
           );
-          _classification = type;
-          _surface?.setClassification(type);
-          _contourSurface?.setClassification(type);
-          syncTileQuality();
+          _surface?.setClassification(next);
+          _contourSurface?.setClassification(next);
         };
         mapStackEventTarget.addEventListener(
           'gev:map-stack-changed',
@@ -446,7 +407,6 @@ export function createPropagationLayer({
 
     disable() {
       _enabled = false;
-      _quality?.restore();
       releaseListeners();
       release();
       _lastError = null;
@@ -467,8 +427,6 @@ export function createPropagationLayer({
 
     destroy() {
       _enabled = false;
-      _quality?.restore();
-      _quality = null;
       releaseListeners();
       release();
       _prepared.clear();

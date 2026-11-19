@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { bindRenderer } from '../../render/rendererOf.js';
 import { createStationInteraction } from './interaction.js';
 
 /** The smallest element the interaction touches. */
@@ -75,18 +76,18 @@ function harness({ ui }) {
   doc.createElement = (tag) => new FakeElement(tag);
   doc.documentElement = { dataset: ui ? { ui } : {} };
   const moveStart = new Set();
-  const viewer = {
-    container,
+  const viewer = { container };
+  bindRenderer(viewer, {
+    canvas,
     camera: {
-      moveStart: {
-        addEventListener(fn) {
-          moveStart.add(fn);
-          return () => moveStart.delete(fn);
-        },
+      on(event, fn) {
+        if (event !== 'moveStart') return () => {};
+        moveStart.add(fn);
+        return () => moveStart.delete(fn);
       },
     },
-    scene: { canvas, postRender: { addEventListener: () => () => {} } },
-  };
+    frame: { on: () => () => {} },
+  });
   const hits = new Map(); // "x,y" -> station id
   const surface = {
     idAt: (x, y) => hits.get(`${x},${y}`) ?? null,

@@ -9,7 +9,8 @@ import {
 import {
   DRILL_SLOP_PX,
   PICK_SLOP_PX,
-  installPickSlop,
+  touchDrillWindow,
+  touchPickWindow,
 } from './cards-slop.js';
 
 test('stepIndex wraps both ways and tolerates a missing current index', () => {
@@ -60,42 +61,31 @@ test('a pin finishes as Place pin after one tap', () => {
 test('parseVesselReadout drops the placeholder and splits title from detail', () => {
   assert.equal(parseVesselReadout('AIS: --'), null);
   assert.equal(parseVesselReadout(''), null);
-  assert.deepEqual(parseVesselReadout('AIS: EVER GIVEN\nCARGO  SPD: 12 kn\nMMSI: 1'), {
-    title: 'EVER GIVEN',
-    lines: ['CARGO  SPD: 12 kn', 'MMSI: 1'],
-  });
+  assert.deepEqual(
+    parseVesselReadout('AIS: EVER GIVEN\nCARGO  SPD: 12 kn\nMMSI: 1'),
+    {
+      title: 'EVER GIVEN',
+      lines: ['CARGO  SPD: 12 kn', 'MMSI: 1'],
+    },
+  );
 });
 
-test('installPickSlop widens defaults, respects explicit sizes, and reverts', () => {
-  const calls = [];
-  class Scene {
-    pick(pos, w, h) {
-      calls.push(['pick', w, h]);
-    }
-    drillPick(pos, limit, w, h) {
-      calls.push(['drill', w, h]);
-    }
-  }
-  const original = Scene.prototype.pick;
-  const undo = installPickSlop(Scene);
-  const scene = new Scene();
-  scene.pick({});
-  scene.pick({}, 14, 14);
-  scene.drillPick({}, 5);
-  scene.drillPick({}, 5, 6, 6);
-  scene.drillPick({}, 5, 40, 40);
-  assert.deepEqual(calls, [
-    ['pick', PICK_SLOP_PX, PICK_SLOP_PX],
-    ['pick', 14, 14],
-    ['drill', DRILL_SLOP_PX, DRILL_SLOP_PX],
-    ['drill', DRILL_SLOP_PX, DRILL_SLOP_PX],
-    ['drill', 40, 40],
-  ]);
-  // Installing twice does not stack wrappers.
-  const undoAgain = installPickSlop(Scene);
-  undoAgain();
-  scene.pick({});
-  assert.equal(calls.at(-1)[1], PICK_SLOP_PX);
-  undo();
-  assert.equal(Scene.prototype.pick, original);
+test('touch pick windows are wide in the mobile UI and the default elsewhere', () => {
+  assert.deepEqual(touchPickWindow({ mobile: true }), {
+    width: PICK_SLOP_PX,
+    height: PICK_SLOP_PX,
+  });
+  assert.equal(touchPickWindow({ mobile: false }), undefined);
+  assert.deepEqual(touchDrillWindow(6, { mobile: true }), {
+    width: DRILL_SLOP_PX,
+    height: DRILL_SLOP_PX,
+  });
+  assert.deepEqual(touchDrillWindow(6, { mobile: false }), {
+    width: 6,
+    height: 6,
+  });
+  assert.deepEqual(touchDrillWindow(40, { mobile: true }), {
+    width: 40,
+    height: 40,
+  });
 });

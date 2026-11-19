@@ -1,5 +1,6 @@
-import * as Cesium from 'cesium';
-import { billboardClampedPosition } from '../../render/cesium/internals.js';
+import { fromDegrees } from '../../geo/ellipsoid.js';
+import { hexColor } from '../../render/color.js';
+import { drawOf, findFrame, findQuery } from '../../render/rendererOf.js';
 import {
   CATEGORY_COLORS,
   CLAMP_STATION_LIMIT,
@@ -10,41 +11,28 @@ import {
   symbolCell,
   symbolFor,
 } from './model.js';
+import {
+  createHorizon,
+  documentCanvas,
+  idAt,
+  idsUnder,
+  labelIdAt,
+  stationLabelEntry,
+} from './scene.js';
 
 export const STATION_ID_PREFIX = 'aprs-station:';
+export const APRS_LABEL_SOURCE_ID = 'aprs-labels';
+export { touchUi } from './scene.js';
 
-/** The mobile UI mode; labels are only pickable there. */
-export function touchUi() {
-  return globalThis.document?.documentElement?.dataset?.ui === 'mobile';
-}
-/** A click reaches this many stations deep, within this many pixels. */
-const STACK_LIMIT = 24;
-const STACK_PICK_PX = 6;
-
-/**
- * Every station whose billboard id starts with `prefix` under a canvas point,
- * prefix removed. The pick order shifts with draw order, so they come back
- * sorted by id: clicking a stack walks it in a fixed order.
- */
-export function idsUnder(scene, x, y, prefix) {
-  const picked = scene.drillPick(
-    new Cesium.Cartesian2(x, y),
-    STACK_LIMIT,
-    STACK_PICK_PX,
-    STACK_PICK_PX,
-  );
-  const ids = new Set();
-  for (const item of picked) {
-    const id = typeof item?.id === 'string' ? item.id : item?.id?.id;
-    if (typeof id === 'string' && id.startsWith(prefix))
-      ids.add(id.slice(prefix.length));
-  }
-  return [...ids].sort();
-}
 /** Labels drop out beyond this camera distance (metres). */
 const LABEL_RANGE_M = 400_000;
 /** Icons shrink a little with distance so a continent stays readable. */
-const ICON_SCALE_BY_DISTANCE = new Cesium.NearFarScalar(2e5, 1, 1.2e7, 0.45);
+const ICON_SCALE_BY_DISTANCE = Object.freeze({
+  near: 2e5,
+  nearValue: 1,
+  far: 1.2e7,
+  farValue: 0.45,
+});
 /**
  * Horizon test points sit this far above the surface, so a station standing on
  * the visible limb does not flicker with the terrain beneath it.
@@ -54,8 +42,11 @@ const ICON_SIZE = 44;
 /** The symbol picture inside the badge. */
 const SPRITE_SIZE = 32;
 const TRACK_WIDTH = 3;
-const SELECTED_TRACK_COLOR = Cesium.Color.fromCssColorString('#ffe45c');
-const LABEL_FONT = 'bold 12px Inter, sans-serif';
+const SELECTED_TRACK_COLOR = hexColor('#ffe45c');
+const LABEL_SOURCE_OPTIONS = Object.freeze({
+  cohortLimit: LABEL_STATION_LIMIT,
+  moving: false,
+});
 
 const iconCache = new Map();
 
@@ -102,17 +93,16 @@ function whenSymbolSheets(onReady) {
  * aprs.fi picture when the sheets are loaded, otherwise a drawn glyph. Cached
  * by look.
  */
-function iconFor(symbol, cell, color) {
+function iconFor(symbol, cell, color, createCanvas) {
   const sprite = cell && symbolSheets.state === 'ready';
   const key = sprite
     ? `s|${cell.sheet}|${cell.col}|${cell.row}|${cell.overlay?.col}|${cell.overlay?.row}|${color}`
     : `g|${symbol.glyph}|${color}`;
   let canvas = iconCache.get(key);
   if (canvas) return { key, canvas };
-  canvas = document.createElement('canvas');
-  canvas.width = ICON_SIZE;
-  canvas.height = ICON_SIZE;
-  const ctx = canvas.getContext('2d');
+  canvas = createCanvas(ICON_SIZE, ICON_SIZE);
+  const ctx = canvas?.getContext?.('2d');
+  if (!ctx) return null;
   const c = ICON_SIZE / 2;
   ctx.beginPath();
   ctx.arc(c, c, c - 3, 0, Math.PI * 2);
@@ -150,210 +140,139 @@ function iconFor(symbol, cell, color) {
   return { key, canvas };
 }
 
-/**
- * Lowest height (metres above the ellipsoid) any real surface reaches: the
- * Dead Sea shore is about -410 m and the sea surface dips to about -106 m.
- */
-const LOWEST_SURFACE_M = -500;
+/** Packed ECEF positions of a `{lon, lat}` point list, on the ellipsoid. */
+const trackPositions = (points) => points.map((p) => fromDegrees(p.lon, p.lat));
 
 /**
- * A clamp error this fraction of the camera distance (about 25 px on a desktop
- * screen) or less leaves the icon where it belongs, near enough.
- */
-const CLAMP_ERROR_PER_DISTANCE = 0.02;
-
-/**
- * Whether a ground-clamped billboard sits visibly out of place, clamped under
- * any real surface.
+ * The stations, their tracks, and the selected station's 24 h track, drawn
+ * through the renderer's draw port; station labels go to the world-overlay
+ * host (`overlayHost`), when there is one.
  *
- * Cesium clamps to whatever photoreal tile is loaded there, and a coarse
- * ancestor tile's flat facets can sit kilometres under the true ground
- * (measured: -4,941 m at a node 11 km from Huntsville's rocket park, -73 km at
- * others in a 150 km-high view). Off-screen ground never refines, so such a
- * clamp can stand until the camera moves. With the depth test off, that node is
- * drawn mid-screen over whatever is in the foreground, and the error is
- * depth / distance, so the same 5 km is invisible from orbit. Cesium's private
- * clamp result is read through render/cesium/internals.js. Positions sit at height 0, so the clamp
- * moved straight along the normal and its length is the depth.
+ * A whole-Earth view can hold thousands of stations, so each change writes
+ * only the items it touched.
  */
-export function isClampedOutOfPlace(billboard, camera) {
-  const clamped = billboardClampedPosition(billboard);
-  if (!clamped) return false;
-  const anchor = billboard.position;
-  if (
-    Cesium.Cartesian3.magnitudeSquared(clamped) >=
-    Cesium.Cartesian3.magnitudeSquared(anchor)
-  )
-    return false;
-  const depthSquared = Cesium.Cartesian3.distanceSquared(clamped, anchor);
-  return (
-    depthSquared > LOWEST_SURFACE_M ** 2 &&
-    depthSquared >
-      CLAMP_ERROR_PER_DISTANCE ** 2 *
-        Cesium.Cartesian3.distanceSquared(camera, anchor)
-  );
-}
-
-/**
- * Hide anything on the far side of the planet, or clamped far under it.
- *
- * Icons are drawn with the depth test off so they stay legible over terrain
- * and buildings, which also means the globe no longer hides them: a station in
- * Australia would show through the Earth when looking at Europe. This is that
- * missing occlusion, done analytically against the ellipsoid, so it needs no
- * depth buffer. It runs from the camera position, only when it has moved. The
- * clamp check runs every frame, since tiles re-clamp without the camera moving.
- */
-export function createHorizon(viewer) {
-  const occluder = new Cesium.EllipsoidalOccluder(
-    Cesium.Ellipsoid.WGS84,
-    new Cesium.Cartesian3(),
-  );
-  const last = new Cesium.Cartesian3(NaN, NaN, NaN);
-  return {
-    /** Re-test `records`; returns true when any visibility flipped. */
-    update(records, force) {
-      const camera = viewer.camera?.positionWC;
-      if (!camera) return false;
-      // Sub-kilometre movement cannot change what is over the horizon.
-      const moved =
-        force || !Cesium.Cartesian3.equalsEpsilon(camera, last, 0, 500);
-      if (moved) {
-        Cesium.Cartesian3.clone(camera, last);
-        occluder.cameraPosition = camera;
-      }
-      let flipped = false;
-      for (const record of records) {
-        if (moved)
-          record.overHorizon = !occluder.isPointVisible(record.horizonPoint);
-        const visible =
-          !record.overHorizon && !isClampedOutOfPlace(record.billboard, camera);
-        if (visible === record.visible) continue;
-        record.visible = visible;
-        flipped = true;
-        record.billboard.show = visible && !record.filteredOut;
-        if (record.label) record.label.show = visible && record.labelWanted;
-      }
-      return flipped;
-    },
-    isPointVisible(point) {
-      const camera = viewer.camera?.positionWC;
-      if (!camera) return true;
-      occluder.cameraPosition = camera;
-      return occluder.isPointVisible(point);
-    },
-    invalidate() {
-      Cesium.Cartesian3.clone(new Cesium.Cartesian3(NaN, NaN, NaN), last);
-    },
-  };
-}
-
-/**
- * The stations, their tracks, and the selected station's 24 h track.
- *
- * Stations are primitive billboards and labels rather than entities: a
- * whole-Earth view can hold thousands, and a collection updates in place.
- */
-export function createAprsSurface({ viewer, classificationType }) {
-  const scene = viewer.scene;
-  const billboards = scene.primitives.add(
-    new Cesium.BillboardCollection({ scene }),
-  );
-  const labels = scene.primitives.add(new Cesium.LabelCollection({ scene }));
-  const trackSource = new Cesium.CustomDataSource('aprs-tracks');
-  viewer.dataSources.add(trackSource);
+export function createAprsSurface({
+  viewer,
+  classificationType = 'both',
+  overlayHost = null,
+  createCanvas = documentCanvas,
+}) {
+  const draw = drawOf(viewer);
+  const icons = draw.icons({ id: 'aprs:stations', show: true });
+  const tracks = draw.lines({
+    id: 'aprs:tracks',
+    pickable: false,
+    show: true,
+  });
   const horizon = createHorizon(viewer);
   /** @type {Map<string, object>} station id -> render record */
   let records = new Map();
-  /** @type {Map<string, {signature: string, entity: Cesium.Entity}>} */
-  let trackEntities = new Map();
-  let selectedTrack = null;
+  /** @type {Map<string, string>} station id -> drawn track signature */
+  let trackSignatures = new Map();
+  /** @type {Map<string, object>} line id -> line item, for re-clamping */
+  let trackItems = new Map();
+  let selectedTrack = false;
   let emphasised = null;
   let type = classificationType;
   let showLabels = true;
+  let clamp = true;
   let remover = null;
-  const render = () => scene.requestRender?.();
+  let destroyed = false;
+  const render = () => findFrame(viewer)?.requestRender('aprs');
   // Once the aprs.fi sheets arrive, restyle what is already drawn.
   whenSymbolSheets(() => {
-    const clamp = records.size <= CLAMP_STATION_LIMIT;
-    for (const record of records.values())
-      styleRecord(record, record.station, clamp);
+    if (destroyed) return;
+    for (const record of records.values()) styleRecord(record);
+    icons.upsert([...records.values()].map(iconItem));
     render();
   });
 
-  const heightReference = (clamp) =>
-    clamp
-      ? Cesium.HeightReference.CLAMP_TO_GROUND
-      : Cesium.HeightReference.NONE;
-
-  function styleRecord(record, station, clamp) {
+  function styleRecord(record) {
+    const { station } = record;
     const category = stationCategory(station);
     const color = CATEGORY_COLORS[category] ?? CATEGORY_COLORS.fixed;
-    const symbol = symbolFor(station.symTable, station.symCode);
-    const { key, canvas } = iconFor(
-      symbol,
+    record.icon = iconFor(
+      symbolFor(station.symTable, station.symCode),
       symbolCell(station.symTable, station.symCode),
       color,
+      createCanvas,
     );
-    if (record.iconKey !== key) {
-      record.billboard.setImage(key, canvas);
-      record.iconKey = key;
-    }
-    record.billboard.heightReference = heightReference(clamp);
     record.category = category;
+    record.color = color;
+  }
+
+  function iconItem(record) {
+    const { station } = record;
+    return {
+      id: `${STATION_ID_PREFIX}${station.id}`,
+      pos: record.position,
+      image: record.icon
+        ? { canvas: record.icon.canvas, key: record.icon.key }
+        : '',
+      size: [ICON_SIZE, ICON_SIZE],
+      anchor: 'center',
+      height: clamp ? 'clampGround' : 'absolute',
+      disableDepthTest: Number.POSITIVE_INFINITY,
+      scaleByDistance: ICON_SCALE_BY_DISTANCE,
+      scale: station.id === emphasised ? 1.3 : 1,
+      show: record.visible && Boolean(record.icon),
+    };
+  }
+
+  /** Station labels, one overlay entry each, while few enough are drawn. */
+  function publishLabels() {
+    if (!overlayHost) return;
     const wanted = showLabels && records.size <= LABEL_STATION_LIMIT;
-    record.labelWanted = wanted;
-    if (wanted) {
-      if (!record.label) {
-        record.label = labels.add({
-          // On touch a label is a tap target too (mobile only; desktop hover
-          // and click keep picking the icon alone).
-          id: touchUi() ? `${STATION_ID_PREFIX}${station.id}` : undefined,
-          text: stationLabel(station),
-          font: LABEL_FONT,
-          fillColor: Cesium.Color.WHITE,
-          outlineColor: Cesium.Color.BLACK.withAlpha(0.95),
-          outlineWidth: 4,
-          style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-          pixelOffset: new Cesium.Cartesian2(0, -ICON_SIZE * 0.62),
-          verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-          disableDepthTestDistance: Number.POSITIVE_INFINITY,
-          distanceDisplayCondition: new Cesium.DistanceDisplayCondition(
-            0,
-            LABEL_RANGE_M,
-          ),
-          position: record.billboard.position,
-        });
-      }
-      record.label.heightReference = heightReference(clamp);
-      record.label.show = record.visible && wanted;
-    } else if (record.label) {
-      labels.remove(record.label);
-      record.label = null;
-    }
-  }
-
-  function applyEmphasis() {
-    for (const [id, record] of records)
-      record.billboard.scale = id === emphasised ? 1.3 : 1;
-  }
-
-  function trackSignature(points) {
-    const last = points[points.length - 1];
-    return `${points.length}:${last.ts}`;
+    const entries = wanted
+      ? [...records.values()].map((record) =>
+          stationLabelEntry({
+            id: record.station.id,
+            position: record.position,
+            title: stationLabel(record.station),
+            accent: record.color,
+            emphasised: record.station.id === emphasised,
+            iconPx: ICON_SIZE,
+            maxDistance: LABEL_RANGE_M,
+          }),
+        )
+      : [];
+    overlayHost.setEntries(APRS_LABEL_SOURCE_ID, entries, LABEL_SOURCE_OPTIONS);
   }
 
   function trackColor(category) {
-    return Cesium.Color.fromCssColorString(
-      CATEGORY_COLORS[category] ?? CATEGORY_COLORS.mobile,
-    ).withAlpha(0.85);
+    return hexColor(CATEGORY_COLORS[category] ?? CATEGORY_COLORS.mobile, 0.85);
+  }
+
+  function trackLine(id, points, color, widthPx) {
+    return {
+      id,
+      positions: trackPositions(points),
+      widthPx,
+      mode: 'draped',
+      clampTo: type,
+      style: { kind: 'solid', color },
+    };
+  }
+
+  function putTracks(items) {
+    for (const item of items) trackItems.set(item.id, item);
+    if (items.length) tracks.upsert(items);
+  }
+
+  function dropTracks(ids) {
+    for (const id of ids) trackItems.delete(id);
+    if (ids.length) tracks.remove(ids);
   }
 
   function ensureHorizonListener() {
     if (remover || !records.size) return;
-    remover = scene.preRender?.addEventListener(() => {
-      if (horizon.update(records.values(), false)) render();
-    });
+    remover =
+      findFrame(viewer)?.on('preRender', () => {
+        const flipped = horizon.update(records.values(), false);
+        if (!flipped.length) return;
+        icons.upsert(flipped.map(iconItem));
+        render();
+      }) ?? null;
   }
 
   return {
@@ -361,175 +280,139 @@ export function createAprsSurface({ viewer, classificationType }) {
      * Reconcile the drawn stations with `stations` (already filtered by the
      * server): add, move and restyle changed ones, drop the rest.
      * @param {object[]} stations
-     * @param {Map<string, object[]>} tracks
+     * @param {Map<string, object[]>} stationTracks
      */
-    show(stations, tracks) {
-      const clamp = stations.length <= CLAMP_STATION_LIMIT;
+    show(stations, stationTracks) {
+      clamp = stations.length <= CLAMP_STATION_LIMIT;
       const next = new Map();
-      // Size first: the label limit depends on how many stations are drawn.
       for (const station of stations) {
         let record = records.get(station.id);
-        const position = Cesium.Cartesian3.fromDegrees(
-          station.lon,
-          station.lat,
-        );
-        if (!record) {
+        if (
+          !record ||
+          record.station.lat !== station.lat ||
+          record.station.lon !== station.lon
+        ) {
           record = {
-            station,
-            billboard: billboards.add({
-              id: `${STATION_ID_PREFIX}${station.id}`,
-              position,
-              verticalOrigin: Cesium.VerticalOrigin.CENTER,
-              disableDepthTestDistance: Number.POSITIVE_INFINITY,
-              scaleByDistance: ICON_SCALE_BY_DISTANCE,
-            }),
-            label: null,
-            iconKey: null,
-            visible: true,
-            filteredOut: false,
-            labelWanted: false,
-            horizonPoint: Cesium.Cartesian3.fromDegrees(
+            ...record,
+            position: fromDegrees(station.lon, station.lat),
+            horizonPoint: fromDegrees(
               station.lon,
               station.lat,
               HORIZON_ELEVATION_M,
             ),
-            category: 'fixed',
+            visible: record?.visible ?? true,
           };
-        } else if (
-          record.station.lat !== station.lat ||
-          record.station.lon !== station.lon
-        ) {
-          record.billboard.position = position;
-          if (record.label) record.label.position = position;
-          record.horizonPoint = Cesium.Cartesian3.fromDegrees(
-            station.lon,
-            station.lat,
-            HORIZON_ELEVATION_M,
-          );
         }
         record.station = station;
+        styleRecord(record);
         next.set(station.id, record);
       }
-      for (const [id, record] of records) {
-        if (next.has(id)) continue;
-        billboards.remove(record.billboard);
-        if (record.label) labels.remove(record.label);
-      }
       records = next;
-      for (const record of records.values())
-        styleRecord(record, record.station, clamp);
-      applyEmphasis();
       horizon.invalidate();
       horizon.update(records.values(), true);
+      icons.set([...records.values()].map(iconItem));
+      publishLabels();
       ensureHorizonListener();
-      this.showTracks(tracks);
+      this.showTracks(stationTracks);
       render();
     },
 
     /** Draw each station's recent track, replacing only tracks that changed. */
-    showTracks(tracks) {
+    showTracks(stationTracks) {
       const wanted = new Map(
-        [...(tracks ?? new Map())].filter(([id]) => records.has(id)),
+        [...(stationTracks ?? new Map())].filter(([id]) => records.has(id)),
       );
-      for (const [id, held] of trackEntities) {
+      const gone = [];
+      for (const id of trackSignatures.keys()) {
         if (wanted.has(id)) continue;
-        trackSource.entities.remove(held.entity);
-        trackEntities.delete(id);
+        trackSignatures.delete(id);
+        gone.push(`track:${id}`);
       }
+      dropTracks(gone);
+      const changed = [];
       for (const [id, points] of wanted) {
         const signature = trackSignature(points);
-        const held = trackEntities.get(id);
-        if (held?.signature === signature) continue;
-        if (held) trackSource.entities.remove(held.entity);
-        const entity = trackSource.entities.add({
-          polyline: {
-            positions: Cesium.Cartesian3.fromDegreesArray(
-              points.flatMap((p) => [p.lon, p.lat]),
-            ),
-            width: TRACK_WIDTH,
-            material: trackColor(records.get(id)?.category),
-            clampToGround: true,
-            classificationType: type,
-          },
-        });
-        trackEntities.set(id, { signature, entity });
+        if (trackSignatures.get(id) === signature) continue;
+        trackSignatures.set(id, signature);
+        changed.push(
+          trackLine(
+            `track:${id}`,
+            points,
+            trackColor(records.get(id)?.category),
+            TRACK_WIDTH,
+          ),
+        );
       }
+      putTracks(changed);
     },
 
     /** One station's full 24 h track, highlighted, until cleared. */
     showSelectedTrack(points) {
       this.clearSelectedTrack();
       if (!points || points.length < 2) return;
-      selectedTrack = trackSource.entities.add({
-        polyline: {
-          positions: Cesium.Cartesian3.fromDegreesArray(
-            points.flatMap((p) => [p.lon, p.lat]),
-          ),
-          width: TRACK_WIDTH + 2,
-          material: SELECTED_TRACK_COLOR,
-          clampToGround: true,
-          classificationType: type,
-        },
-      });
+      putTracks([
+        trackLine('selected', points, SELECTED_TRACK_COLOR, TRACK_WIDTH + 2),
+      ]);
+      selectedTrack = true;
       render();
     },
     clearSelectedTrack() {
       if (!selectedTrack) return;
-      trackSource.entities.remove(selectedTrack);
-      selectedTrack = null;
+      dropTracks(['selected']);
+      selectedTrack = false;
       render();
     },
 
     setLabels(on) {
       showLabels = Boolean(on);
-      const clamp = records.size <= CLAMP_STATION_LIMIT;
-      for (const record of records.values())
-        styleRecord(record, record.station, clamp);
-      horizon.invalidate();
-      horizon.update(records.values(), true);
+      publishLabels();
       render();
     },
 
+    /** What the tracks drape on: `'terrain'`, `'tiles'` or `'both'`. */
     setClassification(next) {
       if (next === undefined || next === type) return;
       type = next;
-      for (const held of trackEntities.values())
-        held.entity.polyline.classificationType = next;
-      if (selectedTrack) selectedTrack.polyline.classificationType = next;
+      putTracks(
+        [...trackItems.values()].map((item) => ({ ...item, clampTo: next })),
+      );
       render();
     },
 
     /** Grow the hovered/pinned station's icon. */
     setEmphasis(id) {
       if (emphasised === id) return;
+      const changed = [emphasised, id]
+        .map((key) => (key === null ? null : records.get(key)))
+        .filter(Boolean);
       emphasised = id;
-      applyEmphasis();
+      if (changed.length) icons.upsert(changed.map(iconItem));
+      publishLabels();
       render();
     },
 
     /** Station id under a canvas point, or null. */
     idAt(x, y) {
-      const picked = scene.pick(new Cesium.Cartesian2(x, y));
-      const id = picked?.id;
-      const text = typeof id === 'string' ? id : (id?.id ?? null);
-      return typeof text === 'string' && text.startsWith(STATION_ID_PREFIX)
-        ? text.slice(STATION_ID_PREFIX.length)
-        : null;
+      return (
+        labelIdAt(overlayHost, APRS_LABEL_SOURCE_ID, x, y) ??
+        idAt(findQuery(viewer), x, y, STATION_ID_PREFIX)
+      );
     },
 
     /** Every station under a canvas point, in a fixed order, for cycling a stack. */
     idsAt(x, y) {
-      return idsUnder(scene, x, y, STATION_ID_PREFIX);
+      const ids = idsUnder(findQuery(viewer), x, y, STATION_ID_PREFIX);
+      const label = labelIdAt(overlayHost, APRS_LABEL_SOURCE_ID, x, y);
+      return label === null || ids.includes(label)
+        ? ids
+        : [...ids, label].sort();
     },
 
     /** The record for a drawn station: its data and whether it is on screen. */
     recordFor(id) {
       const record = records.get(id);
       if (!record) return null;
-      return {
-        station: record.station,
-        visible: record.visible && record.billboard.show !== false,
-      };
+      return { station: record.station, visible: record.visible };
     },
 
     /**
@@ -539,32 +422,24 @@ export function createAprsSurface({ viewer, classificationType }) {
     screenPosition(id, lon, lat) {
       const record = id ? records.get(id) : null;
       if (record && !record.visible) return undefined;
-      if (!record) {
-        const point = Cesium.Cartesian3.fromDegrees(
-          lon,
-          lat,
-          HORIZON_ELEVATION_M,
-        );
-        if (!horizon.isPointVisible(point)) return undefined;
-      }
-      const position = record
-        ? record.billboard.computeScreenSpacePosition?.(scene)
-        : scene.cartesianToCanvasCoordinates(
-            Cesium.Cartesian3.fromDegrees(lon, lat),
-          );
-      return position ?? undefined;
+      if (
+        !record &&
+        !horizon.isPointVisible(fromDegrees(lon, lat, HORIZON_ELEVATION_M))
+      )
+        return undefined;
+      const position = record ? record.position : fromDegrees(lon, lat);
+      return findQuery(viewer)?.project(position) ?? undefined;
     },
 
     clear() {
-      for (const record of records.values()) {
-        billboards.remove(record.billboard);
-        if (record.label) labels.remove(record.label);
-      }
       records = new Map();
-      trackSource.entities.removeAll();
-      trackEntities = new Map();
-      selectedTrack = null;
+      icons.clear();
+      tracks.clear();
+      trackSignatures = new Map();
+      trackItems = new Map();
+      selectedTrack = false;
       emphasised = null;
+      overlayHost?.clearSource?.(APRS_LABEL_SOURCE_ID);
       remover?.();
       remover = null;
       render();
@@ -581,14 +456,19 @@ export function createAprsSurface({ viewer, classificationType }) {
       return records.size;
     },
     get trackCount() {
-      return trackEntities.size;
+      return trackSignatures.size;
     },
 
     destroy() {
+      destroyed = true;
       this.clear();
-      scene.primitives.remove(billboards);
-      scene.primitives.remove(labels);
-      viewer.dataSources.remove(trackSource, true);
+      icons.dispose();
+      tracks.dispose();
     },
   };
+}
+
+function trackSignature(points) {
+  const last = points[points.length - 1];
+  return `${points.length}:${last.ts}`;
 }

@@ -1,5 +1,6 @@
 import { t } from '../../i18n/index.js';
-import * as Cesium from 'cesium';
+import { canvasOf, findFrame, findQuery } from '../../render/rendererOf.js';
+import { touchPickWindow } from '../../ui/mobile/cards-slop.js';
 import { placeCard } from './model.js';
 import { STATION_ID_PREFIX } from './rendering.js';
 
@@ -17,34 +18,31 @@ const DRAG_TOLERANCE_PX = 5;
  *
  * The card is plain DOM inside the viewer's container, so it needs nothing from
  * the app's own overlay system, and every input is a listener that is removed
- * again on `destroy()`.
+ * again on `destroy()`. Picks and projections go through the query port, the
+ * card follows its bubble after each frame (the frame port's `postRender`).
  *
  * @param {object} options
- * @param {Cesium.Viewer} options.viewer
+ * @param {object} options.viewer The scene object.
  * @param {{detailsFor: Function}} options.surface The station surface.
- * @param {Function} [options.pick] `(x, y) => station entity id | null`.
- * @param {Function} [options.project] `(entity) => {x, y} | undefined`.
+ * @param {Function} [options.pick] `(x, y) => station item id | null`.
+ * @param {Function} [options.project] `(ecef) => {x, y} | undefined`.
  */
 export function createStationInteraction({
   viewer,
   surface,
   now = Date.now,
   documentRef = globalThis.document,
+  // A fingertip gets a wider pick window in the mobile UI.
   pick = (x, y) => {
-    const picked = viewer.scene.pick(new Cesium.Cartesian2(x, y));
-    const id = picked?.id;
-    return typeof id === 'string' ? id : (id?.id ?? null);
+    const id = findQuery(viewer)?.pick(x, y, touchPickWindow())?.id;
+    return typeof id === 'string' ? id : null;
   },
-  project = (entity) => {
-    const position = entity.position?.getValue(viewer.clock.currentTime);
-    return position
-      ? viewer.scene.cartesianToCanvasCoordinates(position)
-      : undefined;
-  },
+  project = (position) =>
+    (position && findQuery(viewer)?.project(position)) ?? undefined,
   setTimer = (fn, ms) => globalThis.setTimeout(fn, ms),
   clearTimer = (id) => globalThis.clearTimeout(id),
 }) {
-  const canvas = viewer.scene.canvas;
+  const canvas = canvasOf(viewer);
   const container = viewer.container ?? canvas.parentElement;
 
   const card = documentRef.createElement('div');
@@ -136,7 +134,7 @@ export function createStationInteraction({
       hideCard();
       return;
     }
-    const at = project(details.entity);
+    const at = project(details.position);
     if (!at) return hideCard();
     place({ x: at.x + pinnedOffset.dx, y: at.y + pinnedOffset.dy });
   }
@@ -155,13 +153,13 @@ export function createStationInteraction({
     if (!details || !details.visible) return;
     pinnedCode = code;
     render(details, true);
-    const at = project(details.entity);
+    const at = project(details.position);
     pinnedOffset = at
       ? { dx: point.x - at.x, dy: point.y - at.y }
       : { dx: 0, dy: 0 };
     place(point);
     if (!followRemover)
-      followRemover = viewer.scene.postRender?.addEventListener(follow) ?? null;
+      followRemover = findFrame(viewer)?.on('postRender', follow) ?? null;
   }
 
   function runHover() {
