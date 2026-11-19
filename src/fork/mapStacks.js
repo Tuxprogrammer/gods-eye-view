@@ -27,3 +27,9 @@ export const FORK_MAP_STACK_ALIASES = Object.freeze([
   ['open free map', 'openfreemap-dark'],
   ['dark map', 'openfreemap-dark'],
 ]);
+
+/** On-map credits of those stacks (src/maps/defaultSources.js). */
+export const CARTO_ATTRIBUTION_HTML =
+  '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>';
+export const OPENFREEMAP_ATTRIBUTION_HTML =
+  '<a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> © <a href="https://openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> Data from <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>';

@@ -130,13 +130,16 @@ html[data-ui='mobile'] #mobile-status[data-kind='loading'] {
 /* Required attribution stays visible, just tiny: 7px, one line, bottom-left,
    translucent dark backing (the full list lives behind "Data attribution").
    Desktop rules for #cesium-credits reach specificity [2,4,1] (minimal-HUD
-   variant) and set bottom/left/right/max-width per state, so the id is
-   repeated to outrank all of them without !important. The geometry is
+   variant) and set bottom/left/right/max-width per state, so two :not(#_)
+   lift this rule to three ids and outrank all of them without !important
+   (repeating the id would leave #gev-credits, the line drawn for renderers
+   without their own credit display, no counterpart; creditsView.test.mjs). The geometry is
    modelled by creditAttribution.test.mjs (safe-area bottom, 8px+ clearance
    from the right-hand mic FAB, below the sheet). Keep the forms below
    (calc(var(--m-safe-b) + Npx), calc(100vw - Npx - var(--m-safe-r)), px
    max-height) or update that test. */
-html[data-ui='mobile'] #cesium-credits#cesium-credits#cesium-credits {
+html[data-ui='mobile']:not(#_):not(#_) #cesium-credits,
+html[data-ui='mobile']:not(#_):not(#_) #gev-credits {
   box-sizing: border-box;
   right: auto;
   bottom: calc(var(--m-safe-b) + 4px);
@@ -153,7 +156,8 @@ html[data-ui='mobile'] #cesium-credits#cesium-credits#cesium-credits {
   background: rgba(6, 10, 14, 0.62);
   border-radius: 0 6px 0 0;
 }
-html[data-ui='mobile'] #cesium-credits img {
+html[data-ui='mobile'] #cesium-credits img,
+html[data-ui='mobile'] #gev-credits .gev-credit-logo {
   max-height: 8px;
   width: auto;
   vertical-align: middle !important;

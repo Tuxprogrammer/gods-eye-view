@@ -2,32 +2,34 @@ import { MAP_STACKS } from './catalog.js';
 import { photorealUnavailableReason } from './availability.js';
 import { keySetupRequirementEnvVars } from '../keySetupCore.mjs';
 import { t } from '../i18n/index.js';
+import { mapEngine } from './engine.js';
+import { ESRI_ATTRIBUTION_HTML } from './attribution.js';
 import {
-  createOsmImagery,
-  createEsriImagery,
-  createIonImagery,
-  createCartoImagery,
-  ESRI_ATTRIBUTION_HTML,
   CARTO_ATTRIBUTION_HTML,
   OPENFREEMAP_ATTRIBUTION_HTML,
-} from './imagery.js';
-import { createOpenFreeMapImagery } from './openFreeMapRaster.js';
-import { createWorldTerrain, createKeylessTerrain } from './terrain.js';
+} from '../fork/mapStacks.js';
 
-/** Select sources and setup guidance without putting provider branches in the controller. */
+/**
+ * Select sources and setup guidance without putting provider branches in the
+ * controller. Each source builds its imagery and terrain through the
+ * `engine` given (the scene's map engine, `engine.js`), else the one the
+ * adapter provided for viewers with no renderer, when it is first shown.
+ */
 export function createDefaultMapSources({
   googleTileset = null,
   cesiumToken = '',
   googleApiKey = '',
+  engine = null,
 } = {}) {
+  const engineOf = () => engine ?? mapEngine();
   const ionToken = String(cesiumToken || '').trim();
   const hasIon = Boolean(ionToken);
   const hasGoogle = Boolean(String(googleApiKey || '').trim());
   const terrain = {
     id: hasIon ? 'world' : 'keyless',
     create: hasIon
-      ? (request) => createWorldTerrain(ionToken, request)
-      : createKeylessTerrain,
+      ? (request) => engineOf().terrain.world(ionToken, request)
+      : (request) => engineOf().terrain.keyless(request),
   };
   return {
     defaultId: googleTileset ? 'photoreal' : 'esri-imagery',
@@ -54,13 +56,16 @@ export function createDefaultMapSources({
             photorealUnavailableReason(hasIon || hasGoogle),
           tileset: googleTileset,
         };
+      // Fork: CARTO and OpenFreeMap (src/fork/mapStacks.js) come from the
+      // engine's `carto` and `openfreemap` imagery.
       const imageryByKind = {
-        ion: () => createIonImagery(descriptor.style, ionToken),
-        osm: createOsmImagery,
-        carto: () => createCartoImagery(descriptor.style),
-        openfreemap: () => createOpenFreeMapImagery(),
+        ion: () => engineOf().imagery.ion(descriptor.style, ionToken),
+        osm: () => engineOf().imagery.osm(),
+        carto: () => engineOf().imagery.carto(descriptor.style),
+        openfreemap: () => engineOf().imagery.openfreemap(),
       };
-      const imagery = imageryByKind[descriptor.kind] || createEsriImagery;
+      const imagery =
+        imageryByKind[descriptor.kind] ?? (() => engineOf().imagery.esri());
       const fallbackToOsm = (name, credit) => ({
         credit,
         constructionFallback: {

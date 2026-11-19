@@ -1,4 +1,5 @@
 import * as Cesium from 'cesium';
+import { billboardClampedPosition } from '../../render/cesium/internals.js';
 import {
   CATEGORY_COLORS,
   CLAMP_STATION_LIMIT,
@@ -171,12 +172,12 @@ const CLAMP_ERROR_PER_DISTANCE = 0.02;
  * others in a 150 km-high view). Off-screen ground never refines, so such a
  * clamp can stand until the camera moves. With the depth test off, that node is
  * drawn mid-screen over whatever is in the foreground, and the error is
- * depth / distance, so the same 5 km is invisible from orbit. `_clampedPosition`
- * is Cesium's private clamp result. Positions sit at height 0, so the clamp
+ * depth / distance, so the same 5 km is invisible from orbit. Cesium's private
+ * clamp result is read through render/cesium/internals.js. Positions sit at height 0, so the clamp
  * moved straight along the normal and its length is the depth.
  */
 export function isClampedOutOfPlace(billboard, camera) {
-  const clamped = billboard._clampedPosition;
+  const clamped = billboardClampedPosition(billboard);
   if (!clamped) return false;
   const anchor = billboard.position;
   if (

@@ -37,12 +37,16 @@ export const FORK_IMPORTERS = Object.freeze({
     'src/voice/gevActions.js',
     'src/mapStackChips.js',
     'src/layers/submarineCables/policy.js',
+    'src/maps/defaultSources.js',
   ],
   'src/app/layers/fork.js': ['src/app/constructCatalog.js'],
   'src/standalone/forkLayerSources.js': ['src/standalone/layerSources.js'],
   'src/i18n/fork/catalogs.json': ['src/i18n/index.js'],
   'src/ui/forkMobileShell.js': ['src/ui/applicationShell.js'],
   'src/ui/mobileMode.js': ['src/ui/forkMobileShell.js'],
+  'src/app/mobileViewerTuning.js': ['src/app/scene.js'],
+  'src/fork/startupFlight.js': ['src/app/controls.js'],
+  'src/maps/openFreeMapRaster.js': ['src/maps/globeEngine.js'],
   // The manifest's only import.
   'src/i18n/marker.js': ['src/fork/manifest.js'],
 });

@@ -167,7 +167,7 @@ export function maybeRefreshRegionalBrief(info) {
     !Number.isFinite(info.longitude)
   )
     return;
-  const subjectId = `${info.layerId || 'aircraft'}:${info.icao24 || (info.kind === 'vessel' ? info.id : '') || info.noradId || info.registration || info.callsign || 'unknown'}`;
+  const subjectId = `${info.layerId || 'aircraft'}:${info.icao24 || (info.kind === 'vessel' || info.generic === true ? info.id : '') || info.noradId || info.registration || info.callsign || 'unknown'}`;
   if (subjectId !== this.regionalBriefSubjectId) {
     this.regionalBriefAbort?.abort();
     this.regionalBriefAbort = null;

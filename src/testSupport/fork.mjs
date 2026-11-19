@@ -20,6 +20,39 @@ export const FORK_LAYER_STATE_TOKENS = Object.freeze({
   crime: 'zw',
 });
 
+/**
+ * Fork files that still reach Cesium directly, beside upstream's
+ * src/render/cesiumAllowList.json: they predate the renderer contract. The
+ * Cesium ratchets (src/render/noCesiumOutsideRender.test.mjs,
+ * src/testSupport/viewerAccess.mjs) treat them as on that list; port a file
+ * to the contract and remove it here. Sorted.
+ */
+export const FORK_CESIUM_FILES = Object.freeze([
+  'src/layers/aprs/index.js',
+  'src/layers/aprs/rendering.js',
+  'src/layers/crime/index.js',
+  'src/layers/meshtastic/index.js',
+  'src/layers/meshtastic/rendering.js',
+  'src/layers/propagation/horizon.js',
+  'src/layers/propagation/rendering.js',
+  'src/layers/propagation/stationInteraction.js',
+  'src/layers/propagation/surface.js',
+  'src/layers/propagation/tilesetQuality.js',
+  'src/ui/mobile/pages/cards.js',
+]);
+
+/**
+ * Fork files off that list that still reach Cesium through the viewer, with
+ * how many accesses each still has, beside upstream's
+ * src/render/viewerAccessAllowList.json (src/render/viewerAccess.test.mjs).
+ * Counts only ever go down.
+ */
+export const FORK_VIEWER_ACCESS = Object.freeze({
+  'src/layers/aprs/interaction.js': 5,
+  'src/layers/aprs/popups.js': 6,
+  'src/layers/propagation/index.js': 9,
+});
+
 /** An enum with the fork's map stacks removed, so upstream's pin holds. */
 export const withoutForkMapStacks = (ids) =>
   ids.filter((id) => !FORK_MAP_STACK_IDS.includes(id));

@@ -141,6 +141,7 @@ test("UiPanel draws Core's panel markup and asks for the other state", async (t)
       'demo-badge',
       'panel-divider',
       'demo-action',
+      'panel-edge-btn',
       'panel-collapse-btn',
     ],
   );
@@ -165,8 +166,8 @@ test('UiPanel without collapsible has no button, and glow is optional', (t) => {
   });
   const panel = document.getElementById('plain-panel');
   assert.equal(panel.tagName, 'SECTION');
-  assert.equal(panel.querySelector('.panel-glow'), null);
-  assert.equal(panel.querySelector('.panel-collapse-btn'), null);
+  assert.equal(panel.querySelector('.panel-glow') === null, true);
+  assert.equal(panel.querySelector('.panel-collapse-btn') === null, true);
 });
 
 test('RailPanel follows the store, forwards clicks, and never restores a class its owner removed', async (t) => {
@@ -424,6 +425,31 @@ test('destroying the chrome inside Cockpit puts back the panels its entry closed
   assert.equal(data.classList.contains('collapsed'), false);
   chrome.exitCockpit();
   assert.equal(data.classList.contains('collapsed'), false);
+});
+
+test('Cockpit entry folds the Space Missions panel away and exit brings it back', () => {
+  document.body.innerHTML = `<div id="space-missions-panel"></div>`;
+  const store = usePanelChromeStore(createPinia());
+  const chrome = panelChrome(store);
+  const missions = document.getElementById('space-missions-panel');
+  followPanelState(store, 'space-missions-panel', missions);
+  chrome.enterCockpit();
+  assert.equal(missions.classList.contains('collapsed'), true);
+  chrome.exitCockpit();
+  assert.equal(missions.classList.contains('collapsed'), false);
+  chrome.destroy();
+});
+
+test('a share link records whether the Space Missions panel is open', () => {
+  document.body.innerHTML = `<div id="space-missions-panel"></div>`;
+  const store = usePanelChromeStore(createPinia());
+  const chrome = panelChrome(store);
+  const state = chrome._buildSharePanelState();
+  assert.deepEqual(
+    state.specs.filter((spec) => spec.id === 'space-missions-panel'),
+    [{ id: 'space-missions-panel', collapsed: false }],
+  );
+  chrome.destroy();
 });
 
 test('the accordion closes peers through the real store, and opens them again', () => {

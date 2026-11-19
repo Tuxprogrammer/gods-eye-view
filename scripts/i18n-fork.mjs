@@ -7,7 +7,7 @@
 //
 // A string the fork adds goes in src/i18n/fork/catalogs.json, never in
 // locales/<code>.json: `npm run i18n -- --missing <code>` lists it either way.
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -85,8 +85,18 @@ export function writeCatalogLayers(
   );
   const json = (value) => `${JSON.stringify(value, null, 2)}\n`;
   writeFileSync(upstreamPath, json(upstreamLayer));
+  writeForkLayer(locale, forkLayer, forkPath);
+}
+
+/**
+ * Replace a locale's fork layer with `layer`. With no fork catalog yet, an
+ * empty layer writes nothing (a checkout or sandbox without the fork's file).
+ */
+export function writeForkLayer(locale, layer, forkPath = FORK_CATALOGS) {
+  if (!existsSync(forkPath) && !Object.keys(layer).length) return;
+  mkdirSync(path.dirname(forkPath), { recursive: true });
   writeFileSync(
     forkPath,
-    json({ ...readJson(forkPath, {}), [locale]: forkLayer }),
+    `${JSON.stringify({ ...readJson(forkPath, {}), [locale]: layer }, null, 2)}\n`,
   );
 }

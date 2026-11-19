@@ -1,8 +1,8 @@
-import * as Cesium from 'cesium';
 import { createCrimeLayer } from '../../layers/crime/index.js';
 import * as picking from '../../data/pickRegistry.js';
 import * as overlays from '../../overlays/worldOverlay.js';
 import { isPointerFree } from '../../data/inputOwnership.js';
+import { inputFor } from '../../input/dispatcher.js';
 
 /** Wire the Madison PD crime layer into the application catalog. */
 export function createApplicationCrime(options) {
@@ -13,8 +13,8 @@ export function createApplicationCrime(options) {
       clearSource: overlays.clearOverlaySource,
       hitTest: overlays.hitTestWorldOverlay,
     },
-    screenSpaceEventHandlerFactory: (viewer) =>
-      new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas),
+    subscribeClick: (viewer, onClick) =>
+      inputFor(viewer).onClick((event) => onClick({ pick: event.pick })),
     picking,
     pointer: { isPointerFree },
     ...options,

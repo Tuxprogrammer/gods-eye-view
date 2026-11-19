@@ -5,6 +5,7 @@ import { createBrowserViteConfig } from '../../build/vite.js';
 import { localProviderPlugins } from '../providers/local.js';
 import { localMcpPlugin } from '../mcp/plugin.js';
 import { apiNotFoundPlugin } from './api-not-found.js';
+import { conformanceReferencesPlugin } from './conformance-references.js';
 import { googleTokenUnavailablePlugin } from './google-token-unavailable.js';
 import { maplibreWorkerPlugin } from './maplibre-worker.js';
 import { standaloneVoiceTools } from './voiceTools.js';
@@ -32,6 +33,7 @@ export function standaloneConfig(
       }),
       localMcpPlugin(),
       googleTokenUnavailablePlugin(),
+      conformanceReferencesPlugin(),
       apiNotFoundPlugin(),
       unwatchedRuntimeDirsPlugin(),
     ],

@@ -42,7 +42,9 @@ const WINDOW_LABELS = Object.freeze({
 export function createCrimeLayer({
   source,
   overlayHost = null,
-  screenSpaceEventHandlerFactory = null,
+  // `(viewer, onClick) => unsubscribe`: ambient clicks over the globe, each
+  // with `pick`, the renderer's own pick of it (src/input/dispatcher.js).
+  subscribeClick = null,
   picking = null,
   pointer = null,
   followUpMs = 30_000,
@@ -63,12 +65,11 @@ export function createCrimeLayer({
   let lastUpdate = null;
   let lastError = null;
   let stale = false;
-  let clickHandler = null;
+  let unsubscribeClick = null;
   let selectedKey = null;
   let rowControlsListener = null;
 
-  const canSelect = () =>
-    Boolean(overlayHost && screenSpaceEventHandlerFactory && picking);
+  const canSelect = () => Boolean(overlayHost && subscribeClick && picking);
   const notifyRow = () => rowControlsListener?.();
 
   function publishCard() {
@@ -131,14 +132,13 @@ export function createCrimeLayer({
   }
 
   function installClickHandler() {
-    if (!canSelect() || clickHandler || !viewer) return;
+    if (!canSelect() || unsubscribeClick || !viewer) return;
     picking.registerPickOwner?.(LAYER_ID, (id) =>
       String(id).startsWith(PICK_PREFIX),
     );
-    clickHandler = screenSpaceEventHandlerFactory(viewer);
-    clickHandler.setInputAction((click) => {
+    unsubscribeClick = subscribeClick(viewer, (click) => {
       if (pointer && !pointer.isPointerFree()) return;
-      const picked = viewer.scene.pick(click.position);
+      const picked = click.pick;
       const key = picked ? pickedKey(picked) : null;
       if (key) {
         selectedKey = key;
@@ -153,12 +153,12 @@ export function createCrimeLayer({
         selectedKey = null;
         publishCard();
       }
-    }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+    });
   }
 
   function removeClickHandler() {
-    clickHandler?.destroy();
-    clickHandler = null;
+    unsubscribeClick?.();
+    unsubscribeClick = null;
     picking?.unregisterPickOwner?.(LAYER_ID);
   }
 
