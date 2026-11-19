@@ -3,6 +3,8 @@ import test from 'node:test';
 import { fromDegrees } from '../../geo/ellipsoid.js';
 import { bindFakeDraw } from '../../testSupport/fakeDrawPort.mjs';
 import {
+  HEATMAP_DRAPE_BELOW_M,
+  HEATMAP_SHELL_ABOVE_M,
   PROPAGATION_CONTOUR_LABEL_SOURCE_ID,
   PROPAGATION_STATION_LABEL_SOURCE_ID,
   STATION_ID_PREFIX,
@@ -263,4 +265,93 @@ test('clearing and destroying the stations release the set and the labels', () =
   assert.equal(s.preRender.size, 0, 'nothing is culled with nothing drawn');
   surface.destroy();
   assert.equal(set.disposed, true);
+});
+
+test('from high up the heatmap is a raster shell, draped again closer in', () => {
+  const viewer = {};
+  const moves = new Set();
+  let height = 6_000_000;
+  const { draw } = bindFakeDraw(viewer, {
+    camera: {
+      pose: () => ({ height }),
+      on(event, fn) {
+        assert.equal(event, 'changed');
+        moves.add(fn);
+        return () => moves.delete(fn);
+      },
+    },
+    frame: { on: () => () => {}, requestRender() {} },
+  });
+  const fields = [];
+  draw.field = (spec) => {
+    const field = {
+      spec: { ...spec },
+      show: true,
+      disposed: false,
+      update(patch) {
+        Object.assign(field.spec, patch);
+      },
+      dispose() {
+        field.disposed = true;
+      },
+    };
+    fields.push(field);
+    return field;
+  };
+  const moveTo = (next) => {
+    height = next;
+    for (const fn of [...moves]) fn();
+  };
+  const surface = createHeatmapSurface({
+    viewer,
+    classificationType: 'tiles',
+    makeCanvas: fakeCanvas,
+  });
+  const shapes = draw.find('propagation:heatmap');
+  const map = prepared();
+  surface.show(map, 0.6);
+  assert.equal(surface.mode, 'shell');
+  assert.equal(fields.length, 1);
+  const [shell] = fields;
+  assert.equal(shell.spec.kind, 'rasterShell');
+  assert.equal(shell.spec.image.canvas, map.canvas);
+  assert.deepEqual(shell.spec.rectangle, {
+    west: -180,
+    south: -90,
+    east: 180,
+    north: 90,
+  });
+  assert.equal(shell.spec.alpha, 0.6);
+  assert.equal(shell.show, true);
+  assert.equal(shapes.show, false, 'the draped tiles wait underneath');
+
+  // The shell fades through its own alpha.
+  surface.setOpacity(0.3);
+  assert.equal(shell.spec.alpha, 0.3);
+
+  // Between the two heights nothing switches; below the lower one it drapes.
+  moveTo(HEATMAP_DRAPE_BELOW_M + 1);
+  assert.equal(surface.mode, 'shell');
+  moveTo(HEATMAP_DRAPE_BELOW_M - 1);
+  assert.equal(surface.mode, 'drape');
+  assert.equal(shell.show, false);
+  assert.equal(shapes.show, true);
+  moveTo(HEATMAP_SHELL_ABOVE_M - 1);
+  assert.equal(surface.mode, 'drape');
+  moveTo(HEATMAP_SHELL_ABOVE_M + 1);
+  assert.equal(surface.mode, 'shell');
+  assert.equal(shell.show, true);
+
+  // A new map re-images the same shell; hiding hides both.
+  const next = prepared();
+  surface.show(next, 0.3);
+  assert.equal(fields.length, 1);
+  assert.equal(shell.spec.image.canvas, next.canvas);
+  surface.setVisible(false);
+  assert.equal(shell.show, false);
+  assert.equal(shapes.show, false);
+
+  surface.destroy();
+  assert.equal(shell.disposed, true);
+  assert.equal(moves.size, 0, 'the camera listener goes with it');
 });

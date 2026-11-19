@@ -13,7 +13,7 @@ import {
   valuePosition,
 } from './model.js';
 import { fromDegrees } from '../../geo/ellipsoid.js';
-import { drawOf, findFrame } from '../../render/rendererOf.js';
+import { drawOf, findCamera, findFrame } from '../../render/rendererOf.js';
 import { createHorizonCuller } from './horizon.js';
 
 /** Decode a base64 PNG to RGBA without colour management or premultiplication. */
@@ -81,14 +81,38 @@ function newCanvas(width, height) {
 let heatmapSurfaces = 0;
 
 /**
- * The globe as textured rectangles draped onto the surface beneath them:
- * Google 3D tiles in the photoreal stack, terrain otherwise (`clampTo`). An
- * imagery layer cannot do this, because the photoreal stack hides the globe
- * entirely.
+ * From high up the map is a raster shell just above the ground; closer in,
+ * textured rectangles draped onto the surface beneath them. The camera
+ * switches above the first height and back below the second, so a camera
+ * hovering near one does not flap between them.
+ */
+export const HEATMAP_SHELL_ABOVE_M = 1_500_000;
+export const HEATMAP_DRAPE_BELOW_M = 1_000_000;
+/** The shell's height: under the weather and wind shells (5 km and up). */
+export const HEATMAP_SHELL_HEIGHT_M = 4_500;
+const WHOLE_GLOBE = Object.freeze({
+  west: -180,
+  south: -90,
+  east: 180,
+  north: 90,
+});
+
+/**
+ * The map, drawn two ways by camera height.
  *
- * An image fill has no colour of its own to fade it, so the opacity is baked
- * into each tile's texture: a change redraws the tiles from the prepared
- * canvas and hands them over under a new key.
+ * Close in, the globe as textured rectangles draped onto the surface beneath
+ * them: Google 3D tiles in the photoreal stack, terrain otherwise
+ * (`clampTo`). An imagery layer cannot do this, because the photoreal stack
+ * hides the globe entirely. An image fill has no colour of its own to fade
+ * it, so the opacity is baked into each tile's texture: a change redraws the
+ * tiles from the prepared canvas and hands them over under a new key.
+ *
+ * From high up, draped tiles land on coarse 3D tiles that the draping pass
+ * does not tint reliably (untinted patches and dark holes from about
+ * 2,400 km). The contract cannot ask for finer tiles, so up there the map is
+ * a raster shell over the whole globe instead (`rasterShell`), which needs no
+ * surface to drape on and fades through its own alpha. A renderer without
+ * fields keeps the draped tiles at every height.
  * @param {{viewer: object, classificationType?: 'tiles'|'terrain'|'both',
  *   makeCanvas?: (width: number, height: number) => object|null}} options
  */
@@ -98,7 +122,15 @@ export function createHeatmapSurface({
   makeCanvas = newCanvas,
 }) {
   const id = `propagation:heatmap:${(heatmapSurfaces += 1)}`;
-  const shapes = drawOf(viewer).shapes({ id, show: false, pickable: false });
+  const draw = drawOf(viewer);
+  const shapes = draw.shapes({ id, show: false, pickable: false });
+  const camera = findCamera(viewer);
+  /** @type {import('../../render/contract/draw').FieldHandle|null} */
+  let shell = null;
+  let shellFrom = null;
+  let visible = true;
+  // Whether the camera is high enough for the shell (decided with hysteresis).
+  let high = false;
   /** @type {Array<{tile: object, texture: object}>} */
   let tiles = [];
   let source = null;
@@ -150,6 +182,59 @@ export function createHeatmapSurface({
     );
   }
 
+  const canShell = () => typeof draw.field === 'function';
+
+  /** Whether the camera's height calls for the shell now. */
+  function cameraHigh() {
+    const height = camera?.pose()?.height;
+    if (!Number.isFinite(height)) return high;
+    return high
+      ? height >= HEATMAP_DRAPE_BELOW_M
+      : height > HEATMAP_SHELL_ABOVE_M;
+  }
+
+  /** The shell for the prepared canvas, made or re-imaged as needed. */
+  function ensureShell() {
+    if (!canShell() || !source) return null;
+    if (shell && shellFrom === source) return shell;
+    const image = { canvas: source, key: `${id}:shell:${version}` };
+    if (shell) shell.update({ image });
+    else
+      shell = draw.field({
+        kind: 'rasterShell',
+        id: `${id}:shell`,
+        image,
+        rectangle: WHOLE_GLOBE,
+        heightM: HEATMAP_SHELL_HEIGHT_M,
+        alpha,
+      });
+    shellFrom = source;
+    return shell;
+  }
+
+  /** Show the draped tiles or the shell, whichever the height calls for. */
+  function present() {
+    const any = visible && tiles.length > 0;
+    const useShell = any && high && canShell();
+    if (useShell) ensureShell();
+    if (shell) shell.show = useShell;
+    shapes.show = any && !useShell;
+  }
+
+  // Camera moves switch between the two; without camera events the map
+  // keeps the way it was first shown.
+  const offCamera =
+    typeof camera?.on === 'function'
+      ? camera.on('changed', () => {
+          const next = cameraHigh();
+          if (next === high) return;
+          high = next;
+          present();
+          render(viewer);
+        })
+      : () => {};
+  high = cameraHigh();
+
   return {
     /** Replace the drawn map. Cheap: crops one prepared canvas into tiles. */
     show(prepared, opacity) {
@@ -163,13 +248,15 @@ export function createHeatmapSurface({
       }
       paint();
       write();
-      shapes.show = tiles.length > 0;
+      high = cameraHigh();
+      present();
       render(viewer);
     },
     setOpacity(opacity) {
       const next = clampOpacity(opacity);
       if (next === alpha && version > 0) return;
       alpha = next;
+      shell?.update({ alpha });
       if (!tiles.length) return;
       paint();
       write();
@@ -181,21 +268,29 @@ export function createHeatmapSurface({
       if (tiles.length) write();
       render(viewer);
     },
-    setVisible(visible) {
-      shapes.show = Boolean(visible) && tiles.length > 0;
+    setVisible(next) {
+      visible = Boolean(next);
+      present();
       render(viewer);
     },
     clear() {
       shapes.clear();
       tiles = [];
       source = null;
-      shapes.show = false;
+      present();
       render(viewer);
     },
     get tileCount() {
       return tiles.length;
     },
+    /** `shell` from high up (where the renderer draws fields), else `drape`. */
+    get mode() {
+      return high && canShell() ? 'shell' : 'drape';
+    },
     destroy() {
+      offCamera();
+      shell?.dispose();
+      shell = null;
       shapes.dispose();
       tiles = [];
       source = null;
