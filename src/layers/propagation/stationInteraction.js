@@ -3,6 +3,7 @@ import { canvasOf, findFrame, findQuery } from '../../render/rendererOf.js';
 import { touchPickWindow } from '../../ui/mobile/cards-slop.js';
 import { placeCard } from './model.js';
 import { STATION_ID_PREFIX } from './rendering.js';
+import { kitCloseButton } from '../../ui/forkKit.js';
 
 /** Hover picks are throttled: a GPU pick per mouse-move event is wasteful. */
 const HOVER_THROTTLE_MS = 70;
@@ -41,6 +42,12 @@ export function createStationInteraction({
     (position && findQuery(viewer)?.project(position)) ?? undefined,
   setTimer = (fn, ms) => globalThis.setTimeout(fn, ms),
   clearTimer = (id) => globalThis.clearTimeout(id),
+  // The card's close button: the kit's (tests hand in their own element).
+  closeButton = () =>
+    kitCloseButton({
+      class: 'propagation-station-card-close',
+      label: t('Close station details'),
+    }),
 }) {
   const canvas = canvasOf(viewer);
   const container = viewer.container ?? canvas.parentElement;
@@ -55,11 +62,7 @@ export function createStationInteraction({
   head.className = 'propagation-station-card-head';
   const title = documentRef.createElement('span');
   title.className = 'propagation-station-card-title';
-  const close = documentRef.createElement('button');
-  close.type = 'button';
-  close.className = 'propagation-station-card-close';
-  close.setAttribute('aria-label', t('Close station details'));
-  close.textContent = '×';
+  const close = closeButton();
   head.append(title, close);
   const table = documentRef.createElement('table');
   table.className = 'propagation-station-card-table';

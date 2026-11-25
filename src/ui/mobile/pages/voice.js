@@ -95,6 +95,50 @@ function openVoicePage() {
   );
 }
 
+/**
+ * Upstream's dock stylesheets (omnibar-dock.css, command-dock-trays.css) lay
+ * the Omnibar row and the credit line out around a voice control in the dock,
+ * through `dock-has-voice` on <html> (src/ui/rail/rootClass.js). The dock
+ * still renders that control, but on phones it is this FAB, so the class is
+ * kept off while the phone UI is on: otherwise the desktop dock layout moves
+ * the Omnibar to the bottom and caps the credit line to nothing. Back on the
+ * desktop UI (the mode can flip without a reload), a class taken off here
+ * goes back on once the control is a child of the dock again (the dock's own
+ * hold adds it only when first taken); a control left elsewhere, or none, is
+ * not one in the dock.
+ * @returns {() => void} Stops following the mode.
+ */
+export function keepVoiceOutOfDockLayout(doc) {
+  const html = doc.documentElement;
+  let removed = false;
+  const sync = () => {
+    const has = html.classList.contains('dock-has-voice');
+    if (html.dataset.ui === 'mobile') {
+      if (has) {
+        html.classList.remove('dock-has-voice');
+        removed = true;
+      }
+    } else if (removed) {
+      if (has) removed = false;
+      else if (doc.querySelector(`#command-dock > #${ROOT_ID}`)) {
+        removed = false;
+        html.classList.add('dock-has-voice');
+      }
+    }
+  };
+  sync();
+  if (typeof MutationObserver !== 'function') return () => {};
+  const observer = new MutationObserver(sync);
+  observer.observe(html, {
+    attributes: true,
+    attributeFilter: ['class', 'data-ui'],
+  });
+  // The control comes back to the dock after the mode flips.
+  const dock = doc.getElementById('command-dock');
+  if (dock) observer.observe(dock, { childList: true });
+  return () => observer.disconnect();
+}
+
 /** Move the control to <body>, style it as a FAB and wire touch behaviour. */
 function attachFab(node) {
   if (root === node) return;
@@ -102,6 +146,7 @@ function attachFab(node) {
   support = voiceSupport(window);
   movePanel(node, document.body, FAB_KEY);
   node.dataset.mobileFab = 'true';
+  keepVoiceOutOfDockLayout(document);
 
   const button = q('#gev-voice-button');
   let timer = 0;

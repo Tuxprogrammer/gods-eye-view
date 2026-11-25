@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, onUpdated, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { getLocale, t, tn } from '../../../i18n/index.js';
 import { EXCLUSIVE_SURFACE_CLASSES } from '../../../exclusiveSurfaces.js';
@@ -16,6 +16,9 @@ import { useGlobeActionsStore } from '../../stores/globeActions.js';
 import { useLocationStore } from '../../stores/location.js';
 import { useOmnibarStore } from '../../stores/omnibar.js';
 import { useVoiceStore } from '../../stores/voice.js';
+import UiButton from '../../kit/UiButton.vue';
+import UiIcon from '../../kit/UiIcon.vue';
+import { vRootClass } from '../../rail/rootClass.js';
 
 // One field for places, layers and questions. Places run through the location
 // controls, layers through the shell's omnibar actions, and anything else can
@@ -1010,6 +1013,21 @@ function onMic(supersede = false) {
 
 const shortcut = computed(() => (isMac ? '⌘K' : 'Ctrl K'));
 
+// The dock's stylesheet selects on the field being on the page, on its
+// results and on focus inside it through classes on the page root
+// (src/ui/rail/rootClass.js). Removing a focused row sends no focusout, so
+// every render checks the focus again.
+const root = ref(null);
+const focusWithin = ref(false);
+function followFocus(event) {
+  const el = root.value;
+  if (!el) return;
+  if (event?.type === 'focusin') focusWithin.value = true;
+  else if (event?.type === 'focusout') focusWithin.value = el.contains(event.relatedTarget);
+  else focusWithin.value = el.matches(':focus-within');
+}
+onUpdated(() => followFocus());
+
 
 // Chips come and go as the text changes; the arrow keys stay on one that is
 // there, and leave the strip when it empties.
@@ -1025,10 +1043,10 @@ watch(
 </script>
 
 <template>
-  <section id="gev-omnibar" :class="{ 'has-results': showResults }" :aria-label="t('Search')">
+  <section id="gev-omnibar" ref="root" :class="{ 'has-results': showResults }" v-root-class="{ 'has-omnibar': true, 'omnibar-has-results': showResults, 'omnibar-focus-within': focusWithin }" :aria-label="t('Search')" @focusin="followFocus" @focusout="followFocus">
     <div class="omnibar-field">
       <span class="omnibar-edge" aria-hidden="true"></span>
-      <span class="material-symbols-outlined omnibar-search-icon" aria-hidden="true">search</span>
+      <UiIcon class="omnibar-search-icon" name="search" :size="null" />
       <input
         ref="input"
         id="gev-omnibar-input"
@@ -1055,9 +1073,9 @@ watch(
         @blur="focused = false"
       />
       <kbd class="omnibar-kbd" aria-hidden="true">{{ shortcut }}</kbd>
-      <button type="button" class="omnibar-mic" :class="{ active: voiceOn }" :disabled="!voice.controls" :aria-pressed="String(voiceOn)" :aria-label="t('Talk to GEV')" :title="t('Talk to GEV')" @click="onMic(true)">
+      <UiButton class="omnibar-mic" :pressed="voiceOn" pressed-class="active" :disabled="!voice.controls" :label="t('Talk to GEV')" @click="onMic(true)">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21" /></svg>
-      </button>
+      </UiButton>
     </div>
     <div v-show="showResults" ref="results" class="omnibar-results" :class="{ 'has-feedback': showFeedback }">
       <p id="omnibar-error" v-show="showFeedback" role="alert">{{ feedback }}</p>
@@ -1065,11 +1083,10 @@ watch(
       <li v-if="strip" class="omnibar-strip" role="group" :aria-label="strip.title">
         <span class="omnibar-strip__title" aria-hidden="true">{{ strip.title }}</span>
         <div ref="stripChips" class="omnibar-strip__chips" role="presentation" @wheel="onStripWheel">
-          <button
+          <UiButton
             v-for="(chip, index) in strip.chips"
             :id="`gev-omnibar-chip-${index}`"
             :key="chip.key"
-            type="button"
             tabindex="-1"
             class="omnibar-strip__chip"
             :class="{ active: chip.pressed, focused: inStrip && index === chipIndex }"
@@ -1079,8 +1096,8 @@ watch(
             @mousedown.prevent
             @click="chooseChip(chip)"
           >
-            <span class="material-symbols-outlined" aria-hidden="true">{{ chip.icon }}</span>{{ chip.name }}
-          </button>
+            <UiIcon :name="chip.icon" :size="null" />{{ chip.name }}
+          </UiButton>
         </div>
       </li>
       <li
@@ -1095,7 +1112,7 @@ watch(
         @click="choose(item)"
         @mousemove="inStrip = false"
       >
-        <span v-if="item.icon" class="material-symbols-outlined omnibar-item-icon" aria-hidden="true">{{ item.icon }}</span>
+        <UiIcon v-if="item.icon" class="omnibar-item-icon" :name="item.icon" :size="null" />
         <svg v-else class="omnibar-item-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z" /></svg>
         <span class="omnibar-item-label">{{ item.label }}</span>
         <small>{{ item.hint }}</small>
@@ -1346,13 +1363,18 @@ small {
     calc(var(--mobile-sheet-cover, 0px) + 6px)
   );
   left: auto;
-  inset-inline: 16px 60px;
+  inset-inline: 16px;
   width: auto;
   transform: none;
 }
+/* The language picker sits at the right edge beside the field; the field leaves it room.
+   `.has-locale-picker`, `.has-world-timeline` and `.has-omnibar` are page-root classes (src/ui/rail/rootClass.js). */
+:global(body.mobile-shell:is(.has-locale-picker *, #locale-picker) #gev-omnibar) {
+  inset-inline: 16px 60px;
+}
 /* A lifted timeline leaves less map above the credits on short phones. */
 @media (max-height: 480px) {
-  :global(body.mobile-shell:has(#world-timeline) #gev-omnibar) {
+  :global(body.mobile-shell:is(.has-world-timeline *, #world-timeline) #gev-omnibar) {
     --omnibar-top: calc(var(--mobile-top-inset, 0px) + 48px);
     --omnibar-field-room: 34px;
     --omnibar-field-height: 34px;
@@ -1363,7 +1385,7 @@ small {
     --omnibar-item-padding: 2px;
   }
   /* The field takes the HUD readout's row (48-82px): the readout sits under it. */
-  :global(body.mobile-shell:has(#world-timeline):has(#gev-omnibar) #intel-hud .hud-bottom-left) {
+  :global(body.mobile-shell:is(.has-world-timeline *, #world-timeline):is(.has-omnibar *, #gev-omnibar) #intel-hud .hud-bottom-left) {
     top: calc(var(--mobile-top-inset, 0px) + 88px);
   }
 }

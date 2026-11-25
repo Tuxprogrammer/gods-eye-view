@@ -13,6 +13,7 @@
  * Events: listens `gev:mobile-open` {page}.
  */
 import { t } from '../../i18n/index.js';
+import { kitIcon } from '../forkKit.js';
 const pages = new Map(); // id -> { def, mounted, body, section, tile }
 let sheet = null; // live DOM/state once installSheet ran
 
@@ -57,13 +58,13 @@ function el(doc, tag, className, attrs = {}) {
 }
 
 function iconNode(doc, icon) {
+  // A Material Symbols name is the kit's glyph; anything else is shown as is.
+  if (typeof icon === 'string' && /^[a-z][a-z0-9_]*$/.test(icon))
+    return kitIcon(icon, { class: 'mobile-tile__icon' });
   const node = doc.createElement('span');
   node.className = 'mobile-tile__icon';
   node.setAttribute('aria-hidden', 'true');
-  if (typeof icon === 'string' && /^[a-z][a-z0-9_]*$/.test(icon)) {
-    node.classList.add('material-symbols-outlined');
-    node.textContent = icon;
-  } else if (icon && typeof icon === 'object' && icon.nodeType) {
+  if (icon && typeof icon === 'object' && icon.nodeType) {
     node.append(icon);
   } else {
     node.textContent = icon ?? '';

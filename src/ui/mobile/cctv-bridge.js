@@ -8,6 +8,7 @@
  *     hover card / auto-expanding panel).
  */
 import { t } from '../../i18n/index.js';
+import { kitButton } from '../forkKit.js';
 import {
   describeCctvActive,
   describeCctvSync,
@@ -90,12 +91,11 @@ export function installCctvBridge(page, getCtx) {
   );
 
   // 2 + 3. Active camera: announcement + top-right button --------------------
-  const button = document.createElement('button');
-  button.id = 'mobile-cctv-btn';
-  button.type = 'button';
+  const button = kitButton(
+    { id: 'mobile-cctv-btn', label: t('Open CCTV camera view') },
+    '📹',
+  );
   button.hidden = true;
-  button.setAttribute('aria-label', t('Open CCTV camera view'));
-  button.textContent = '📹';
   button.addEventListener('click', () =>
     window.dispatchEvent(
       new CustomEvent(OPEN_EVENT, { detail: { page: 'cctv' } }),

@@ -25,6 +25,7 @@ import {
   initialDrawerState,
   reduceDrawer,
 } from './cockpit-model.js';
+import { kitIcon } from '../forkKit.js';
 
 export const COCKPIT_MODE_EVENT = 'gev:cockpit-mode-changed';
 
@@ -52,11 +53,7 @@ function make(doc, tag, className, attrs = {}) {
 }
 
 function symbol(doc, name) {
-  const node = make(doc, 'span', 'material-symbols-outlined', {
-    'aria-hidden': 'true',
-  });
-  node.textContent = name;
-  return node;
+  return kitIcon(name);
 }
 
 export function installCockpitDrawer(doc = document, win = window) {

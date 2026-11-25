@@ -12,6 +12,7 @@
  *   id    - optional key so one source can replace/clear its own message
  */
 import { t } from '../../i18n/index.js';
+import { h, kitButton } from '../forkKit.js';
 import { movePanel, restorePanel } from './portal.js';
 import { openSheet, isSheetOpen, closeSheet } from './sheet.js';
 
@@ -21,17 +22,16 @@ const DEFAULT_TTL = 4000;
 export function installChrome(doc = document, win = window) {
   const disposers = [];
 
-  const menu = doc.createElement('button');
-  menu.id = 'mobile-menu-btn';
-  menu.type = 'button';
-  menu.className = 'mobile-menu-btn';
-  menu.setAttribute('aria-label', t('Menu'));
-  menu.setAttribute('aria-controls', 'mobile-sheet');
-  menu.setAttribute('aria-expanded', 'false');
-  const bars = doc.createElement('span');
-  bars.className = 'mobile-menu-btn__bars';
-  bars.setAttribute('aria-hidden', 'true');
-  menu.append(bars);
+  const menu = kitButton(
+    {
+      id: 'mobile-menu-btn',
+      class: 'mobile-menu-btn',
+      label: t('Menu'),
+      'aria-controls': 'mobile-sheet',
+      'aria-expanded': 'false',
+    },
+    () => h('span', { class: 'mobile-menu-btn__bars', 'aria-hidden': 'true' }),
+  );
   const onMenu = () => (isSheetOpen() ? closeSheet() : openSheet());
   menu.addEventListener('click', onMenu);
 

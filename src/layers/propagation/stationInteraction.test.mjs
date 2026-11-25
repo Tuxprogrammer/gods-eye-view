@@ -137,6 +137,7 @@ function harness({ ports = {}, own = true } = {}) {
     viewer,
     surface,
     documentRef: doc,
+    closeButton: () => new FakeElement('button'),
     ...doubles,
     setTimer: (fn) => {
       timers.push(fn);

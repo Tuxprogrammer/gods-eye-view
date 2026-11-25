@@ -8,6 +8,7 @@
  *    remove) are copied into visible help lines.
  */
 import { t } from '../../i18n/index.js';
+import { kitButton } from '../forkKit.js';
 import { registerMobilePage } from './sheet.js';
 
 const HELP_SOURCES = [
@@ -85,10 +86,7 @@ export function installKeySetup(doc = document, win = window) {
           intro.textContent = t(
             'Developer setting. Only available when the app runs on its own dev server (localhost); keys are saved to this machine and never leave it.',
           );
-          const open = doc.createElement('button');
-          open.type = 'button';
-          open.className = 'm-btn';
-          open.textContent = t('Open provider keys');
+          const open = kitButton({ class: 'm-btn' }, t('Open provider keys'));
           open.addEventListener('click', () => {
             ctx.close();
             (doc.getElementById('key-setup-chip') ?? chip).click();
