@@ -125,28 +125,9 @@
   outline-offset: 1px;
 }
 
+/* A server's on/off is the kit's UiSwitch (switch.css draws it). */
 .data-server-toggle {
   flex: none;
-  padding: 2px 8px;
-  font-family: var(--font-mono);
-  font-size: 8px;
-  letter-spacing: 1.2px;
-  color: var(--text-dim);
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 3px;
-  cursor: pointer;
-}
-
-.data-server-toggle.active {
-  color: #06140c;
-  background: #43d17a;
-  border-color: #43d17a;
-}
-
-.data-server-toggle:focus-visible {
-  outline: 1px solid var(--accent);
-  outline-offset: 1px;
 }
 
 .data-server-add summary {

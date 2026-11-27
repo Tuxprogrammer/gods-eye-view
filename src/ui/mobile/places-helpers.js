@@ -1,4 +1,5 @@
 /** Pure helpers for the mobile Places page (unit-tested, no DOM). */
+import { t } from '../../i18n/index.js';
 
 /** "📍 Location: Tokyo" -> "Tokyo"; empty/"--" -> "". */
 export function cleanCityLine(text) {
@@ -22,22 +23,7 @@ export function placesSummary(cityText, poiText) {
   const city = cleanCityLine(cityText);
   const poi = cleanPoiLine(poiText);
   if (city && poi) return `${city} - ${poi}`;
-  return city || poi || 'Search or pick a city';
-}
-
-/**
- * Decide the inline message once a search settled. The shell reports failures
- * only through the toast, so the page reads the toast text.
- * @returns {{kind: 'error'|'ok', text: string}}
- */
-export function classifySearchOutcome(toastText, cityText) {
-  const toast = String(toastText ?? '').trim();
-  if (/not found/i.test(toast))
-    return { kind: 'error', text: 'No match. Try a city name or lat, lon.' };
-  if (/failed/i.test(toast))
-    return { kind: 'error', text: 'Search failed. Check your connection.' };
-  const city = cleanCityLine(cityText);
-  return { kind: 'ok', text: city ? `Flying to ${city}` : 'Flying there' };
+  return city || poi || t('Search places');
 }
 
 /** True when the browser can share (Web Share API level 1, url only). */

@@ -391,12 +391,12 @@ test('the colour scale appears only once a map is held, for the active map', asy
   assert.deepEqual(ramp.ticks, [{ position: 0.5, label: '10' }]);
 });
 
-test('a failure with nothing to show is unavailable and reported to the manager', async () => {
+test('a failure with nothing to show keeps the layer on, unavailable, with the error in its stats for the manager', async () => {
   const { layer, state, viewer } = harness();
   layer.init(viewer);
   layer.enable(viewer);
   state.fail = true;
-  assert.equal(await layer.update(viewer), false);
+  assert.equal(await layer.update(viewer), true);
   const stats = layer.getStats();
   assert.equal(stats.status, 'unavailable');
   assert.equal(stats.error, 'offline');
@@ -408,7 +408,7 @@ test('a failure after a good map keeps showing it, marked stale when old', async
   layer.enable(viewer);
   await layer.update(viewer);
   state.fail = true;
-  assert.equal(await layer.update(viewer), false);
+  assert.equal(await layer.update(viewer), true);
   assert.equal(layer.getStats().status, 'ok');
   assert.equal(layer.getStats().stale, false);
   clock.t += 60 * 60_000;

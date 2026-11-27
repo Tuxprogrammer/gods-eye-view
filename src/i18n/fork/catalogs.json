@@ -141,7 +141,6 @@
     "Tap a feature on the map, or choose an action below.": "Toca un elemento del mapa o elige una acción abajo.",
     "Add MQTT server": "Añadir servidor MQTT",
     "Drawing tools": "Herramientas de dibujo",
-    "Label for the next shape": "Etiqueta para la siguiente forma",
     "Target selected": "Objetivo seleccionado",
     "Tap Deselect to release it": "Toca «Deseleccionar» para soltarlo",
     "Calibration (advanced)": "Calibración (avanzada)",
@@ -216,7 +215,6 @@
     "Deselect": "Deseleccionar",
     "Deselect the selected target": "Deseleccionar el objetivo seleccionado",
     "Radio Networks": "Redes de radio",
-    "Label (optional)": "Etiqueta (opcional)",
     "Violent": "Violentos",
     "Property": "Contra la propiedad",
     "Drugs & alcohol": "Drogas y alcohol",
@@ -242,7 +240,11 @@
     "Report window": "Periodo de informes",
     "Show or hide this kind of offense": "Mostrar u ocultar este tipo de delito",
     "Cases from the weekly Madison Police Department incident reports, placed at the block. A dot takes the color of its most common kind of case. Cases involving sex offenses, children, deaths or missing persons are not shown.": "Casos de los informes semanales de incidentes del Departamento de Policía de Madison, ubicados por cuadra. Cada punto toma el color del tipo de caso más frecuente. No se muestran casos de delitos sexuales, menores, muertes ni personas desaparecidas.",
-    "Crime Reports": "Informes policiales"
+    "Crime Reports": "Informes policiales",
+    "Type a place first.": "Escribe primero un lugar.",
+    "Flying to {place}": "Volando a {place}",
+    "Circles the last landmark you flew to. Tap the ORBIT chip on the map to stop.": "Rodea el último punto de interés al que volaste. Toca la etiqueta ORBIT del mapa para detenerlo.",
+    "Contacts cycles the nearest planes, vessels and installations. Space Missions lists launches and orbital assets. Satellites track independently.": "Contactos recorre los aviones, buques e instalaciones más cercanos. Misiones espaciales muestra lanzamientos y activos orbitales. Los satélites se siguen por separado."
   },
   "ru": {
     "Flying to Huntsville, AL...": "Перелёт в Хантсвилл, Алабама...",
@@ -390,7 +392,6 @@
     "Tap a feature on the map, or choose an action below.": "Коснитесь объекта на карте или выберите действие ниже.",
     "Add MQTT server": "Добавить сервер MQTT",
     "Drawing tools": "Инструменты рисования",
-    "Label for the next shape": "Подпись для следующей фигуры",
     "Target selected": "Цель выбрана",
     "Tap Deselect to release it": "Нажмите «Снять выбор», чтобы отпустить её",
     "Calibration (advanced)": "Калибровка (дополнительно)",
@@ -466,7 +467,6 @@
     "Deselect": "Снять выбор",
     "Deselect the selected target": "Снять выбор с цели",
     "Radio Networks": "Радиосети",
-    "Label (optional)": "Метка (необязательно)",
     "Violent": "Насильственные",
     "Property": "Имущественные",
     "Drugs & alcohol": "Наркотики и алкоголь",
@@ -493,7 +493,11 @@
     "Report window": "Период сводок",
     "Show or hide this kind of offense": "Показать или скрыть этот вид правонарушений",
     "Cases from the weekly Madison Police Department incident reports, placed at the block. A dot takes the color of its most common kind of case. Cases involving sex offenses, children, deaths or missing persons are not shown.": "Дела из еженедельных сводок происшествий полиции Мэдисона, размещённые с точностью до квартала. Цвет точки соответствует самому частому виду дел. Дела о сексуальных преступлениях, детях, смертях и пропавших людях не показываются.",
-    "Crime Reports": "Полицейские сводки"
+    "Crime Reports": "Полицейские сводки",
+    "Type a place first.": "Сначала введите место.",
+    "Flying to {place}": "Перелёт в {place}",
+    "Circles the last landmark you flew to. Tap the ORBIT chip on the map to stop.": "Облёт последней достопримечательности, к которой вы летали. Чтобы остановить, нажмите ORBIT на карте.",
+    "Contacts cycles the nearest planes, vessels and installations. Space Missions lists launches and orbital assets. Satellites track independently.": "«Контакты» перебирает ближайшие самолёты, суда и объекты. «Космические миссии» показывают запуски и орбитальные аппараты. Спутники отслеживаются отдельно."
   },
   "de": {
     "Flying to Huntsville, AL...": "Flug nach Huntsville, AL...",
@@ -642,7 +646,6 @@
     "Tap a feature on the map, or choose an action below.": "Ein Objekt auf der Karte antippen oder unten eine Aktion wählen.",
     "Add MQTT server": "MQTT-Server hinzufügen",
     "Drawing tools": "Zeichenwerkzeuge",
-    "Label for the next shape": "Beschriftung für die nächste Form",
     "Target selected": "Ziel ausgewählt",
     "Tap Deselect to release it": "„Abwählen“ tippen, um es freizugeben",
     "Calibration (advanced)": "Kalibrierung (erweitert)",
@@ -707,7 +710,6 @@
     "Deselect": "Abwählen",
     "Deselect the selected target": "Ausgewähltes Ziel abwählen",
     "Radio Networks": "Funknetze",
-    "Label (optional)": "Beschriftung (optional)",
     "Violent": "Gewalt",
     "Property": "Eigentum",
     "Drugs & alcohol": "Drogen & Alkohol",
@@ -732,7 +734,11 @@
     "Report window": "Berichtszeitraum",
     "Show or hide this kind of offense": "Diese Art von Delikt ein- oder ausblenden",
     "Cases from the weekly Madison Police Department incident reports, placed at the block. A dot takes the color of its most common kind of case. Cases involving sex offenses, children, deaths or missing persons are not shown.": "Fälle aus den wöchentlichen Vorfallsberichten der Polizei Madison, auf Blockebene verortet. Ein Punkt hat die Farbe seiner häufigsten Fallart. Fälle zu Sexualdelikten, Kindern, Todesfällen oder vermissten Personen werden nicht angezeigt.",
-    "Crime Reports": "Polizeiberichte"
+    "Crime Reports": "Polizeiberichte",
+    "Type a place first.": "Gib zuerst einen Ort ein.",
+    "Flying to {place}": "Flug nach {place}",
+    "Circles the last landmark you flew to. Tap the ORBIT chip on the map to stop.": "Kreist um das zuletzt angeflogene Wahrzeichen. Tippe zum Beenden auf der Karte auf ORBIT.",
+    "Contacts cycles the nearest planes, vessels and installations. Space Missions lists launches and orbital assets. Satellites track independently.": "Kontakte wechselt durch die nächsten Flugzeuge, Schiffe und Einrichtungen. Weltraummissionen listet Starts und Objekte im Orbit. Satelliten werden unabhängig verfolgt."
   },
   "fr": {
     "Flying to Huntsville, AL...": "Vol vers Huntsville, AL...",
@@ -885,7 +891,6 @@
     "Tap a feature on the map, or choose an action below.": "Touchez un élément de la carte ou choisissez une action ci-dessous.",
     "Add MQTT server": "Ajouter un serveur MQTT",
     "Drawing tools": "Outils de dessin",
-    "Label for the next shape": "Étiquette de la prochaine forme",
     "Target selected": "Cible sélectionnée",
     "Tap Deselect to release it": "Touchez « Désélectionner » pour la libérer",
     "Calibration (advanced)": "Calibration (avancée)",
@@ -951,7 +956,6 @@
     "Deselect": "Désélectionner",
     "Deselect the selected target": "Désélectionner la cible sélectionnée",
     "Radio Networks": "Réseaux radio",
-    "Label (optional)": "Libellé (facultatif)",
     "Violent": "Violences",
     "Property": "Biens",
     "Drugs & alcohol": "Drogues et alcool",
@@ -977,7 +981,11 @@
     "Report window": "Période des rapports",
     "Show or hide this kind of offense": "Afficher ou masquer ce type d’infraction",
     "Cases from the weekly Madison Police Department incident reports, placed at the block. A dot takes the color of its most common kind of case. Cases involving sex offenses, children, deaths or missing persons are not shown.": "Affaires issues des rapports hebdomadaires d’incidents de la police de Madison, placées au pâté de maisons. Un point prend la couleur du type d’affaire le plus fréquent. Les affaires d’infractions sexuelles, d’enfants, de décès ou de personnes disparues ne sont pas affichées.",
-    "Crime Reports": "Rapports de police"
+    "Crime Reports": "Rapports de police",
+    "Type a place first.": "Saisissez d’abord un lieu.",
+    "Flying to {place}": "Vol vers {place}",
+    "Circles the last landmark you flew to. Tap the ORBIT chip on the map to stop.": "Tourne autour du dernier lieu remarquable survolé. Touchez la puce ORBIT sur la carte pour arrêter.",
+    "Contacts cycles the nearest planes, vessels and installations. Space Missions lists launches and orbital assets. Satellites track independently.": "Contacts parcourt les avions, navires et installations les plus proches. Missions spatiales liste les lancements et les objets en orbite. Les satellites sont suivis séparément."
   },
   "it": {
     "Flying to Huntsville, AL...": "Volo verso Huntsville, AL...",
@@ -1130,7 +1138,6 @@
     "Tap a feature on the map, or choose an action below.": "Tocca un elemento sulla mappa o scegli un’azione qui sotto.",
     "Add MQTT server": "Aggiungi server MQTT",
     "Drawing tools": "Strumenti di disegno",
-    "Label for the next shape": "Etichetta per la prossima forma",
     "Target selected": "Obiettivo selezionato",
     "Tap Deselect to release it": "Tocca «Deseleziona» per rilasciarlo",
     "Calibration (advanced)": "Calibrazione (avanzata)",
@@ -1196,7 +1203,6 @@
     "Deselect": "Deseleziona",
     "Deselect the selected target": "Deseleziona l’obiettivo selezionato",
     "Radio Networks": "Reti radio",
-    "Label (optional)": "Etichetta (facoltativa)",
     "Violent": "Violenti",
     "Property": "Contro il patrimonio",
     "Drugs & alcohol": "Droghe e alcol",
@@ -1222,7 +1228,11 @@
     "Report window": "Periodo dei rapporti",
     "Show or hide this kind of offense": "Mostra o nascondi questo tipo di reato",
     "Cases from the weekly Madison Police Department incident reports, placed at the block. A dot takes the color of its most common kind of case. Cases involving sex offenses, children, deaths or missing persons are not shown.": "Casi dai rapporti settimanali sugli incidenti del Dipartimento di Polizia di Madison, collocati per isolato. Un punto prende il colore del tipo di caso più frequente. I casi riguardanti reati sessuali, minori, decessi o persone scomparse non vengono mostrati.",
-    "Crime Reports": "Rapporti di polizia"
+    "Crime Reports": "Rapporti di polizia",
+    "Type a place first.": "Scrivi prima un luogo.",
+    "Flying to {place}": "In volo verso {place}",
+    "Circles the last landmark you flew to. Tap the ORBIT chip on the map to stop.": "Gira intorno all’ultimo punto di riferimento raggiunto. Tocca il chip ORBIT sulla mappa per fermarti.",
+    "Contacts cycles the nearest planes, vessels and installations. Space Missions lists launches and orbital assets. Satellites track independently.": "Contatti scorre aerei, navi e installazioni più vicini. Missioni spaziali elenca lanci e risorse orbitali. I satelliti sono tracciati separatamente."
   },
   "ja": {
     "Flying to Huntsville, AL...": "アラバマ州ハンツビルへ飛行中…",
@@ -1367,7 +1377,6 @@
     "Tap a feature on the map, or choose an action below.": "マップ上の要素をタップするか、下のアクションを選んでください。",
     "Add MQTT server": "MQTTサーバーを追加",
     "Drawing tools": "描画ツール",
-    "Label for the next shape": "次の図形のラベル",
     "Target selected": "ターゲットを選択中",
     "Tap Deselect to release it": "「選択解除」をタップして解除",
     "Calibration (advanced)": "キャリブレーション（詳細）",
@@ -1431,7 +1440,6 @@
     "Deselect": "選択解除",
     "Deselect the selected target": "選択中のターゲットを解除",
     "Radio Networks": "無線ネットワーク",
-    "Label (optional)": "ラベル(任意)",
     "Violent": "暴力",
     "Property": "財産",
     "Drugs & alcohol": "薬物・アルコール",
@@ -1455,7 +1463,11 @@
     "Report window": "報告期間",
     "Show or hide this kind of offense": "この種類の犯罪を表示/非表示",
     "Cases from the weekly Madison Police Department incident reports, placed at the block. A dot takes the color of its most common kind of case. Cases involving sex offenses, children, deaths or missing persons are not shown.": "マディソン警察の週次事件報告に基づく事件を、ブロック単位で表示します。点の色は最も多い事件の種類を示します。性犯罪、子ども、死亡、行方不明者に関する事件は表示しません。",
-    "Crime Reports": "警察の報告"
+    "Crime Reports": "警察の報告",
+    "Type a place first.": "先に場所を入力してください。",
+    "Flying to {place}": "{place}へ移動中",
+    "Circles the last landmark you flew to. Tap the ORBIT chip on the map to stop.": "最後に移動したランドマークの周りを回ります。止めるには地図上の ORBIT チップをタップします。",
+    "Contacts cycles the nearest planes, vessels and installations. Space Missions lists launches and orbital assets. Satellites track independently.": "コンタクトは最寄りの航空機・船舶・施設を順に表示します。宇宙ミッションは打ち上げと軌道上の資産を一覧表示します。衛星は個別に追跡されます。"
   },
   "pt": {
     "Flying to Huntsville, AL...": "Voando para Huntsville, AL...",
@@ -1608,7 +1620,6 @@
     "Tap a feature on the map, or choose an action below.": "Toque em um elemento do mapa ou escolha uma ação abaixo.",
     "Add MQTT server": "Adicionar servidor MQTT",
     "Drawing tools": "Ferramentas de desenho",
-    "Label for the next shape": "Rótulo da próxima forma",
     "Target selected": "Alvo selecionado",
     "Tap Deselect to release it": "Toque em “Desmarcar” para liberá-lo",
     "Calibration (advanced)": "Calibração (avançado)",
@@ -1674,7 +1685,6 @@
     "Deselect": "Desmarcar",
     "Deselect the selected target": "Desmarcar o alvo selecionado",
     "Radio Networks": "Redes de rádio",
-    "Label (optional)": "Rótulo (opcional)",
     "Violent": "Violentos",
     "Property": "Contra o patrimônio",
     "Drugs & alcohol": "Drogas e álcool",
@@ -1700,7 +1710,11 @@
     "Report window": "Período dos relatórios",
     "Show or hide this kind of offense": "Mostrar ou ocultar este tipo de ocorrência",
     "Cases from the weekly Madison Police Department incident reports, placed at the block. A dot takes the color of its most common kind of case. Cases involving sex offenses, children, deaths or missing persons are not shown.": "Casos dos relatórios semanais de ocorrências do Departamento de Polícia de Madison, posicionados por quarteirão. Cada ponto assume a cor do tipo de caso mais comum. Casos envolvendo crimes sexuais, crianças, mortes ou pessoas desaparecidas não são exibidos.",
-    "Crime Reports": "Relatórios policiais"
+    "Crime Reports": "Relatórios policiais",
+    "Type a place first.": "Digite um lugar primeiro.",
+    "Flying to {place}": "Voando para {place}",
+    "Circles the last landmark you flew to. Tap the ORBIT chip on the map to stop.": "Circula o último ponto de referência para onde você voou. Toque no chip ORBIT no mapa para parar.",
+    "Contacts cycles the nearest planes, vessels and installations. Space Missions lists launches and orbital assets. Satellites track independently.": "Contatos percorre os aviões, navios e instalações mais próximos. Missões espaciais lista lançamentos e ativos em órbita. Os satélites são rastreados separadamente."
   },
   "uk": {
     "Flying to Huntsville, AL...": "Політ до Гантсвілла, Алабама...",
@@ -1857,7 +1871,6 @@
     "Tap a feature on the map, or choose an action below.": "Торкніться об’єкта на карті або виберіть дію нижче.",
     "Add MQTT server": "Додати MQTT-сервер",
     "Drawing tools": "Інструменти малювання",
-    "Label for the next shape": "Підпис для наступної фігури",
     "Target selected": "Ціль вибрано",
     "Tap Deselect to release it": "Торкніться «Скасувати вибір», щоб відпустити її",
     "Calibration (advanced)": "Калібрування (розширене)",
@@ -1924,7 +1937,6 @@
     "Deselect": "Скасувати вибір",
     "Deselect the selected target": "Скасувати вибір цілі",
     "Radio Networks": "Радіомережі",
-    "Label (optional)": "Мітка (необов’язково)",
     "Violent": "Насильницькі",
     "Property": "Майнові",
     "Drugs & alcohol": "Наркотики й алкоголь",
@@ -1951,7 +1963,11 @@
     "Report window": "Період зведень",
     "Show or hide this kind of offense": "Показати або приховати цей вид правопорушень",
     "Cases from the weekly Madison Police Department incident reports, placed at the block. A dot takes the color of its most common kind of case. Cases involving sex offenses, children, deaths or missing persons are not shown.": "Справи зі щотижневих зведень про події поліції Медісона, розміщені з точністю до кварталу. Колір точки відповідає найчастішому виду справ. Справи про сексуальні злочини, дітей, смерті та зниклих людей не показуються.",
-    "Crime Reports": "Поліцейські зведення"
+    "Crime Reports": "Поліцейські зведення",
+    "Type a place first.": "Спершу введіть місце.",
+    "Flying to {place}": "Переліт до {place}",
+    "Circles the last landmark you flew to. Tap the ORBIT chip on the map to stop.": "Облітає останню пам’ятку, до якої ви летіли. Щоб зупинити, торкніться ORBIT на мапі.",
+    "Contacts cycles the nearest planes, vessels and installations. Space Missions lists launches and orbital assets. Satellites track independently.": "«Контакти» перебирає найближчі літаки, судна й об’єкти. «Космічні місії» показують запуски та орбітальні апарати. Супутники відстежуються окремо."
   },
   "zh-CN": {
     "Flying to Huntsville, AL...": "正在飞往阿拉巴马州亨茨维尔…",
@@ -2096,7 +2112,6 @@
     "Tap a feature on the map, or choose an action below.": "点按地图上的要素，或在下方选择操作。",
     "Add MQTT server": "添加 MQTT 服务器",
     "Drawing tools": "绘图工具",
-    "Label for the next shape": "下一个图形的标签",
     "Target selected": "已选择目标",
     "Tap Deselect to release it": "点按“取消选择”以释放",
     "Calibration (advanced)": "校准（高级）",
@@ -2160,7 +2175,6 @@
     "Deselect": "取消选择",
     "Deselect the selected target": "取消选择所选目标",
     "Radio Networks": "无线电网络",
-    "Label (optional)": "标签(可选)",
     "Violent": "暴力",
     "Property": "财产",
     "Drugs & alcohol": "毒品与酒精",
@@ -2184,7 +2198,11 @@
     "Report window": "报告时段",
     "Show or hide this kind of offense": "显示或隐藏此类案件",
     "Cases from the weekly Madison Police Department incident reports, placed at the block. A dot takes the color of its most common kind of case. Cases involving sex offenses, children, deaths or missing persons are not shown.": "案件来自麦迪逊警察局每周事件报告，按街区定位。圆点颜色表示该处最常见的案件类型。涉及性犯罪、儿童、死亡或失踪人员的案件不予显示。",
-    "Crime Reports": "警情报告"
+    "Crime Reports": "警情报告",
+    "Type a place first.": "请先输入地点。",
+    "Flying to {place}": "正在飞往{place}",
+    "Circles the last landmark you flew to. Tap the ORBIT chip on the map to stop.": "环绕你最后飞往的地标。点按地图上的 ORBIT 标签即可停止。",
+    "Contacts cycles the nearest planes, vessels and installations. Space Missions lists launches and orbital assets. Satellites track independently.": "“联系人”依次显示最近的飞机、船只和设施。“太空任务”列出发射和在轨资产。卫星单独跟踪。"
   },
   "zh-Hant": {
     "Flying to Huntsville, AL...": "正在飛往阿拉巴馬州亨茨維爾…",
@@ -2329,7 +2347,6 @@
     "Tap a feature on the map, or choose an action below.": "點按地圖上的要素，或在下方選擇操作。",
     "Add MQTT server": "添加 MQTT 服務器",
     "Drawing tools": "繪圖工具",
-    "Label for the next shape": "下一個圖形的標籤",
     "Target selected": "已選擇目標",
     "Tap Deselect to release it": "點按“取消選擇”以釋放",
     "Calibration (advanced)": "校準（高級）",
@@ -2393,7 +2410,6 @@
     "Deselect": "取消選擇",
     "Deselect the selected target": "取消選擇所選目標",
     "Radio Networks": "無線電網絡",
-    "Label (optional)": "標籤(可選)",
     "Violent": "暴力",
     "Property": "財產",
     "Drugs & alcohol": "毒品與酒精",
@@ -2417,7 +2433,11 @@
     "Report window": "報告時段",
     "Show or hide this kind of offense": "顯示或隱藏此類案件",
     "Cases from the weekly Madison Police Department incident reports, placed at the block. A dot takes the color of its most common kind of case. Cases involving sex offenses, children, deaths or missing persons are not shown.": "案件來自麥迪遜警察局每週事件報告，按街區定位。圓點顏色表示該處最常見的案件類型。涉及性犯罪、兒童、死亡或失蹤人員的案件不予顯示。",
-    "Crime Reports": "警情報告"
+    "Crime Reports": "警情報告",
+    "Type a place first.": "請先輸入地點。",
+    "Flying to {place}": "正在飛往{place}",
+    "Circles the last landmark you flew to. Tap the ORBIT chip on the map to stop.": "環繞你最後飛往的地標。點按地圖上的 ORBIT 標籤即可停止。",
+    "Contacts cycles the nearest planes, vessels and installations. Space Missions lists launches and orbital assets. Satellites track independently.": "“聯繫人”依次顯示最近的飛機、船隻和設施。“太空任務”列出發射和在軌資產。衛星單獨跟蹤。"
   },
   "ar": {
     "Flying to Huntsville, AL...": "جارٍ الطيران إلى هانتسفيل، ألاباما...",
@@ -2585,8 +2605,6 @@
     "Add MQTT server": "أضف خادم MQTT",
     "Close the add-server form": "أغلق نموذج إضافة الخادم",
     "Drawing tools": "أدوات الرسم",
-    "Label (optional)": "التسمية (اختيارية)",
-    "Label for the next shape": "تسمية الشكل التالي",
     "Change the drawing colour": "غيّر لون الرسم",
     "Undo": "تراجع",
     "Exit drawing": "اخرج من الرسم",
@@ -2680,7 +2698,11 @@
     "Report window": "فترة التقارير",
     "Show or hide this kind of offense": "إظهار هذا النوع من المخالفات أو إخفاؤه",
     "Cases from the weekly Madison Police Department incident reports, placed at the block. A dot takes the color of its most common kind of case. Cases involving sex offenses, children, deaths or missing persons are not shown.": "قضايا من تقارير الحوادث الأسبوعية لقسم شرطة ماديسون، موضوعة على مستوى المربع السكني. تأخذ النقطة لون أكثر أنواع القضايا شيوعًا فيها. لا تُعرض القضايا المتعلقة بالجرائم الجنسية أو الأطفال أو الوفيات أو المفقودين.",
-    "Crime Reports": "تقارير الشرطة"
+    "Crime Reports": "تقارير الشرطة",
+    "Type a place first.": "اكتب اسم مكان أولًا.",
+    "Flying to {place}": "جارٍ الطيران إلى {place}",
+    "Circles the last landmark you flew to. Tap the ORBIT chip on the map to stop.": "يدور حول آخر معلم طرت إليه. انقر شارة ORBIT على الخريطة للإيقاف.",
+    "Contacts cycles the nearest planes, vessels and installations. Space Missions lists launches and orbital assets. Satellites track independently.": "تتنقل جهات الاتصال بين أقرب الطائرات والسفن والمنشآت. تعرض المهام الفضائية عمليات الإطلاق والأصول المدارية. تُتتبَّع الأقمار الصناعية بشكل مستقل."
   },
   "he": {
     "Flying to Huntsville, AL...": "טס להאנטסוויל, אלבמה...",
@@ -2861,8 +2883,6 @@
     "Add MQTT server": "הוספת שרת MQTT",
     "Close the add-server form": "סגירת טופס הוספת השרת",
     "Drawing tools": "כלי ציור",
-    "Label (optional)": "תווית (אופציונלי)",
-    "Label for the next shape": "תווית לצורה הבאה",
     "Change the drawing colour": "שינוי צבע הציור",
     "Undo": "ביטול פעולה",
     "Exit drawing": "יציאה מציור",
@@ -2925,7 +2945,11 @@
     "This section failed to load.": "טעינת החלק הזה נכשלה.",
     "{count} {category}": "{count} {category}",
     "APRS": "APRS",
-    "Meshtastic": "Meshtastic"
+    "Meshtastic": "Meshtastic",
+    "Type a place first.": "הקלידו קודם מקום.",
+    "Flying to {place}": "טסים אל {place}",
+    "Circles the last landmark you flew to. Tap the ORBIT chip on the map to stop.": "מקיף את ציון הדרך האחרון שאליו טסתם. הקישו על התווית ORBIT במפה כדי לעצור.",
+    "Contacts cycles the nearest planes, vessels and installations. Space Missions lists launches and orbital assets. Satellites track independently.": "אנשי קשר עובר בין המטוסים, כלי השיט והמתקנים הקרובים ביותר. משימות חלל מציג שיגורים ונכסים במסלול. לוויינים נעקבים בנפרד."
   },
   "sv": {
     "Flying to Huntsville, AL...": "Flyger till Huntsville, AL...",
@@ -3086,8 +3110,6 @@
     "Add MQTT server": "Lägg till MQTT-server",
     "Close the add-server form": "Stäng formuläret för ny server",
     "Drawing tools": "Ritverktyg",
-    "Label (optional)": "Etikett (valfri)",
-    "Label for the next shape": "Etikett för nästa form",
     "Change the drawing colour": "Ändra ritfärg",
     "Undo": "Ångra",
     "Exit drawing": "Avsluta ritning",
@@ -3164,6 +3186,10 @@
     "Standard": "Standard",
     "Mini": "Mini",
     "APRS": "APRS",
-    "Meshtastic": "Meshtastic"
+    "Meshtastic": "Meshtastic",
+    "Type a place first.": "Skriv in en plats först.",
+    "Flying to {place}": "Flyger till {place}",
+    "Circles the last landmark you flew to. Tap the ORBIT chip on the map to stop.": "Cirklar runt det senaste landmärket du flög till. Tryck på ORBIT på kartan för att stoppa.",
+    "Contacts cycles the nearest planes, vessels and installations. Space Missions lists launches and orbital assets. Satellites track independently.": "Kontakter bläddrar mellan närmaste flygplan, fartyg och anläggningar. Rymduppdrag listar uppskjutningar och objekt i omloppsbana. Satelliter spåras separat."
   }
 }

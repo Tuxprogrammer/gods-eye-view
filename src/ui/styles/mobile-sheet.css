@@ -212,6 +212,11 @@ html[data-ui='mobile'][data-mobile-sheet='open'] body {
   overflow: hidden;
   overscroll-behavior: none;
 }
+/* The Stories button (StoriesView.vue) floats above every panel; over the
+   open sheet it would cover the page's controls. */
+html[data-ui='mobile'][data-mobile-sheet='open'] #hStories {
+  visibility: hidden;
+}
 html[data-ui='mobile'] #mobile-sheet,
 html[data-ui='mobile'] #mobile-sheet-backdrop {
   touch-action: none;

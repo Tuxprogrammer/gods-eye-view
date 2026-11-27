@@ -14,6 +14,9 @@ import { t } from '../../../i18n/index.js';
 import { registerMobilePage } from '../sheet.js';
 import { movePanel, isPanelMoved } from '../portal.js';
 import { contextTileSummary } from '../context-summary.js';
+import { watch } from 'vue';
+import { useSpaceMissionsStore } from '../../stores/spaceMissions.js';
+import { applicationPinia } from '../../vueRuntime.js';
 
 const byId = (id) => document.getElementById(id);
 
@@ -40,34 +43,51 @@ function summary() {
   });
 }
 
-/** Mission detail replaces the roster: bring the sheet back to the top. */
+/**
+ * Mission detail replaces the roster: bring the sheet back to the top.
+ * @returns {Function} Stops watching.
+ */
 function watchMissionDetail(container) {
   const host = byId('space-mission-panel-host');
-  if (!host || typeof MutationObserver !== 'function') return;
+  if (!host || typeof MutationObserver !== 'function') return () => {};
   const scrollTop = () => {
     const scroller = container.closest('.mobile-sheet__body');
     if (scroller) scroller.scrollTop = 0;
   };
+  let watched = null;
+  const detailObserver = new MutationObserver(() => {
+    if (watched && !watched.hidden) scrollTop();
+  });
   const watchDetail = () => {
     const detail = byId('space-mission-panel');
-    if (!detail || detail.dataset.mobileWatched) return;
-    detail.dataset.mobileWatched = 'true';
-    new MutationObserver(() => {
-      if (!detail.hidden) scrollTop();
-    }).observe(detail, { attributes: true, attributeFilter: ['hidden'] });
+    if (!detail || detail === watched) return;
+    watched = detail;
+    detailObserver.disconnect();
+    detailObserver.observe(detail, {
+      attributes: true,
+      attributeFilter: ['hidden'],
+    });
     if (!detail.hidden) scrollTop();
   };
-  new MutationObserver(watchDetail).observe(host, { childList: true });
+  const hostObserver = new MutationObserver(watchDetail);
+  hostObserver.observe(host, { childList: true });
   watchDetail();
+  return () => {
+    hostObserver.disconnect();
+    detailObserver.disconnect();
+  };
 }
 
 function mount(container, ctx) {
   container.classList.add('m-context');
+  let stopMissions = null;
 
   const modes = document.querySelector('.global-context-modes');
   const standby = byId('context-mode-standby');
   const flights = byId('context-flights-view');
-  const missions = byId('context-missions-view');
+  // Space Missions is a layer with its own panel; its roster and detail
+  // (the host inside that panel) come here.
+  const missions = byId('space-mission-panel-host');
 
   if (modes) movePanel(modes, container, 'context-modes');
   // The CONTACTS button explains itself only through a tooltip on desktop.
@@ -75,18 +95,36 @@ function mount(container, ctx) {
     make(
       'p',
       'm-meta m-context__help',
-      'Contacts cycles the nearest planes, vessels and installations. Space Missions lists launches and orbital assets. Satellites track independently.',
+      t(
+        'Contacts cycles the nearest planes, vessels and installations. Space Missions lists launches and orbital assets. Satellites track independently.',
+      ),
     ),
   );
   if (standby) movePanel(standby, container, 'context-standby');
   if (flights) movePanel(flights, container, 'context-flights');
-  if (missions) movePanel(missions, container, 'context-missions');
+  if (missions) {
+    movePanel(missions, container, 'context-missions');
+    // Out of its rail panel, which hides while the layer is off, the host
+    // hides itself the same way.
+    const store = useSpaceMissionsStore(applicationPinia());
+    stopMissions = watch(
+      () => store.enabled,
+      (on) => {
+        missions.hidden = !on;
+      },
+      { immediate: true },
+    );
+  }
 
   // Selecting a contact or mission flies the camera: peek so it is visible.
   container.addEventListener('click', (event) => {
     if (event.target.closest?.(PEEK_TARGETS)) ctx.peek(true);
   });
-  watchMissionDetail(container);
+  const stopDetail = watchMissionDetail(container);
+  return () => {
+    stopDetail();
+    stopMissions?.();
+  };
 }
 
 export function install() {

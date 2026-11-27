@@ -27,6 +27,9 @@ let installed = false;
 let handle = null;
 
 const byId = (id) => document.getElementById(id);
+// The Visual panel's presets and map source (VisualPresets.vue), wherever
+// this page has moved them.
+const visualPresets = () => document.querySelector('.visual-presets');
 
 function el(tag, className, text) {
   const node = document.createElement(tag);
@@ -172,72 +175,82 @@ export function install() {
     summary: () =>
       viewSummary({
         style: byId('active-style-name')?.textContent,
-        source: byId('map-stack-status')?.textContent,
+        source: visualPresets()?.querySelector('.visual-presets__status')
+          ?.textContent,
       }),
     mount(container, ctx) {
-      mountView(container, ctx, { fpsListeners, getFps: () => fpsReadout });
+      return mountView(container, ctx, {
+        fpsListeners,
+        getFps: () => fpsReadout,
+      });
     },
   });
 
   // Keep the tile line live (active style / map source change from anywhere).
   if (typeof MutationObserver === 'function') {
     const refresh = () => handle.notify();
-    for (const id of ['active-style-name', 'map-stack-status']) {
-      const node = byId(id);
-      if (node)
-        new MutationObserver(refresh).observe(node, {
-          childList: true,
-          characterData: true,
-          subtree: true,
-        });
-    }
+    const follow = (node) =>
+      new MutationObserver(refresh).observe(node, {
+        childList: true,
+        characterData: true,
+        subtree: true,
+      });
+    const style = byId('active-style-name');
+    if (style) follow(style);
+    // The map source badge is the Visual panel's, which may render later.
+    watchForElement(
+      document.body,
+      () => visualPresets()?.querySelector('.visual-presets__status'),
+      (status) => {
+        follow(status);
+        refresh();
+      },
+      { subtree: true, once: true },
+    );
   }
   return handle;
 }
 
+/** Build the View page; returns the cleanup the sheet runs on dispose. */
 function mountView(container, ctx, { fpsListeners, getFps }) {
   container.classList.add('mv-page');
+  const stops = [];
 
-  // 1. Visual style presets (+ visible description, since title= is hidden).
+  // 1. Visual style presets and map source: the Visual panel's own section
+  // (VisualPresets.vue, inside #pp-toggles), moved to the top of the page,
+  // with the text a touch screen cannot show as a tip: the active preset's
+  // description and the reason each unavailable map source is unavailable.
   container.append(heading('style', 'Visual style'));
-  const styleButtons = byId('style-buttons');
-  if (styleButtons) movePanel(styleButtons, container, 'view-style-buttons');
+  const presets = visualPresets();
+  if (presets) movePanel(presets, container, 'view-visual-presets');
   const help = el('p', 'm-meta mv-style-help');
   help.setAttribute('aria-live', 'polite');
-  container.append(help);
-  const syncHelp = () => {
+  const note = el('p', 'm-meta mv-map-note');
+  container.append(help, note);
+  const syncPresets = () => {
     const active =
-      styleButtons?.querySelector('.style-btn.active') ??
-      styleButtons?.querySelector('.style-btn');
+      presets?.querySelector('.visual-presets__style.active') ??
+      presets?.querySelector('.visual-presets__style');
     const { name, description } = presetHelp(active);
     help.replaceChildren();
     if (name) help.append(el('strong', 'mv-style-help__name', name));
     if (description) help.append(` — ${description}`);
+    const lines = unavailableMapNotes(
+      presets?.querySelectorAll('.visual-presets__chip'),
+    );
+    note.textContent = lines.join('\n');
+    note.hidden = lines.length === 0;
   };
-  syncHelp();
-  if (styleButtons && typeof MutationObserver === 'function') {
-    new MutationObserver(syncHelp).observe(styleButtons, {
+  syncPresets();
+  if (presets && typeof MutationObserver === 'function') {
+    const observer = new MutationObserver(syncPresets);
+    observer.observe(presets, {
       attributes: true,
-      attributeFilter: ['class'],
+      attributeFilter: ['class', 'aria-disabled', 'title'],
+      childList: true,
       subtree: true,
     });
-  }
-
-  // 2. Map source chips (+ inline reason for unavailable ones).
-  const mapSection = document.querySelector('.map-source-section');
-  if (mapSection) {
-    movePanel(mapSection, container, 'view-map-source');
-    const note = el('p', 'm-meta mv-map-note');
-    mapSection.append(note);
-    const chips = byId('map-stack-chips');
-    const syncNote = () => {
-      const lines = unavailableMapNotes(chips?.children);
-      note.textContent = lines.join('\n');
-      note.hidden = lines.length === 0;
-    };
-    syncNote();
-    if (chips && typeof MutationObserver === 'function')
-      new MutationObserver(syncNote).observe(chips, { childList: true });
+    stops.push(() => observer.disconnect());
   }
 
   // 3. Camera.
@@ -280,9 +293,20 @@ function mountView(container, ctx, { fpsListeners, getFps }) {
   container.append(heading('display', 'Display & effects'));
   const pp = byId('pp-toggles');
   if (pp) {
-    for (const child of Array.from(pp.children)) {
-      const slot = slotForNode(child);
-      if (slot) child.dataset.mvSlot = slot;
+    // The groups sit in the panel body; Vue adds some (sky, frame rate)
+    // later, so they are slotted again when the body's children change.
+    const body = pp.querySelector('.pp-panel-body') ?? pp;
+    const slotGroups = () => {
+      for (const child of Array.from(body.children)) {
+        const slot = slotForNode(child);
+        if (slot && child.dataset.mvSlot !== slot) child.dataset.mvSlot = slot;
+      }
+    };
+    slotGroups();
+    if (typeof MutationObserver === 'function') {
+      const observer = new MutationObserver(slotGroups);
+      observer.observe(body, { childList: true });
+      stops.push(() => observer.disconnect());
     }
     movePanel(pp, container, 'view-pp-toggles');
   }
@@ -293,11 +317,12 @@ function mountView(container, ctx, { fpsListeners, getFps }) {
   );
   cleanHint.dataset.mvSlot = 'clean-hint';
   container.append(cleanHint);
-  byId('clean-view-toggle')?.addEventListener('click', () => {
-    // The sheet also closes from the body-class observer; this covers the
-    // toggle being pressed while already peeked.
-    ctx.close();
-  });
+  // The sheet also closes from the body-class observer; this covers the
+  // toggle being pressed while already peeked.
+  const cleanToggle = byId('clean-view-toggle');
+  const closeOnClean = () => ctx.close();
+  cleanToggle?.addEventListener('click', closeOnClean);
+  stops.push(() => cleanToggle?.removeEventListener('click', closeOnClean));
 
   // 5. FPS readout switch.
   const fps = switchRow(
@@ -308,6 +333,10 @@ function mountView(container, ctx, { fpsListeners, getFps }) {
   fps.dataset.mvSlot = 'fps';
   const syncFps = () => setSwitchState(fps, getFps()?.hidden === false);
   fpsListeners.add(syncFps);
+  stops.push(() => fpsListeners.delete(syncFps));
   syncFps();
   container.append(fps);
+  return () => {
+    for (const stop of stops.splice(0)) stop();
+  };
 }

@@ -66,3 +66,21 @@ test('teardown during the flight cancels it', (t) => {
   stop();
   assert.equal(calls.flightsCancelled, 1);
 });
+
+test('a camera port that cannot fly keeps the start view', (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const views = [];
+  let cancelled = 0;
+  const host = { isDestroyed: () => false };
+  bindRenderer(host, {
+    camera: {
+      setView: (view) => views.push(view),
+      cancelFlight: () => cancelled++,
+    },
+  });
+  const stop = flyToForkStart(host);
+  t.mock.timers.tick(500);
+  assert.equal(views.length, 1);
+  stop();
+  assert.equal(cancelled, 1);
+});

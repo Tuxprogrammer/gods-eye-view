@@ -197,7 +197,9 @@ export function installSheet(doc = document, win = window) {
     record.section = section;
     record.body = pageBody;
     try {
-      record.def.mount(pageBody, ctxFor(record.def.id));
+      // A page may return a cleanup, run when the sheet is disposed.
+      const cleanup = record.def.mount(pageBody, ctxFor(record.def.id));
+      record.cleanup = typeof cleanup === 'function' ? cleanup : null;
     } catch (error) {
       console.error('[mobile] page mount failed', record.def.id, error);
       pageBody.textContent = t('This section failed to load.');
@@ -390,6 +392,12 @@ export function installSheet(doc = document, win = window) {
     backdrop.remove();
     root.remove();
     for (const record of pages.values()) {
+      try {
+        record.cleanup?.();
+      } catch (error) {
+        console.error('[mobile] page cleanup failed', record.def.id, error);
+      }
+      record.cleanup = null;
       record.mounted = false;
       record.section = null;
       record.body = null;

@@ -17,6 +17,9 @@
  * Scene action panels / pack credit cards are styled by CSS only.
  */
 import { t } from '../../../i18n/index.js';
+import { DRAW_COLORS } from '../../../annotations/drawMarks.js';
+import { useDisplayStore } from '../../stores/display.js';
+import { applicationPinia } from '../../vueRuntime.js';
 import { isMobileUi } from '../../mobileMode.js';
 import { closeSheet, isSheetOpen } from '../sheet.js';
 import { getActiveTrackedReadoutId } from '../../../data/trackedReadout.js';
@@ -331,14 +334,8 @@ function installDrawToolbar(disposers, on) {
     seg.append(b);
     return b;
   });
-  const label = el('input', 'm-draw__label');
-  label.type = 'text';
-  label.maxLength = 120;
-  label.placeholder = t('Label (optional)');
-  label.setAttribute('aria-label', t('Label for the next shape'));
-  label.setAttribute('autocomplete', 'off');
   const colour = button('m-draw__colour', '●', t('Change the drawing colour'));
-  row.append(seg, label, colour);
+  row.append(seg, colour);
   const actions = el('div', 'm-draw__actions');
   const undo = button('m-btn', t('Undo'));
   const cancel = button('m-btn', t('Cancel'));
@@ -350,13 +347,10 @@ function installDrawToolbar(disposers, on) {
   disposers.push(() => bar.remove());
 
   const tool = () => window.__gevDrawTool ?? null;
-  const labelInput = () => document.getElementById('draw-label-input');
-  const colourSelect = () => document.getElementById('draw-color-select');
-
-  on(label, 'input', () => {
-    const target = labelInput();
-    if (target) target.value = label.value;
-  });
+  // The Draw controls answer through the display store (DrawControls.vue);
+  // a shape is named afterwards, in its row.
+  const display = () => useDisplayStore(applicationPinia());
+  const drawColour = () => display().draw?.color ?? DRAW_COLORS[0];
   on(undo, 'click', () => {
     // The tool's own Backspace handler owns the vertex list.
     document.body.dispatchEvent(
@@ -371,10 +365,8 @@ function installDrawToolbar(disposers, on) {
   on(finish, 'click', () => void tool()?.finish());
   on(exit, 'click', () => tool()?.setActive(false));
   on(colour, 'click', () => {
-    const select = colourSelect();
-    if (!select?.options?.length) return;
-    select.selectedIndex = (select.selectedIndex + 1) % select.options.length;
-    select.dispatchEvent(new Event('change', { bubbles: true }));
+    const next = DRAW_COLORS.indexOf(drawColour()) + 1;
+    display().act('setDrawColor', DRAW_COLORS[next % DRAW_COLORS.length]);
     refresh();
   });
 
@@ -395,15 +387,7 @@ function installDrawToolbar(disposers, on) {
     for (const b of segButtons) {
       b.setAttribute('aria-checked', String(api?.shape === b.dataset.shape));
     }
-    const input = labelInput();
-    if (
-      input &&
-      label.value !== input.value &&
-      document.activeElement !== label
-    )
-      label.value = input.value;
-    const select = colourSelect();
-    if (select) colour.dataset.colour = select.value;
+    colour.dataset.colour = drawColour();
   }
 
   const observer = new MutationObserver(refresh);

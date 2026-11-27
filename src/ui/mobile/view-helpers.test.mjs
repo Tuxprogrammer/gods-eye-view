@@ -55,7 +55,7 @@ function fakeNode(attrs = {}, { classes = [], children = {} } = {}) {
 test('presetHelp exposes the title= description as visible text', () => {
   const button = fakeNode(
     { title: 'Simulate night-vision goggles.' },
-    { children: { '.btn-label': { textContent: ' NVG ' } } },
+    { children: { '.visual-presets__label': { textContent: ' NVG ' } } },
   );
   assert.deepEqual(presetHelp(button), {
     name: 'NVG',
@@ -65,17 +65,20 @@ test('presetHelp exposes the title= description as visible text', () => {
 });
 
 test('unavailableMapNotes lists every unavailable chip with its reason', () => {
-  const chip = (label, title, unavailable) =>
-    fakeNode(
-      { title, 'aria-disabled': String(unavailable) },
-      {
-        classes: unavailable ? ['unavailable'] : [],
-        children: { '.map-stack-chip-label': { textContent: label } },
-      },
+  const chip = (label, title, unavailable, badge = '') =>
+    Object.assign(
+      fakeNode(
+        { title, 'aria-disabled': String(unavailable) },
+        {
+          classes: unavailable ? ['unavailable'] : [],
+          children: badge ? { small: { textContent: badge } } : {},
+        },
+      ),
+      { textContent: `${label}${badge}` },
     );
   const notes = unavailableMapNotes([
     chip('OSM', 'OSM', false),
-    chip('Bing Aerial', 'Needs a Cesium ion token', true),
+    chip('Bing Aerial', 'Needs a Cesium ion token', true, 'ION'),
     chip('Photoreal', 'Photoreal', true),
   ]);
   assert.deepEqual(notes, [

@@ -308,8 +308,10 @@ export function createAprsLayer({
     source: 'APRS-IS',
     updateInterval: APRS_REFRESH_MS,
 
-    init(viewer) {
+    init(viewer, { panel = null } = {}) {
       if (_viewer) throw new Error('APRS layer is already initialized');
+      // The panels' handle: invalidated when the row or readout changed.
+      _rowControlsListener = panel ? () => panel.invalidate() : null;
       _viewer = viewer;
       _surface = createSurface({
         viewer,
@@ -376,8 +378,10 @@ export function createAprsLayer({
         _hiddenPending = true;
         return true;
       }
-      const ok = await refresh();
-      return ok || !_lastError;
+      // A feed that is down keeps the layer on: its row shows the error and
+      // the next interval retries. False only when the layer went off.
+      await refresh();
+      return _enabled;
     },
 
     destroy() {
@@ -402,10 +406,6 @@ export function createAprsLayer({
         },
         { set },
       );
-    },
-
-    setRowControlsListener(listener) {
-      _rowControlsListener = typeof listener === 'function' ? listener : null;
     },
 
     getStats() {

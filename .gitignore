@@ -39,3 +39,6 @@ pinokio/.installed
 .playwright-mcp/
 # Transient: a release interrupted mid-assembly (npm run changelog recovers it)
 changelog.d/.assembling/
+
+# Fork-only package boundary additions (npm run check:boundaries -- --local).
+scripts/package-boundaries.local.json

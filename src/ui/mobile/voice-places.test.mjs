@@ -2,7 +2,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   canWebShare,
-  classifySearchOutcome,
   cleanCityLine,
   cleanPoiLine,
   placesSummary,
@@ -29,16 +28,8 @@ test('placesSummary composes the tile line', () => {
   assert.equal(placesSummary('📍 Location: Paris', 'Landmark: --'), 'Paris');
   assert.equal(
     placesSummary('📍 Location: --', 'Landmark: --'),
-    'Search or pick a city',
+    'Search places',
   );
-});
-
-test('classifySearchOutcome reads the toast, else reports success', () => {
-  assert.equal(classifySearchOutcome('Location not found', '').kind, 'error');
-  assert.equal(classifySearchOutcome('Search failed', '').kind, 'error');
-  const ok = classifySearchOutcome('', '📍 Location: Oslo');
-  assert.equal(ok.kind, 'ok');
-  assert.match(ok.text, /Oslo/);
 });
 
 test('canWebShare needs navigator.share', () => {

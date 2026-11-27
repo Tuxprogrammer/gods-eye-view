@@ -354,8 +354,10 @@ export function createPropagationLayer({
     source: 'GIRO ionosondes · kc2g',
     updateInterval: PROPAGATION_REFRESH_MS,
 
-    init(viewer) {
+    init(viewer, { panel = null } = {}) {
       if (_viewer) throw new Error('Propagation layer is already initialized');
+      // The panels' handle: invalidated when the row or readout changed.
+      _rowControlsListener = panel ? () => panel.invalidate() : null;
       _viewer = viewer;
       const classificationType = heatmapClassificationType(viewer);
       _surface = createSurface({ viewer, classificationType });
@@ -420,9 +422,10 @@ export function createPropagationLayer({
         _hiddenPending = true;
         return true;
       }
-      const ok = await refreshAll(_activeField);
-      // A superseded request (field switched, layer turned off) is not a failure.
-      return ok || !_lastError;
+      // A feed that is down keeps the layer on: its row shows the error and
+      // the next interval retries. False only when the layer went off.
+      await refreshAll(_activeField);
+      return _enabled;
     },
 
     destroy() {
@@ -471,10 +474,6 @@ export function createPropagationLayer({
         },
         { selectField, setOpacity, setContours, setStations },
       );
-    },
-
-    setRowControlsListener(listener) {
-      _rowControlsListener = typeof listener === 'function' ? listener : null;
     },
 
     getStats() {

@@ -51,7 +51,8 @@ export function viewSummary({ style, source } = {}) {
 /** Name + long description of a preset button (title= is invisible on touch). */
 export function presetHelp(button) {
   if (!button) return { name: '', description: '' };
-  const label = button.querySelector?.('.btn-label')?.textContent ?? '';
+  const label =
+    button.querySelector?.('.visual-presets__label')?.textContent ?? '';
   return {
     name: label.trim(),
     description: String(button.getAttribute?.('title') ?? '').trim(),
@@ -66,7 +67,13 @@ export function unavailableMapNotes(chips) {
       chip.classList?.contains('unavailable') ||
       chip.getAttribute?.('aria-disabled') === 'true';
     if (!unavailable) continue;
-    const label = chip.querySelector?.('.map-stack-chip-label')?.textContent;
+    // The chip reads "<label><small>ION</small>": the label is its text
+    // without the badge.
+    const badge = chip.querySelector?.('small')?.textContent ?? '';
+    const text = String(chip.textContent ?? '').trim();
+    const label = (
+      badge && text.endsWith(badge) ? text.slice(0, -badge.length) : text
+    ).trim();
     const reason = String(chip.getAttribute?.('title') ?? '').trim();
     if (label && reason && reason !== label) notes.push(`${label}: ${reason}`);
     else if (label) notes.push(`${label}: unavailable`);

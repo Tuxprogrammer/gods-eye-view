@@ -1,5 +1,8 @@
 import { FORK_MAP_STACK_IDS } from '../../fork/mapStacks.js';
 
+/** The layer's id: what it claims the one map selection as (data/clickSelect.js). */
+export const CABLE_LAYER_ID = 'telegeography-submarine-cables';
+
 export const BASE_CABLE_COLOR = '#39d5ff';
 
 export const BASE_LANDING_COLOR = '#8fffd2';

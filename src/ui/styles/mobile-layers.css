@@ -236,12 +236,6 @@ html[data-ui='mobile'] .m-layers .data-server-remove {
   height: var(--m-tap);
   font-size: 18px;
 }
-html[data-ui='mobile'] .m-layers .data-server-toggle {
-  min-height: var(--m-tap);
-  min-width: var(--m-tap);
-  padding: 0 12px;
-  font-size: 12px;
-}
 html[data-ui='mobile'] .m-layers .data-server-name,
 html[data-ui='mobile'] .m-layers .data-server-status {
   font-size: var(--m-font-meta);

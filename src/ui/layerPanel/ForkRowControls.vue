@@ -4,6 +4,7 @@ import UiButton from '../kit/UiButton.vue';
 import UiCheckbox from '../kit/UiCheckbox.vue';
 import UiSelect from '../kit/UiSelect.js';
 import UiSlider from '../kit/UiSlider.js';
+import UiSwitch from '../kit/UiSwitch.vue';
 import { vFieldValue } from '../rail/fieldValue.js';
 import { t } from '../../i18n/index.js';
 
@@ -266,17 +267,11 @@ const FIELDS = [
               :title="t('MQTT topic filter, e.g. msh/US/# or msh/US/AL/#')"
               :aria-label="t('{name} topic', { name: item.name })"
               @change="(event) => onTopic(item.id, event)" /></div
-          ><UiButton
+          ><UiSwitch
             class="data-server-toggle"
-            :class="{ active: Boolean(item.enabled) }"
-            role="switch"
-            :aria-checked="item.enabled ? 'true' : 'false'"
+            :checked="Boolean(item.enabled)"
             :label="t('Listen to {name}', { name: item.name })"
-            :native-title="false"
-            @click="onToggle(item.id)"
-            >{{ item.enabled ? t('ON') : t('OFF') }}</UiButton
-          ></div
-        ></div
+            @change="onToggle(item.id)" /></div></div
       ><details ref="addDetails" class="data-server-add"
         ><summary>{{ t('+ ADD SERVER') }}</summary
         ><form

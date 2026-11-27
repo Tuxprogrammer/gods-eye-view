@@ -205,8 +205,10 @@ export function createCrimeLayer({
     source: 'Madison PD',
     updateInterval: 15 * 60 * 1000,
 
-    init(nextViewer) {
+    init(nextViewer, { panel = null } = {}) {
       if (viewer) throw new Error('The crime layer is already initialized');
+      // The panels' handle: invalidated when the row or readout changed.
+      rowControlsListener = panel ? () => panel.invalidate() : null;
       viewer = nextViewer;
       markers = drawOf(viewer).points({ id: SET_ID, show: false });
     },
@@ -264,7 +266,9 @@ export function createCrimeLayer({
         lastError = error?.message || msg('Crime reports unavailable');
         stale = false;
         notifyRow();
-        return false;
+        // A feed that is down keeps the layer on: its row shows the error and
+        // the next interval retries.
+        return true;
       } finally {
         if (request === controller) request = null;
       }
@@ -309,10 +313,6 @@ export function createCrimeLayer({
         });
       }
       return records;
-    },
-
-    setRowControlsListener(listener) {
-      rowControlsListener = typeof listener === 'function' ? listener : null;
     },
 
     getRowControls() {

@@ -13,7 +13,8 @@ html[data-ui='mobile'] {
 }
 
 /* Elements injected by cards.js exist only in mobile mode. */
-html:not([data-ui='mobile']) :is(
+html:not([data-ui='mobile'])
+  :is(
     .m-card-nav,
     .m-callout-close,
     .m-bhote-tabs,
@@ -53,7 +54,9 @@ html[data-ui='mobile']
 html[data-ui='mobile'] .aprs-card.touch-preview:not(.pinned) .m-card-nav,
 html[data-ui='mobile'] .aprs-card.touch-preview:not(.pinned) .aprs-card-close,
 html[data-ui='mobile'] .aprs-card.touch-preview:not(.pinned) .aprs-card-charts,
-html[data-ui='mobile'] .aprs-card.touch-preview:not(.pinned) .aprs-card-messages,
+html[data-ui='mobile']
+  .aprs-card.touch-preview:not(.pinned)
+  .aprs-card-messages,
 html[data-ui='mobile'] .aprs-card.touch-preview:not(.pinned) .aprs-card-actions,
 html[data-ui='mobile']
   .aprs-card.touch-preview:not(.pinned)
@@ -98,7 +101,8 @@ html[data-ui='mobile']
   box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.5);
 }
 
-html[data-ui='mobile'] :is(.aprs-card, .propagation-station-card).pinned::before {
+html[data-ui='mobile']
+  :is(.aprs-card, .propagation-station-card).pinned::before {
   content: '';
   display: block;
   width: 36px;
@@ -108,8 +112,7 @@ html[data-ui='mobile'] :is(.aprs-card, .propagation-station-card).pinned::before
   background: rgba(255, 255, 255, 0.3);
 }
 
-html[data-ui='mobile']
-  :is(.aprs-card-head, .propagation-station-card-head) {
+html[data-ui='mobile'] :is(.aprs-card-head, .propagation-station-card-head) {
   position: sticky;
   top: 0;
   z-index: 1;
@@ -122,8 +125,7 @@ html[data-ui='mobile']
 html[data-ui='mobile'] .aprs-card-glyph {
   font-size: 18px;
 }
-html[data-ui='mobile']
-  :is(.aprs-card-title, .propagation-station-card-title) {
+html[data-ui='mobile'] :is(.aprs-card-title, .propagation-station-card-title) {
   overflow: hidden;
   font-size: 16px;
   text-overflow: ellipsis;
@@ -241,11 +243,9 @@ html[data-ui='mobile'] .data-server-topic {
   font-size: 16px;
   border-radius: 8px;
 }
-html[data-ui='mobile'] .data-server-toggle {
-  min-width: 60px;
-  min-height: var(--m-tap);
-  font-size: 13px;
-  border-radius: 10px;
+/* A finger-sized hit target around the 30 by 16 px switch. */
+html[data-ui='mobile'] .data-server-toggle::before {
+  inset: -16px -9px;
 }
 html[data-ui='mobile'] .data-server-add summary {
   display: flex;
@@ -383,7 +383,9 @@ html[data-ui='mobile'] #bhote-koshi-event-panel .bhote-event-icon-btn {
   font-size: 24px;
   border-radius: 10px;
 }
-html[data-ui='mobile'] #bhote-koshi-event-panel :is(
+html[data-ui='mobile']
+  #bhote-koshi-event-panel
+  :is(
     .bhote-event-kicker,
     .bhote-event-section-head,
     .bhote-event-status,
@@ -453,7 +455,10 @@ html[data-ui='mobile']
 html[data-ui='mobile'] #bhote-koshi-event-panel .bhote-event-story-nav {
   grid-template-columns: var(--m-tap) minmax(0, 1fr) var(--m-tap);
 }
-html[data-ui='mobile'] #bhote-koshi-event-panel .bhote-event-story-nav > button {
+html[data-ui='mobile']
+  #bhote-koshi-event-panel
+  .bhote-event-story-nav
+  > button {
   width: var(--m-tap);
   min-height: var(--m-tap);
   border-radius: 10px;
@@ -489,9 +494,7 @@ html[data-ui='mobile'] #bhote-koshi-event-panel .bhote-event-caveat {
 }
 
 /* Before/after split: bigger handle, lifted clear of the bottom sheet. */
-html[data-ui='mobile']
-  #bhote-koshi-split-line
-  .bhote-koshi-split-handle {
+html[data-ui='mobile'] #bhote-koshi-split-line .bhote-koshi-split-handle {
   top: 44%;
   width: var(--m-tap);
   height: var(--m-tap);
@@ -519,7 +522,9 @@ html[data-ui='mobile'] .bhote-embedded-callout-player {
   height: auto;
   max-height: 30dvh;
 }
-html[data-ui='mobile'] .bhote-embedded-callout.is-portrait .bhote-embedded-callout-player {
+html[data-ui='mobile']
+  .bhote-embedded-callout.is-portrait
+  .bhote-embedded-callout-player {
   max-height: 34dvh;
 }
 html[data-ui='mobile'] .bhote-embedded-callout footer strong {
@@ -611,18 +616,6 @@ html[data-ui='mobile'] .m-draw__shape[aria-checked='true'] {
   color: var(--m-accent);
   border-color: var(--m-accent);
   background: rgba(0, 212, 255, 0.12);
-}
-html[data-ui='mobile'] .m-draw__label {
-  flex: 1;
-  min-width: 0;
-  min-height: var(--m-tap);
-  box-sizing: border-box;
-  padding: 0 10px;
-  font-size: 16px;
-  color: var(--m-text);
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid var(--m-line);
-  border-radius: 10px;
 }
 html[data-ui='mobile'] .m-draw__colour {
   flex: none;

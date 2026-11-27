@@ -12,41 +12,61 @@ html[data-ui='mobile'] .mv-page .m-meta {
 }
 
 /* #pp-toggles keeps its node (listeners, cockpit portal, share state) but its
-   glass shell, header, and collapsed state are neutralised: its groups become
-   direct flex items of the page and are ordered by data-mv-slot. */
-html[data-ui='mobile'] .mv-page #pp-toggles {
+   glass shell, header, and collapsed state are neutralised: it and its panel
+   body are display: contents, so the body's groups are direct flex items of
+   the page, ordered by data-mv-slot. */
+html[data-ui='mobile'] .mv-page #pp-toggles,
+html[data-ui='mobile'] .mv-page #pp-toggles > .pp-panel-body {
   display: contents;
 }
-html[data-ui='mobile'] .mv-page #pp-toggles > .pp-header-row {
+html[data-ui='mobile'] .mv-page #pp-toggles > .pp-header-row,
+html[data-ui='mobile']
+  .mv-page
+  #pp-toggles
+  .pp-panel-body
+  > .pp-section-heading {
   display: none;
 }
-html[data-ui='mobile'] .mv-page #pp-toggles.collapsed > .pp-toggle-group,
-html[data-ui='mobile'] .mv-page #pp-toggles > .pp-toggle-group {
+html[data-ui='mobile'] .mv-page #pp-toggles .pp-panel-body > .pp-toggle-group {
   display: flex;
   flex-direction: column;
   width: 100%;
   max-width: none;
 }
-html[data-ui='mobile'] .mv-page #pp-toggles.collapsed > #clean-view-toggle,
-html[data-ui='mobile'] .mv-page #pp-toggles > #clean-view-toggle {
+html[data-ui='mobile'] .mv-page #pp-toggles .pp-panel-body > #clean-view-toggle,
+html[data-ui='mobile'] .mv-page #pp-toggles .pp-panel-body > .pp-reset-btn {
   display: flex;
   width: 100%;
 }
-html[data-ui='mobile'] .mv-page #pp-toggles.collapsed > #param-slider-panel {
+html[data-ui='mobile']
+  .mv-page
+  #pp-toggles
+  .pp-panel-body
+  > #param-slider-panel {
   display: none;
 }
 html[data-ui='mobile']
   .mv-page
-  #pp-toggles.collapsed
+  #pp-toggles
+  .pp-panel-body
   > #param-slider-panel.active {
   display: block;
+}
+/* Groups without a slot (the sky, frame rate and named groups) follow the
+   slotted display groups, before Clean UI; :where keeps this below every
+   slot's order. */
+html[data-ui='mobile'] .mv-page :where(.pp-panel-body > *) {
+  order: 38;
+}
+html[data-ui='mobile'] .mv-page :where(.pp-panel-body > .pp-reset-btn) {
+  order: 43;
 }
 
 /* Order: presets, parameters, map, camera, display groups, FPS. */
 html[data-ui='mobile'] .mv-page .mv-h--style {
   order: 0;
 }
-html[data-ui='mobile'] .mv-page #style-buttons {
+html[data-ui='mobile'] .mv-page .visual-presets {
   order: 1;
 }
 html[data-ui='mobile'] .mv-page .mv-style-help {
@@ -55,8 +75,8 @@ html[data-ui='mobile'] .mv-page .mv-style-help {
 html[data-ui='mobile'] .mv-page [data-mv-slot='params'] {
   order: 3;
 }
-html[data-ui='mobile'] .mv-page .map-source-section {
-  order: 10;
+html[data-ui='mobile'] .mv-page .mv-map-note {
+  order: 2;
 }
 html[data-ui='mobile'] .mv-page .mv-h--camera {
   order: 20;
@@ -106,7 +126,7 @@ html[data-ui='mobile'] .mv-page [data-mv-slot='fps'] {
 
 /* Headings */
 html[data-ui='mobile'] .mv-h,
-html[data-ui='mobile'] .mv-page .map-source-heading {
+html[data-ui='mobile'] .mv-page .visual-presets__heading {
   margin: 8px 0 0;
   font-family: var(--font-mono, monospace);
   font-size: 12px;
@@ -120,27 +140,35 @@ html[data-ui='mobile'] .mv-h--style {
 }
 
 /* ---------- Visual presets: wrapped grid, no horizontal strip ---------- */
-html[data-ui='mobile'] .mv-page #style-buttons {
+/* The Visual panel's presets (VisualPresets.vue), moved here by pages/view.js.
+   The page's own "Visual style" heading stands for their "Look" one. */
+html[data-ui='mobile']
+  .mv-page
+  .visual-presets
+  > .visual-presets__heading:first-child {
+  display: none;
+}
+html[data-ui='mobile'] .mv-page .visual-presets__grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
   gap: 8px;
   overflow: visible;
 }
-html[data-ui='mobile'] .mv-page #style-buttons .style-btn {
+html[data-ui='mobile'] .mv-page .visual-presets__style {
   min-width: 0;
   min-height: 64px;
   padding: 8px 4px;
   flex-shrink: 1;
   justify-content: center;
 }
-html[data-ui='mobile'] .mv-page #style-buttons .btn-icon {
+html[data-ui='mobile'] .mv-page .visual-presets__icon {
   font-size: 22px;
 }
-html[data-ui='mobile'] .mv-page #style-buttons .btn-label {
+html[data-ui='mobile'] .mv-page .visual-presets__label {
   font-size: 12px;
   letter-spacing: 0.6px;
 }
-html[data-ui='mobile'] .mv-page #style-buttons .btn-key {
+html[data-ui='mobile'] .mv-page .visual-presets__key {
   display: none;
 }
 html[data-ui='mobile'] .mv-style-help {
@@ -187,26 +215,28 @@ html[data-ui='mobile'] .mv-page .param-value {
 }
 
 /* ---------- Map source ---------- */
-html[data-ui='mobile'] .mv-page .map-source-section {
-  margin-top: 0;
-  padding-top: 0;
-  border-top: 0;
+html[data-ui='mobile'] .mv-page .visual-presets {
+  margin: 0;
+  padding: 0;
+  border-bottom: 0;
   gap: 8px;
 }
-html[data-ui='mobile'] .mv-page .map-source-heading {
+html[data-ui='mobile'] .mv-page .visual-presets__heading {
   margin: 0;
   font-size: 12px;
   letter-spacing: 1.6px;
 }
-html[data-ui='mobile'] .mv-page .pp-stack-status {
+html[data-ui='mobile'] .mv-page .visual-presets__status {
   max-width: 96px;
   font-size: 12px;
 }
-html[data-ui='mobile'] .mv-page .map-stack-chip-row {
+html[data-ui='mobile'] .mv-page .visual-presets__chips {
+  display: grid;
   grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
   gap: 8px;
 }
-html[data-ui='mobile'] .mv-page .map-stack-chip {
+html[data-ui='mobile'] .mv-page .visual-presets__chip {
+  justify-content: center;
   min-height: var(--m-tap);
   padding: 6px 8px;
   border-radius: 10px;
@@ -215,7 +245,7 @@ html[data-ui='mobile'] .mv-page .map-stack-chip {
   text-align: center;
   line-height: 1.2;
 }
-html[data-ui='mobile'] .mv-page .map-stack-chip-req {
+html[data-ui='mobile'] .mv-page .visual-presets__chip small {
   font-size: 10px;
 }
 html[data-ui='mobile'] .mv-map-note {
@@ -297,12 +327,6 @@ html[data-ui='mobile'] .mv-page .pp-select {
   font-size: 16px;
   border-radius: 10px;
 }
-html[data-ui='mobile'] .mv-page .pp-text-input {
-  height: var(--m-tap);
-  padding: 0 10px;
-  font-size: 16px;
-  border-radius: 10px;
-}
 html[data-ui='mobile'] .mv-page .pp-mode-seg {
   border-radius: 10px;
 }
@@ -316,9 +340,6 @@ html[data-ui='mobile'] .mv-page .detection-allocation-seg .pp-mode-btn {
 html[data-ui='mobile'] .mv-page .draw-clear-btn {
   padding: 0 14px;
   border-radius: 10px;
-}
-html[data-ui='mobile'] .mv-page .draw-color-select {
-  flex: 0 0 116px;
 }
 html[data-ui='mobile'] .mv-page .draw-hint {
   font-size: 12px;

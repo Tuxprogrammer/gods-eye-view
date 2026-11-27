@@ -117,6 +117,7 @@ function harness(getIncidents, options = {}) {
   const viewer = {};
   const { draw } = bindFakeDraw(viewer);
   const calls = [];
+  const panel = { notices: 0, invalidate: () => panel.notices++ };
   const layer = createCrimeLayer({
     source: {
       getIncidents: async (options) => {
@@ -131,10 +132,10 @@ function harness(getIncidents, options = {}) {
     },
     ...options,
   });
-  layer.init(viewer);
+  layer.init(viewer, { panel });
   layer.enable(viewer);
   const markers = () => draw.sets.get('crime:markers');
-  return { layer, viewer, markers, events, calls };
+  return { layer, viewer, markers, events, calls, panel };
 }
 
 test('draws one marker per block and filters by kind', async () => {
@@ -156,8 +157,7 @@ test('draws one marker per block and filters by kind', async () => {
   assert.equal(marker.disableDepthTest, 50_000);
   assert.equal(h.layer.getStats().count, 3);
 
-  let notified = 0;
-  h.layer.setRowControlsListener(() => notified++);
+  const before = h.panel.notices;
   const controls = h.layer.getRowControls();
   assert.deepEqual(
     controls.legend.map(({ count }) => count),
@@ -165,7 +165,7 @@ test('draws one marker per block and filters by kind', async () => {
   );
   assert.match(controls.info, /2 withheld for privacy · 1 not mapped/);
   controls.chips.find(({ id }) => id === 'category-traffic').onClick();
-  assert.equal(notified, 1);
+  assert.equal(h.panel.notices - before, 1);
   assert.equal(h.markers().items.size, 1);
   assert.equal(h.layer.getStats().count, 2);
   assert.equal(h.layer.getAnalystRecords().length, 2);
@@ -213,7 +213,7 @@ test('a late answer cannot publish after disable or destroy', async () => {
   }
 });
 
-test('a failed fetch is reported and keeps the last snapshot', async () => {
+test('a failed fetch is reported, keeps the layer on and keeps the last snapshot', async () => {
   let fail = false;
   const h = harness(async () => {
     if (fail) throw new Error('Crime reports unavailable');
@@ -221,7 +221,7 @@ test('a failed fetch is reported and keeps the last snapshot', async () => {
   });
   await h.layer.update();
   fail = true;
-  assert.equal(await h.layer.update(), false);
+  assert.equal(await h.layer.update(), true);
   assert.equal(h.layer.getStats().error, 'Crime reports unavailable');
   assert.equal(h.layer.getStats().count, 1);
   h.layer.destroy();

@@ -36,7 +36,9 @@ export function flyToForkStart(viewer, view = FORK_START_VIEW) {
   });
   let flight = null;
   const timer = setTimeout(() => {
-    if (viewer.isDestroyed?.()) return;
+    // A camera port without flights (a headless or test renderer) stays
+    // at the approach view.
+    if (viewer.isDestroyed?.() || typeof camera.flyTo !== 'function') return;
     flight = camera.flyTo(
       { lon, lat, height },
       {

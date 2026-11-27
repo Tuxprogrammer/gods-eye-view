@@ -84,7 +84,7 @@ test('every control is a kit control: no hand-written button, select, checkbox o
     servers: { heading: 'MQTT SERVERS', items: [server('global')] },
   });
   for (const button of row.el.querySelectorAll('button'))
-    assert.ok(button.classList.contains('ui-button'), button.className);
+    assert.ok(button.matches('.ui-button, .ui-switch'), button.className);
   assert.ok(row.el.querySelector('.ui-checkbox input[name="tls"]'));
   row.wrapper.unmount();
 });
@@ -245,10 +245,9 @@ test('the server list keeps the delete button first and follows the descriptor o
   const [remove, body, toggle] = row.el.querySelector('.data-server').children;
   assert.ok(remove.classList.contains('data-server-remove'));
   assert.equal(remove.getAttribute('aria-label'), 'Delete global');
-  assert.equal(toggle.textContent, 'ON');
+  assert.ok(toggle.classList.contains('ui-switch'));
   assert.equal(toggle.getAttribute('role'), 'switch');
   assert.equal(toggle.getAttribute('aria-checked'), 'true');
-  assert.ok(toggle.classList.contains('active'));
   assert.equal(body.querySelector('.data-server-topic').value, 'msh/US/#');
   const form = row.el.querySelector('.data-server-add');
   assert.equal(row.el.querySelector('.data-server-error').hidden, true);
@@ -270,7 +269,10 @@ test('the server list keeps the delete button first and follows the descriptor o
   );
   assert.deepEqual(ids(), ['almesh', 'mine']);
   const first = row.el.querySelector('.data-server');
-  assert.equal(first.querySelector('.data-server-toggle').textContent, 'OFF');
+  const serverSwitch = first.querySelector('.data-server-toggle');
+  assert.equal(serverSwitch.getAttribute('role'), 'switch');
+  assert.equal(serverSwitch.getAttribute('aria-checked'), 'false');
+  assert.equal(serverSwitch.getAttribute('aria-label'), 'Listen to almesh');
   assert.equal(first.querySelector('.data-server-status').dataset.state, 'off');
   const error = row.el.querySelector('.data-server-error');
   assert.equal(error.textContent, 'nope');
